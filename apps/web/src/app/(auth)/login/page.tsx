@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,14 +31,24 @@ const SECURITY_POINTS = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, verifyTotp } = useAuth();
+  const { login, verifyTotp, status } = useAuth();
   const [formError, setFormError] = React.useState<string | null>(null);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showTotpStep, setShowTotpStep] = React.useState(false);
   const [totpCode, setTotpCode] = React.useState('');
   const [totpSubmitting, setTotpSubmitting] = React.useState(false);
+
+  // If the user is already authenticated (e.g. refreshed the /login page),
+  // redirect them to the dashboard immediately without showing the form.
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      const next = searchParams.get('next');
+      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      // Full navigation so the page and auth context initialise fresh.
+      window.location.replace(dest);
+    }
+  }, [status, searchParams]);
 
   const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -51,7 +61,10 @@ export default function LoginPage() {
       const res = await login({ ...values, rememberMe: values.rememberMe ?? true });
       if (res.totp_required) { setShowTotpStep(true); return; }
       const next = searchParams.get('next');
-      router.push(next && next.startsWith('/') ? next : '/dashboard');
+      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      // Use a full page navigation instead of router.push so the browser
+      // sends the cookie in the next request (avoids cross-domain loop).
+      window.location.href = dest;
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'account_locked' || err.status === 423) {
@@ -77,7 +90,8 @@ export default function LoginPage() {
       const values = getValues();
       await verifyTotp({ email: values.email, password: values.password, code: totpCode, rememberMe: values.rememberMe ?? true });
       const next = searchParams.get('next');
-      router.push(next && next.startsWith('/') ? next : '/dashboard');
+      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      window.location.href = dest;
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : 'Failed to verify 2FA code.');
     } finally { setTotpSubmitting(false); }
