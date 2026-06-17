@@ -73,7 +73,7 @@ export type DealEvent = (typeof DEAL_EVENTS)[number];
 export const TRANSITIONS: Readonly<
   Record<DealStatus, Readonly<Partial<Record<DealEvent, DealStatus>>>>
 > = {
-  Created: { SecureInviteSent: 'Invited', EmergencyPause: 'Paused' },
+  Created: { SecureInviteSent: 'Invited', PartiesAgreed: 'Agreed', EmergencyPause: 'Paused' },
   Invited: { PartiesAgreed: 'Agreed', EmergencyPause: 'Paused' },
   Agreed: { CodeVerified: 'Verified' },
   Verified: { TermsAccepted: 'Confirmed', FundingWindowExpired: 'Expired' },
