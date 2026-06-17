@@ -59,10 +59,13 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self';",
-              // unsafe-inline kept only in development (HMR). Production uses
-              // strict-dynamic + nonce (injected by Next.js) so inline scripts
-              // are rejected by default. (Audit FIX-P2-6)
-              `script-src 'self' ${process.env.NODE_ENV !== 'production' ? "'unsafe-inline' 'unsafe-eval'" : "'strict-dynamic'"};`,
+              // Next.js App Router injects inline hydration/streaming scripts
+              // (self.__next_f pushes) and loads chunk bundles from 'self'.
+              // Without a per-request nonce pipeline, 'strict-dynamic' would
+              // block ALL scripts (including Next's own) and the app would never
+              // hydrate. We allow 'self' + 'unsafe-inline' so the bundles run;
+              // dev additionally needs 'unsafe-eval' for React Fast Refresh.
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''};`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
               `img-src 'self' data: https://*.googleusercontent.com ${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''};`,
               `connect-src 'self' ws: wss: ${process.env.NODE_ENV !== 'production' ? "http:" : ""} https:;`,
