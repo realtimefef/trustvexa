@@ -170,7 +170,7 @@ services:
     region: oregon
     healthCheckPath: /healthz
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --frozen-lockfile &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/api build
     preDeployCommand: pnpm migrate:up
@@ -200,7 +200,7 @@ services:
     region: oregon
     healthCheckPath: /healthz
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --frozen-lockfile &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/web build
     startCommand: pnpm --filter @trustvexa/web start
@@ -216,8 +216,6 @@ services:
         value: https://api.trustvexa.com
       - key: NEXT_PUBLIC_WEB_URL
         value: https://trustvexa.com
-      - key: NEXT_PUBLIC_HCAPTCHA_SITE_KEY
-        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: trustvexa-postgres
@@ -235,7 +233,7 @@ services:
     plan: standard   # Standard: always-on background worker
     region: oregon
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --frozen-lockfile &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/api build &&
       pnpm --filter @trustvexa/worker build
