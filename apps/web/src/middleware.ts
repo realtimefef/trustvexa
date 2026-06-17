@@ -72,25 +72,10 @@ export async function middleware(req: NextRequest) {
   const result = await verifySession(req);
 
   if (!result) {
-    // Cookie missing or session invalid.
-    // If the request is a navigation (browser page load, not an API/asset
-    // fetch), redirect to login so the user can authenticate.
-    // We check Accept header: browsers send text/html for page navigations.
-    const acceptsHtml = req.headers.get('accept')?.includes('text/html') ?? false;
-    const isNavigation =
-      req.headers.get('sec-fetch-mode') === 'navigate' ||
-      (acceptsHtml && !req.headers.get('sec-fetch-dest')?.match(/^(script|style|image|font)$/));
-
-    if (isNavigation) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = '/login';
-      loginUrl.searchParams.set('next', req.nextUrl.pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Non-navigation request (prefetch, fetch) — pass through and let the
-    // client-side auth context handle the unauthenticated state instead of
-    // returning a hard redirect that would break fetch calls.
+    // The refresh-token cookie may live on the API domain (cross-origin Render
+    // deployment) so we cannot reliably read it here. Pass through and let the
+    // client-side ClientAuthGuard handle auth + redirect. If we hard-redirect
+    // here the user lands in an infinite /login loop after every login.
     return NextResponse.next();
   }
 
