@@ -62,13 +62,13 @@ const nextConfig = {
               // unsafe-inline kept only in development (HMR). Production uses
               // strict-dynamic + nonce (injected by Next.js) so inline scripts
               // are rejected by default. (Audit FIX-P2-6)
-              `script-src 'self' ${process.env.NODE_ENV !== 'production' ? "'unsafe-inline' 'unsafe-eval'" : "'strict-dynamic'"} https://hcaptcha.com https://*.hcaptcha.com;`,
-              "style-src 'self' 'unsafe-inline' https://hcaptcha.com https://*.hcaptcha.com https://fonts.googleapis.com;",
-              `img-src 'self' data: https://*.googleusercontent.com https://hcaptcha.com https://*.hcaptcha.com ${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''};`,
-              `connect-src 'self' ws: wss: ${process.env.NODE_ENV !== 'production' ? "http:" : ""} https: https://hcaptcha.com https://*.hcaptcha.com;`,
+              `script-src 'self' ${process.env.NODE_ENV !== 'production' ? "'unsafe-inline' 'unsafe-eval'" : "'strict-dynamic'"};`,
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
+              `img-src 'self' data: https://*.googleusercontent.com ${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''};`,
+              `connect-src 'self' ws: wss: ${process.env.NODE_ENV !== 'production' ? "http:" : ""} https:;`,
               // frame-ancestors in CSP supersedes X-Frame-Options in modern browsers. (Audit FIX-P2-6)
               "frame-ancestors 'none';",
-              "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com;",
+              "frame-src 'self';",
               "font-src 'self' https://fonts.gstatic.com;",
               "object-src 'none';",
               "base-uri 'self';",
