@@ -170,7 +170,7 @@ services:
     region: oregon
     healthCheckPath: /healthz
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --no-frozen-lockfile --prod=false &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/api build
     preDeployCommand: pnpm migrate:up
@@ -200,7 +200,7 @@ services:
     region: oregon
     healthCheckPath: /healthz
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --no-frozen-lockfile --prod=false &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/web build
     startCommand: pnpm --filter @trustvexa/web start
@@ -233,7 +233,7 @@ services:
     plan: standard   # Standard: always-on background worker
     region: oregon
     buildCommand: >
-      pnpm install --no-frozen-lockfile &&
+      pnpm install --no-frozen-lockfile --prod=false &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/api build &&
       pnpm --filter @trustvexa/worker build
