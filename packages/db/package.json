@@ -1,0 +1,18 @@
+{
+  "name": "@trustvexa/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TrustVexa database migrations (node-pg-migrate). Shared migration runner consumed by api and worker; PostgreSQL is the source of truth.",
+  "scripts": {
+    "migrate": "node-pg-migrate -m migrations -j js",
+    "migrate:up": "node-pg-migrate -m migrations -j js up",
+    "migrate:down": "node-pg-migrate -m migrations -j js down",
+    "migrate:redo": "node-pg-migrate -m migrations -j js redo",
+    "migrate:create": "node-pg-migrate -m migrations -j js create",
+    "migrate:dry-run": "node-pg-migrate -m migrations -j js up --dry-run"
+  },
+  "dependencies": {
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.13.1"
+  }
+}
