@@ -4,21 +4,79 @@
  * Unified inbox — pre-deal connections AND deal chats in one view.
  * Connection messages are live (4-second poll); deal-chat messages are
  * historical (REST). Both appear in the same left-hand sidebar.
+ * Images are rendered via AuthImage (authenticated blob URL).
  */
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Archive, MessageSquare, Radio, VolumeX } from 'lucide-react';
+import { Archive, ImagePlus, Loader2, MessageSquare, Radio, VolumeX } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardPageHeader } from '@/components/dashboard-page-header';
-import { apiRequest } from '@/lib/api/client';
+import { apiRequest, getAccessToken } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useSocket } from '@/lib/socket/socket-context';
 import { PresenceDot } from '@/components/presence-dot';
+
+// ── Image renderer (same pattern as connect page) ─────────────────────────────
+
+const API_ORIGIN_MSG = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+const IMG_PREFIX_MSG = '[img:';
+const IMG_OLD_PREFIX_MSG = '[image:';
+
+function extractFileKeyFromUrl(url: string): string | null {
+  try {
+    const p = new URL(url);
+    const idx = p.pathname.indexOf('/storage/files/');
+    if (idx === -1) return null;
+    const kv = p.pathname.slice(idx + '/storage/files/'.length);
+    return kv.endsWith('/view') ? kv.slice(0, -5) : kv;
+  } catch { return null; }
+}
+
+function AuthImageMsg({ fileKey }: { fileKey: string }) {
+  const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => {
+    let revoked = false;
+    const src = `${API_ORIGIN_MSG}/api/v1/storage/serve/${encodeURIComponent(fileKey)}`;
+    const token = getAccessToken();
+    fetch(src, { headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: 'include' })
+      .then(async r => { if (!r.ok) throw new Error(); return r.blob(); })
+      .then(b => { if (!revoked) setBlobUrl(URL.createObjectURL(b)); })
+      .catch(() => { if (!revoked) setFailed(true); });
+    return () => {
+      revoked = true;
+      setBlobUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
+    };
+  }, [fileKey]);
+  if (failed) return <span className="text-[11px] italic text-muted-foreground">Image unavailable</span>;
+  if (!blobUrl) return <span className="inline-block h-10 w-32 rounded-lg bg-muted animate-pulse" />;
+  return (
+    <a href={blobUrl} target="_blank" rel="noopener noreferrer"
+      className="block max-w-[180px] overflow-hidden rounded-xl border border-white/10 hover:opacity-90 transition-opacity">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={blobUrl} alt="Shared image" className="h-auto w-full object-cover max-h-48" loading="lazy" />
+    </a>
+  );
+}
+
+function MsgBodyMsg({ body }: { body: string | null }) {
+  if (!body) return <span className="italic text-muted-foreground text-xs">—</span>;
+  if (body.startsWith(IMG_PREFIX_MSG)) {
+    return <AuthImageMsg fileKey={body.slice(IMG_PREFIX_MSG.length, -1)} />;
+  }
+  if (body.startsWith(IMG_OLD_PREFIX_MSG)) {
+    const rawUrl = body.slice(IMG_OLD_PREFIX_MSG.length, -1);
+    const fk = extractFileKeyFromUrl(rawUrl);
+    if (fk) return <AuthImageMsg fileKey={fk} />;
+    return <span className="italic text-muted-foreground text-xs">🖼 Image</span>;
+  }
+  return <span className="whitespace-pre-wrap break-words">{body}</span>;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -139,8 +197,10 @@ export default function MessagesPage() {
   const [archiveTab, setArchiveTab] = React.useState<'active' | 'archived'>('active');
   const [draftMsg, setDraftMsg] = React.useState('');
   const [sending, setSending] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
   const [typingChats, setTypingChats] = React.useState<Record<string, boolean>>({});
   const [unreadChatIds, setUnreadChatIds] = React.useState<Set<string>>(new Set());
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Socket events
   React.useEffect(() => {
@@ -186,6 +246,27 @@ export default function MessagesPage() {
       setDraftMsg('');
       void queryClient.invalidateQueries({ queryKey: ['connection-messages', selectedId] });
     } catch { /* noop */ } finally { setSending(false); }
+  };
+
+  const sendImage = async (file: File) => {
+    if (!selectedId || selectedKind !== 'connection') return;
+    if (file.size > 10 * 1024 * 1024) return;
+    setUploading(true);
+    try {
+      const token = getAccessToken();
+      const r = await fetch(`${API_ORIGIN_MSG}/api/v1/storage/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: file,
+      });
+      if (!r.ok) throw new Error('Upload failed');
+      const data = (await r.json()) as { file_key: string };
+      await apiRequest(`/connections/${selectedId}/messages`, {
+        method: 'POST',
+        body: { body: `${IMG_PREFIX_MSG}${data.file_key}]` },
+      });
+      void queryClient.invalidateQueries({ queryKey: ['connection-messages', selectedId] });
+    } catch { /* noop */ } finally { setUploading(false); }
   };
 
   const toggleMute = async (chat: ChatSummary) => {
@@ -400,7 +481,7 @@ export default function MessagesPage() {
                     ) : connMsgsQ.data!.map((m) => (
                       <div key={m.id} className={`flex ${m.mine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.mine ? 'bg-primary text-primary-foreground' : 'bg-background border'}`}>
-                          {m.body}
+                          <MsgBodyMsg body={m.body} />
                           <span className="ml-2 text-[10px] opacity-60">
                             {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
@@ -410,11 +491,18 @@ export default function MessagesPage() {
                 </div>
                 {selectedConn?.joined ? (
                   <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void sendMsg(); }}>
+                    <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void sendImage(f); }} />
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                      className="shrink-0 h-9 w-9 flex items-center justify-center rounded-lg border hover:bg-muted transition-colors text-muted-foreground disabled:opacity-40">
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                    </button>
                     <input
                       className="flex-1 rounded-md border bg-background px-3 py-2 text-sm"
                       placeholder="Type a message…"
                       value={draftMsg}
                       onChange={(e) => setDraftMsg(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendMsg(); } }}
                     />
                     <button type="submit" disabled={sending || !draftMsg.trim()}
                       className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
@@ -451,7 +539,9 @@ export default function MessagesPage() {
                             </span>
                             <span className="text-xs text-muted-foreground">{formatTime(msg.createdAt)}</span>
                           </div>
-                          <p className="mt-1.5 whitespace-pre-wrap text-sm text-muted-foreground">{msg.body ?? '\u2014'}</p>
+                          <div className="mt-1.5 text-sm text-muted-foreground">
+                            <MsgBodyMsg body={msg.body ?? null} />
+                          </div>
                           {msg.isEdited || msg.deletedForUsers ? (
                             <div className="mt-2 flex gap-2">
                               {msg.isEdited && <Badge variant="secondary">Edited</Badge>}
