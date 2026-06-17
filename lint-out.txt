@@ -1,0 +1,190 @@
+
+> trustvexa@0.0.0 lint C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged
+> eslint .
+
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\__tests__\critical-flows.test.ts
+   33:31  error  'key' is defined but never used. Allowed unused args must match /^_/u                      @typescript-eslint/no-unused-vars
+   33:36  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+   75:3   error  'effectiveThreshold' is defined but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+   84:28  error  'filterMessagesForViewer' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  435:28  error  't' is defined but never used. Allowed unused args must match /^_/u                        @typescript-eslint/no-unused-vars
+  456:10  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  459:10  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  462:20  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  463:22  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  465:25  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  480:21  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  481:23  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  483:26  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  511:29  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  512:65  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  513:68  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  515:16  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  516:28  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  521:26  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  526:24  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\__tests__\p4-p5-gaps.test.ts
+  407:23  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  410:39  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  436:9   error  'queryCallCount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  437:76  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  527:40  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  536:76  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+  620:40  error  Unexpected any. Specify a different type                                                   @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\lib\queue.ts
+  59:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\auth\auth.repository.ts
+  236:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  249:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  256:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\auth\auth.service.ts
+  282:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\deal\__tests__\deal-tags.test.ts
+  20:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\deal\deal.service.ts
+  223:13  error  Empty block statement  no-empty
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\profile\profile.controller.ts
+  69:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\storage\object-storage.ts
+   73:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   82:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   83:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  142:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\storage\storage.controller.ts
+  42:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\modules\wallets\wallets.service.ts
+  342:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  361:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  378:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  389:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  404:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  526:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  527:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\api\src\realtime\__tests__\gateway.integration.test.ts
+  18:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\e2e\dashboard.spec.ts
+  4:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\next-env.d.ts
+  3:1  error  Do not use a triple slash reference for ./.next/types/routes.d.ts, use `import` style instead  @typescript-eslint/triple-slash-reference
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\deals\[id]\page.tsx
+   89:47  error  Unexpected any. Specify a different type                                      @typescript-eslint/no-explicit-any
+  115:47  error  Unexpected any. Specify a different type                                      @typescript-eslint/no-explicit-any
+  197:12  error  'e' is defined but never used. Allowed unused caught errors must match /^_/u  @typescript-eslint/no-unused-vars
+  334:38  error  Unexpected any. Specify a different type                                      @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\deals\page.tsx
+  203:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\disputes\page.tsx
+  217:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\notifications\page.tsx
+   38:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\profile\page.tsx
+  144:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\settings\page.tsx
+   331:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   376:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   406:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   420:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   438:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   457:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   476:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   791:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1426:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(app)\wallet\page.tsx
+  143:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  183:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\app\(auth)\login\page.tsx
+  125:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\web\src\components\chat-window.tsx
+   69:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  590:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  595:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  595:73  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  605:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\adapters.ts
+  117:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\payloads.ts
+  99:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\__tests__\db-backup.test.ts
+  144:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\__tests__\deposit-watch.test.ts
+   77:47   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:106  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:69   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:35   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:47   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:106  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:69   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  209:35   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:68   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  218:47   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\__tests__\payout-processing.test.ts
+   29:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   91:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\__tests__\reconciliation.test.ts
+   38:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   54:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  126:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\db-backup.ts
+  10:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\email.ts
+  17:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\notification-fanout.ts
+  95:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\payout-processing.ts
+  69:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged\apps\worker\src\processors\webhook-delivery.ts
+  57:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 114 problems (114 errors, 0 warnings)
+
+ΓÇëELIFECYCLEΓÇë Command failed with exit code 1.

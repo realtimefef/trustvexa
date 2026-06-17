@@ -1,0 +1,4 @@
+
+> trustvexa@0.0.0 lint C:\Users\mahip\OneDrive\Desktop\New folder\trustvexa_merged
+> eslint .
+

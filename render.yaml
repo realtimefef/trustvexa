@@ -1,0 +1,256 @@
+# TrustVexa — Render Blueprint (Production)
+# Domain: trustvexa.com
+# Services: web (Next.js), api (Express), worker (BullMQ), PostgreSQL, Redis
+#
+# HOW TO DEPLOY:
+#  1. Push this repo to GitHub
+#  2. Connect GitHub to Render → New Blueprint → point to this file
+#  3. Render creates all services automatically
+#  4. Fill in sync:false secrets in Render Dashboard → Environment Groups
+#  5. Set MAINNET_ENABLED=true once all critical secrets are configured
+#  6. Configure custom domains in Render Dashboard:
+#       trustvexa.com → trustvexa-web
+#       api.trustvexa.com → trustvexa-api
+#  7. Update Google OAuth redirect URI to: https://api.trustvexa.com/api/v1/auth/google/callback
+#
+# SECRETS CHECKLIST (fill in Render Dashboard before going live):
+#  [ ] TRUSTVEXA_MASTER_KEK       — 32-byte base64 key
+#  [ ] ENCRYPTION_MASTER_KEY      — 32-byte base64 key
+#  [ ] GOOGLE_OAUTH_CLIENT_ID     — from Google Cloud Console
+#  [ ] GOOGLE_OAUTH_CLIENT_SECRET — from Google Cloud Console
+#  [ ] MAIL_HOST / MAIL_USER / MAIL_PASSWORD — SMTP credentials
+#  [ ] S3_ENDPOINT / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY — Render Object Storage or R2
+#  [ ] DEPOSIT_WATCH_*_RPC_URL    — replace free RPCs with Alchemy/Infura for reliability
+#  [ ] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY — generate with web-push
+
+envVarGroups:
+  - name: trustvexa-shared
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MAINNET_ENABLED
+        value: "true"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+
+      # Disable HIBP breach check — frictionless signup, no external calls
+      - key: AUTH_DISABLE_BREACH_CHECK
+        value: "true"
+
+      # ── JWT ────────────────────────────────────────────────────────────────
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 30d
+      - key: AUTH_LOOKUP_HASH_KEY
+        generateValue: true
+      - key: INVITE_TOKEN_HASH_KEY
+        generateValue: true
+      - key: FILE_LINK_SECRET
+        generateValue: true
+
+      # ── Encryption (CRITICAL — must set before first deploy) ───────────────
+      - key: TRUSTVEXA_MASTER_KEK
+        sync: false
+      - key: ENCRYPTION_MASTER_KEY
+        sync: false
+
+      # ── URLs (set after services are created) ─────────────────────────────
+      - key: WEB_APP_URL
+        value: https://trustvexa.com
+      - key: API_BASE_URL
+        value: https://api.trustvexa.com
+      - key: CORS_ORIGINS
+        value: https://trustvexa.com,https://www.trustvexa.com
+
+      # ── Google OAuth (leave blank — not used) ─────────────────────────────
+      # Set these only if you add Google login in the future.
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        value: ""
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        value: ""
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        value: ""
+
+      # ── Email via Resend (resend.com) ──────────────────────────────────────
+      # Resend provides a reliable transactional email API with SMTP relay.
+      # Setup: resend.com → Add Domain (trustvexa.com) → Get API Key → SMTP credentials
+      # Resend SMTP: host=smtp.resend.com port=465 user=resend pass=API_KEY
+      - key: MAIL_HOST
+        value: smtp.resend.com
+      - key: MAIL_PORT
+        value: "465"
+      - key: MAIL_USER
+        value: resend
+      - key: MAIL_PASSWORD
+        sync: false   # Your Resend API Key (re_xxxxxxxxxxxx)
+      - key: MAIL_FROM
+        value: noreply@trustvexa.com
+
+      # ── Blockchain RPC endpoints ───────────────────────────────────────────
+      # Replace these free public endpoints with Alchemy/Infura/QuickNode
+      # for production reliability (rate limits on public RPCs are strict)
+      - key: DEPOSIT_WATCH_ETH_RPC_URL
+        value: https://ethereum-rpc.publicnode.com
+      - key: DEPOSIT_WATCH_BNB_RPC_URL
+        value: https://bsc-rpc.publicnode.com
+      - key: DEPOSIT_WATCH_TRON_RPC_URL
+        value: https://api.trongrid.io
+      - key: DEPOSIT_WATCH_SOLANA_RPC_URL
+        value: https://api.mainnet-beta.solana.com
+      # Premium RPC override (set in dashboard with your API key)
+      - key: ETH_RPC_URL_PRIMARY
+        sync: false
+      - key: BNB_RPC_URL_PRIMARY
+        sync: false
+      - key: TRON_RPC_URL_PRIMARY
+        sync: false
+      - key: SOLANA_RPC_URL_PRIMARY
+        sync: false
+
+      # ── S3 Object Storage (Render Object Storage) ────────────────────────────
+      # Render provides native S3-compatible object storage.
+      # After deploying: Dashboard → Storage → Create Object Store → copy credentials
+      - key: S3_ENDPOINT
+        sync: false   # e.g. https://BUCKET.ord1.object.render.com
+      - key: S3_REGION
+        value: ord    # Render Object Storage region
+      - key: S3_BUCKET
+        value: trustvexa-uploads
+      - key: S3_ACCESS_KEY_ID
+        sync: false   # from Render Object Storage credentials
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false   # from Render Object Storage credentials
+
+      # ── FX (CoinGecko) ────────────────────────────────────────────────────
+      - key: FX_PRIMARY_URL
+        value: https://api.coingecko.com/api/v3
+      - key: FX_PRIMARY_API_KEY
+        sync: false
+      - key: FX_BACKUP_URL
+        sync: false
+      - key: FX_BACKUP_API_KEY
+        sync: false
+
+      # ── Web Push (VAPID) ──────────────────────────────────────────────────
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:admin@trustvexa.com
+
+# ── PostgreSQL ────────────────────────────────────────────────────────────────
+databases:
+  - name: trustvexa-postgres
+    databaseName: trustvexa
+    user: trustvexa
+    plan: standard  # Standard: 4GB RAM, 100GB SSD, automatic backups
+    ipAllowList: []
+
+# ── Services ──────────────────────────────────────────────────────────────────
+services:
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  - type: redis
+    name: trustvexa-redis
+    plan: standard   # Standard: 100MB, persistence, no connection limits
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+
+  # ── API (Express) — api.trustvexa.com ──────────────────────────────────────
+  - type: web
+    name: trustvexa-api
+    runtime: node
+    plan: standard   # Standard: 2GB RAM, faster builds, no sleep
+    region: oregon
+    healthCheckPath: /healthz
+    buildCommand: >
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @trustvexa/shared build &&
+      pnpm --filter @trustvexa/api build
+    preDeployCommand: pnpm migrate:up
+    startCommand: pnpm --filter @trustvexa/api start
+    autoDeploy: true
+    domains:
+      - api.trustvexa.com
+    envVars:
+      - fromGroup: trustvexa-shared
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustvexa-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: trustvexa-redis
+          property: connectionString
+
+  # ── Web (Next.js) — trustvexa.com ─────────────────────────────────────────
+  - type: web
+    name: trustvexa-web
+    runtime: node
+    plan: standard   # Standard: 2GB RAM, no sleep
+    region: oregon
+    healthCheckPath: /healthz
+    buildCommand: >
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @trustvexa/shared build &&
+      pnpm --filter @trustvexa/web build
+    startCommand: pnpm --filter @trustvexa/web start
+    autoDeploy: true
+    domains:
+      - trustvexa.com
+      - www.trustvexa.com
+    envVars:
+      - fromGroup: trustvexa-shared
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://api.trustvexa.com
+      - key: NEXT_PUBLIC_WEB_URL
+        value: https://trustvexa.com
+      - key: NEXT_PUBLIC_HCAPTCHA_SITE_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustvexa-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: trustvexa-redis
+          property: connectionString
+
+  # ── Worker (BullMQ) ────────────────────────────────────────────────────────
+  - type: worker
+    name: trustvexa-worker
+    runtime: node
+    plan: standard   # Standard: always-on background worker
+    region: oregon
+    buildCommand: >
+      pnpm install --frozen-lockfile &&
+      pnpm --filter @trustvexa/shared build &&
+      pnpm --filter @trustvexa/api build &&
+      pnpm --filter @trustvexa/worker build
+    startCommand: pnpm --filter @trustvexa/worker start
+    autoDeploy: true
+    envVars:
+      - fromGroup: trustvexa-shared
+      - key: WORKER_HEALTH_PORT
+        value: "4001"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustvexa-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: trustvexa-redis
+          property: connectionString

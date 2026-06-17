@@ -1,0 +1,11 @@
+{
+  // apps/web is a Next.js app (noEmit, bundler resolution) and is built with
+  // `next build`, not `tsc --build`, so it is intentionally excluded from the
+  // composite project references. Type-check it via `pnpm --filter @trustvexa/web typecheck`.
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/api" },
+    { "path": "./apps/worker" }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "trustvexa",
+  "version": "0.0.0",
+  "private": true,
+  "description": "TrustVexa — Render-only, crypto-only escrow platform (TypeScript monorepo)",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "glob": "11.1.0",
+      "ioredis": "5.11.1",
+      "serialize-javascript": "7.0.5",
+      "esbuild": "0.28.1",
+      "postcss": "8.5.15",
+      "vite": "6.4.3",
+      "ws": "^8.21.0"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "typecheck": "tsc --build --force",
+    "clean": "tsc --build --clean",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "migrate": "pnpm --filter @trustvexa/db run migrate",
+    "migrate:up": "pnpm --filter @trustvexa/db run migrate:up",
+    "migrate:down": "pnpm --filter @trustvexa/db run migrate:down",
+    "migrate:create": "pnpm --filter @trustvexa/db run migrate:create",
+    "migrate:dry-run": "pnpm --filter @trustvexa/db run migrate:dry-run",
+    "test": "pnpm -r --if-present run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^14.0.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.1"
+  }
+}
