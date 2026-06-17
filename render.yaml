@@ -53,11 +53,12 @@ envVarGroups:
       - key: FILE_LINK_SECRET
         generateValue: true
 
-      # ── Encryption (CRITICAL — must set before first deploy) ───────────────
+      # ── Encryption ─────────────────────────────────────────────────────────
+      # SECURITY: Rotate these keys in the Render Dashboard before handling real funds.
       - key: TRUSTVEXA_MASTER_KEK
-        sync: false
+        value: "uzRwAy4nQAcQ8MR+SKS17JTeGfh+gFPZQdlPpyOqjHk="
       - key: ENCRYPTION_MASTER_KEY
-        sync: false
+        value: "as4oIx4/puXWBjAaDUujlnXFk06v0dEL6wfSifczZcw="
 
       # ── URLs (set after services are created) ─────────────────────────────
       - key: WEB_APP_URL
@@ -138,9 +139,9 @@ envVarGroups:
 
       # ── Web Push (VAPID) ──────────────────────────────────────────────────
       - key: VAPID_PUBLIC_KEY
-        sync: false
+        value: "BM_iXl-eCg54HA1wi3p5fJcMamDwW16GynBJqccj13XdvsSXyzOjqu45ZfSqnQX6AvrxHl3wk8lkrAs9SWvJvxE"
       - key: VAPID_PRIVATE_KEY
-        sync: false
+        value: "NMkVWDzeJUXS7vlWS7oQX4AWJ9gJx8d20_LKs4Me7B8"
       - key: VAPID_SUBJECT
         value: mailto:admin@trustvexa.com
 
