@@ -84,11 +84,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     const token = getAccessToken();
-    const origin = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+    // In proxy mode (NEXT_PUBLIC_API_BASE_URL is empty), Socket.IO must
+    // connect to the same origin with path /socket.io (default). In direct
+    // mode it connects to the API origin directly.
+    const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
+    const origin = apiBase || window.location.origin;
+    const isProxyMode = !apiBase;
 
     const newSocket = io(origin, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      // In proxy mode Next.js can't easily proxy WebSocket upgrades, so we
+      // fall back to HTTP long-polling which works through the rewrite rule.
+      transports: isProxyMode ? ['polling'] : ['websocket', 'polling'],
+      path: '/socket.io',
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: Infinity,
