@@ -661,6 +661,12 @@ export default function ConnectPage() {
                         </>
                       )}
                     </div>
+                    {/* User IDs — shown to all participants so each side knows who they're talking to */}
+                    <p className="text-[10px] text-muted-foreground">
+                      Buyer ID: <span className="font-mono">{a.creatorId.replace(/-/g,'').slice(0,8).toUpperCase()}</span>
+                      {a.joinerId && <> · Seller ID: <span className="font-mono">{a.joinerId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
+                      {a.middlemanId && <> · MM: <span className="font-mono">{a.middlemanId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
+                    </p>
                   </div>
 
                   {/* Actions */}
