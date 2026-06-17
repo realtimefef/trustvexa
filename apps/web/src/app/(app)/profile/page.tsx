@@ -248,6 +248,19 @@ export default function ProfilePage() {
                     ) : null}
                   </div>
                   <p className="text-sm text-muted-foreground">Level {trustLevel} Account</p>
+                  {/* Unique User ID */}
+                  {authUser?.id && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Fingerprint className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="text-xs text-muted-foreground">User ID:</span>
+                      <span
+                        className="font-mono text-xs bg-muted rounded px-1.5 py-0.5 select-all cursor-text border"
+                        title={`Full ID: ${authUser.id}`}
+                      >
+                        {authUser.id.replace(/-/g,'').slice(0,8).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Badge variant="success" className="mb-1">
