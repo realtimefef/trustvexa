@@ -17,7 +17,6 @@ export interface LoginArgs {
   email: string;
   password: string;
   rememberMe?: boolean;
-  captchaToken?: string;
 }
 
 export interface RegisterArgs {
@@ -28,7 +27,6 @@ export interface RegisterArgs {
   acceptTerms: true;
   acceptPrivacy: true;
   rememberMe?: boolean;
-  captchaToken?: string;
 }
 
 export interface VerifyTotpArgs {
