@@ -638,6 +638,26 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     finally { setPaySubmitting(false); }
   };
 
+  // FREE REFUND — seller voluntarily refunds the buyer (no gas deducted)
+  const [refunding, setRefunding] = React.useState(false);
+  const [refundErr, setRefundErr] = React.useState<string | null>(null);
+  const [refundOk, setRefundOk] = React.useState(false);
+
+  const handleFreeRefund = async () => {
+    if (!window.confirm('Issue a free refund to the buyer? This returns the full escrow amount with no fees deducted.')) return;
+    setRefunding(true); setRefundErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/cancellations`, {
+        method: 'POST',
+        body: { reason: 'Seller initiated voluntary refund', type: 'seller_requested' },
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setRefundOk(true);
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) { setRefundErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Refund request failed.'); }
+    finally { setRefunding(false); }
+  };
+
   const requestMm = async () => {
     setRequestingMm(true); setMmErr(null);
     try {
@@ -758,6 +778,16 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
       ) : deal.status === 'Funded' ? (
         <ActionCard title="Deal is funded — deliver the item now" icon={Send} variant="warning">
           <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Fill in your delivery details below, then deliver the item to the buyer as agreed.</p>
+          {/* Free refund option */}
+          <div className="mt-4 border-t pt-3">
+            <p className="text-xs text-muted-foreground mb-2">Changed your mind? You can issue a voluntary refund:</p>
+            {refundErr && <p className="text-xs text-destructive mb-2">{refundErr}</p>}
+            {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund request submitted. The buyer will receive the full amount.</p>}
+            <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"
+              disabled={refunding || refundOk} onClick={handleFreeRefund}>
+              {refunding ? 'Processing…' : '↩ Issue free refund to buyer'}
+            </Button>
+          </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' ? (
         <ActionCard title="Handover sent — waiting for middleman verification" icon={Shield} variant="success">
