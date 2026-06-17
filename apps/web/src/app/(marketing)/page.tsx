@@ -530,7 +530,7 @@ export default function HomePage() {
           {/* Link to full reviews page */}
           <div className="mt-8 text-center">
             <Link
-              href="/reviews"
+              href="/testimonials"
               className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline underline-offset-4"
             >
               Read all reviews <ArrowRight className="h-3.5 w-3.5" aria-hidden />
