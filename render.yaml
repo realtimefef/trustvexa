@@ -149,7 +149,7 @@ databases:
   - name: trustvexa-postgres
     databaseName: trustvexa
     user: trustvexa
-    plan: standard  # Standard: 4GB RAM, 100GB SSD, automatic backups
+    plan: basic  # Basic: 1GB RAM, 10GB SSD, automatic backups
     ipAllowList: []
 
 # ── Services ──────────────────────────────────────────────────────────────────
