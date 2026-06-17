@@ -1,0 +1,182 @@
+/**
+ * Persistence for connections (pre-deal buyer<->seller conversations) and their
+ * direct messages. All queries are parameterized. Access control (participant
+ * checks) lives in the service.
+ */
+import { query } from '@trustvexa/shared';
+
+export interface ConnectionRow {
+  id: string;
+  code: string;
+  creator_id: string;
+  joiner_id: string | null;
+  middleman_id: string | null;
+  deal_id: string | null;
+  status: 'open' | 'closed';
+  created_at: Date | string;
+  updated_at: Date | string;
+  /** Joined usernames for display. */
+  creator_username?: string | null;
+  joiner_username?: string | null;
+  middleman_username?: string | null;
+}
+
+export interface ConnectionMessageRow {
+  id: string;
+  connection_id: string;
+  sender_id: string;
+  body: string;
+  channel: string;
+  deleted_at: Date | string | null;
+  created_at: Date | string;
+}
+
+/** Insert a new connection. Throws on code collision (caller retries). */
+export async function insertConnection(creatorId: string, code: string): Promise<ConnectionRow> {
+  const res = await query<ConnectionRow>(
+    `INSERT INTO connections (code, creator_id)
+     VALUES ($1, $2)
+     RETURNING id, code, creator_id, joiner_id, deal_id, status, created_at, updated_at`,
+    [code, creatorId],
+  );
+  const row = res.rows[0];
+  if (!row) throw new Error('insertConnection returned no row');
+  return row;
+}
+
+export async function findConnectionByCode(code: string): Promise<ConnectionRow | null> {
+  const res = await query<ConnectionRow>(
+    `SELECT id, code, creator_id, joiner_id, middleman_id, deal_id, status, created_at, updated_at
+       FROM connections WHERE code = $1 LIMIT 1`,
+    [code],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function getConnectionById(id: string): Promise<ConnectionRow | null> {
+  const res = await query<ConnectionRow>(
+    `SELECT c.id, c.code, c.creator_id, c.joiner_id, c.middleman_id, c.deal_id, c.status,
+            c.created_at, c.updated_at,
+            cu.username AS creator_username, ju.username AS joiner_username,
+            mu.username AS middleman_username
+       FROM connections c
+       JOIN users cu ON cu.id = c.creator_id
+       LEFT JOIN users ju ON ju.id = c.joiner_id
+       LEFT JOIN users mu ON mu.id = c.middleman_id
+      WHERE c.id = $1 LIMIT 1`,
+    [id],
+  );
+  return res.rows[0] ?? null;
+}
+
+/** Atomically claim the joiner slot. Returns the row only if the claim won. */
+export async function claimJoiner(
+  connectionId: string,
+  joinerId: string,
+): Promise<ConnectionRow | null> {
+  const res = await query<ConnectionRow>(
+    `UPDATE connections
+        SET joiner_id = $2, updated_at = now()
+      WHERE id = $1 AND joiner_id IS NULL AND creator_id <> $2
+      RETURNING id, code, creator_id, joiner_id, middleman_id, deal_id, status, created_at, updated_at`,
+    [connectionId, joinerId],
+  );
+  return res.rows[0] ?? null;
+}
+
+/** Atomically set the middleman on an existing connection. Returns null when already set. */
+export async function claimMiddleman(
+  connectionId: string,
+  middlemanId: string,
+): Promise<ConnectionRow | null> {
+  const res = await query<ConnectionRow>(
+    `UPDATE connections
+        SET middleman_id = $2, updated_at = now()
+      WHERE id = $1 AND middleman_id IS NULL AND creator_id <> $2 AND joiner_id <> $2
+      RETURNING id, code, creator_id, joiner_id, middleman_id, deal_id, status, created_at, updated_at`,
+    [connectionId, middlemanId],
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function listConnectionsForUser(userId: string): Promise<ConnectionRow[]> {
+  const res = await query<ConnectionRow>(
+    `SELECT c.id, c.code, c.creator_id, c.joiner_id, c.middleman_id, c.deal_id, c.status,
+            c.created_at, c.updated_at,
+            cu.username AS creator_username, ju.username AS joiner_username,
+            mu.username AS middleman_username
+       FROM connections c
+       JOIN users cu ON cu.id = c.creator_id
+       LEFT JOIN users ju ON ju.id = c.joiner_id
+       LEFT JOIN users mu ON mu.id = c.middleman_id
+      WHERE c.creator_id = $1 OR c.joiner_id = $1 OR c.middleman_id = $1
+      ORDER BY c.updated_at DESC
+      LIMIT 100`,
+    [userId],
+  );
+  return res.rows;
+}
+
+export async function setConnectionDeal(connectionId: string, dealId: string): Promise<void> {
+  await query(`UPDATE connections SET deal_id = $2, updated_at = now() WHERE id = $1`, [
+    connectionId,
+    dealId,
+  ]);
+}
+
+export async function insertConnectionMessage(
+  connectionId: string,
+  senderId: string,
+  body: string,
+  channel: string = 'buyer_seller',
+): Promise<ConnectionMessageRow> {
+  const res = await query<ConnectionMessageRow>(
+    `INSERT INTO connection_messages (connection_id, sender_id, body, channel)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, connection_id, sender_id, body, channel, deleted_at, created_at`,
+    [connectionId, senderId, body, channel],
+  );
+  const row = res.rows[0];
+  if (!row) throw new Error('insertConnectionMessage returned no row');
+  return row;
+}
+
+export async function softDeleteConnectionMessage(
+  messageId: string,
+  senderId: string,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE connection_messages
+        SET deleted_at = now()
+      WHERE id = $1 AND sender_id = $2 AND deleted_at IS NULL`,
+    [messageId, senderId],
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+export async function listConnectionMessages(
+  connectionId: string,
+  channel?: string,
+  limit = 200,
+): Promise<ConnectionMessageRow[]> {
+  if (channel) {
+    const res = await query<ConnectionMessageRow>(
+      `SELECT id, connection_id, sender_id, body, channel, deleted_at, created_at
+         FROM connection_messages
+        WHERE connection_id = $1 AND channel = $2
+        ORDER BY created_at ASC
+        LIMIT $3`,
+      [connectionId, channel, limit],
+    );
+    return res.rows;
+  }
+  const res = await query<ConnectionMessageRow>(
+    `SELECT id, connection_id, sender_id, body, channel, deleted_at, created_at
+       FROM connection_messages
+      WHERE connection_id = $1
+      ORDER BY created_at ASC
+      LIMIT $2`,
+    [connectionId, limit],
+  );
+  return res.rows;
+}

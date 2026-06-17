@@ -1,0 +1,1 @@
+{"version":3,"file":"evm-client.d.ts","sourceRoot":"","sources":["../../src/chains/evm-client.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;GAcG;AACH,OAAO,KAAK,EAAE,WAAW,EAAE,OAAO,EAAoB,MAAM,mBAAmB,CAAC;AAuKhF;;;GAGG;AACH,wBAAsB,aAAa,CACjC,OAAO,EAAE,OAAO,EAChB,MAAM,EAAE,MAAM,GAAG,MAAM,EAAE,EACzB,GAAG,EAAE,MAAM,CAAC,UAAU,GACrB,OAAO,CAAC,WAAW,GAAG,IAAI,CAAC,CAW7B"}

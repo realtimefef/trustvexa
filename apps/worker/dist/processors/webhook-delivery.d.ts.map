@@ -1,0 +1,1 @@
+{"version":3,"file":"webhook-delivery.d.ts","sourceRoot":"","sources":["../../src/processors/webhook-delivery.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,GAAG,EAAE,MAAM,QAAQ,CAAC;AAClC,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,YAAY,CAAC;AAInD,wBAAsB,sBAAsB,CAAC,GAAG,EAAE,GAAG,EAAE,GAAG,EAAE,gBAAgB,GAAG,OAAO,CAAC,IAAI,CAAC,CA8E3F"}

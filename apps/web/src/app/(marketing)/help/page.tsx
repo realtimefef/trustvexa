@@ -1,0 +1,248 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import {
+  ArrowUpRight,
+  BookOpen,
+  Coins,
+  HelpCircle,
+  LifeBuoy,
+  MessageCircle,
+  Network,
+  Route,
+  ShieldCheck,
+  UserX,
+  Wallet,
+} from 'lucide-react';
+
+import { PageHero } from '@/components/visual/page-hero';
+import { Reveal } from '@/components/visual/reveal';
+import { CtaBand } from '@/components/visual/cta-band';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+
+export const metadata: Metadata = {
+  title: 'Help & Support Center | TrustVexa',
+  description:
+    'Find answers fast — browse the FAQ, how it works, documentation, trust & security, and status, or follow guided steps for the most common deal problems.',
+};
+
+const HUB: ReadonlyArray<{
+  icon: typeof HelpCircle;
+  title: string;
+  description: string;
+  href: string;
+}> = [
+  {
+    icon: HelpCircle,
+    title: 'FAQ',
+    description: 'Quick answers to the questions we hear most often.',
+    href: '/faq',
+  },
+  {
+    icon: Route,
+    title: 'How it works',
+    description: 'The full escrow flow from invite to release, step by step.',
+    href: '/how-it-works',
+  },
+  {
+    icon: BookOpen,
+    title: 'Documentation',
+    description: 'Detailed how-to guides for every part of a deal.',
+    href: '/docs',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Trust & Security',
+    description: 'How we keep funds and accounts safe.',
+    href: '/security',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Contact',
+    description: 'Reach the middleman team or open a ticket.',
+    href: '/contact',
+  },
+  {
+    icon: LifeBuoy,
+    title: 'Status',
+    description: 'Live platform and per-network status.',
+    href: '/status',
+  },
+];
+
+const GUIDES: ReadonlyArray<{
+  icon: typeof Wallet;
+  title: string;
+  steps: ReadonlyArray<string>;
+}> = [
+  {
+    icon: Wallet,
+    title: 'Payment not showing',
+    steps: [
+      'Confirm the transaction is finished in your wallet and has on-chain confirmations.',
+      'Check you sent the exact coin and amount shown on the deal funding screen.',
+      'Allow a few minutes — deposits are credited after the network confirms them.',
+      'Still missing after confirmations? Open a ticket with your transaction hash.',
+    ],
+  },
+  {
+    icon: Network,
+    title: 'Wrong network',
+    steps: [
+      'Match the network to the coin: USDT on TRC-20 or ERC-20, ETH on ERC-20, BNB on BEP-20, TRX on Tron, SOL on Solana.',
+      'Sending on the wrong network can delay or lose funds, so always verify before you send.',
+      'If you already sent on the wrong network, do not send again.',
+      'Contact the middleman immediately with your transaction hash so we can investigate.',
+    ],
+  },
+  {
+    icon: UserX,
+    title: 'Seller is silent',
+    steps: [
+      'Use the deal chat to request a delivery update first.',
+      'Remember the 3-day completion clock keeps the deal moving even without replies.',
+      'If the seller never delivers, you are protected — funds stay in escrow.',
+      'Open a dispute and the middleman will review the evidence.',
+    ],
+  },
+  {
+    icon: UserX,
+    title: 'Buyer is silent',
+    steps: [
+      'Confirm you delivered exactly what the deal describes and posted proof in the chat.',
+      'If the buyer goes quiet after delivery, the inspection window auto-approves the release.',
+      'Do not send anything outside the deal terms.',
+      'If you need help, open a dispute and the middleman will step in.',
+    ],
+  },
+  {
+    icon: HelpCircle,
+    title: 'Account access problem',
+    steps: [
+      'Double-check your email and password, then try the password reset link.',
+      'Make sure you are using the correct email address for your account.',
+      'Disable browser extensions that may block login, or try another browser.',
+      'Still locked out? Contact support from the email tied to your account.',
+    ],
+  },
+  {
+    icon: Coins,
+    title: 'Refund request',
+    steps: [
+      'If a deal has not been funded or delivered, it can be cancelled by agreement.',
+      'For a funded deal, raise the issue in the deal chat first.',
+      'If you cannot agree, open a dispute and submit your evidence.',
+      'The middleman reviews both sides and decides where the funds go.',
+    ],
+  },
+];
+
+export default function HelpPage() {
+  return (
+    <>
+      <PageHero
+        eyebrow={
+          <>
+            <LifeBuoy className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Support
+          </>
+        }
+        title="Help &amp; Support Center"
+        subtitle="Whatever you need, start here. Browse the guides below, follow steps for a common problem, or reach the middleman team directly."
+      />
+
+      <section className="section">
+        <div className="container max-w-4xl space-y-14">
+          {/* Hub cards */}
+          <div className="space-y-6">
+            <h2 className="font-display text-xl font-semibold">Browse help topics</h2>
+            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
+              {HUB.map((item, i) => (
+                <Reveal key={item.href} delay={(i % 3) * 80}>
+                  <Link
+                    href={item.href}
+                    className="card-glow group flex h-full flex-col rounded-2xl border bg-card p-6 shadow-soft transition-all hover:-translate-y-1"
+                  >
+                    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <item.icon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <p className="flex items-center justify-between font-display font-semibold">
+                      {item.title}
+                      <ArrowUpRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+
+          {/* Guided help */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h2 className="font-display text-xl font-semibold">Guided help</h2>
+              <p className="text-sm text-muted-foreground">
+                Short, practical steps for the situations people run into most. If these do not
+                resolve it, open a ticket and a middleman will help.
+              </p>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {GUIDES.map((guide, i) => (
+                <Reveal key={guide.title} delay={(i % 2) * 80}>
+                  <div className="h-full rounded-2xl border bg-card/60 p-6 backdrop-blur transition-all hover:shadow-glow">
+                    <div className="flex items-center gap-2">
+                      <guide.icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <p className="font-display font-semibold">{guide.title}</p>
+                    </div>
+                    <ol className="mt-4 space-y-2.5">
+                      {guide.steps.map((step, idx) => (
+                        <li key={idx} className="flex gap-3 text-sm text-muted-foreground">
+                          <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+                            {idx + 1}
+                          </span>
+                          <span className="leading-relaxed">{step}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+
+          {/* Open a ticket */}
+          <Reveal>
+            <Card className="rounded-2xl border bg-card shadow-soft card-glow">
+              <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                <MessageCircle className="h-5 w-5 text-primary" aria-hidden="true" />
+                <div>
+                  <CardTitle className="font-display text-base">
+                    Still need help? Open a ticket
+                  </CardTitle>
+                  <CardDescription>
+                    Reach the neutral middleman directly. Include your deal reference and any
+                    transaction hashes so we can act quickly.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-3 pt-0">
+                <Button asChild variant="gradient" size="sm">
+                  <Link href="/contact">Contact the middleman</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/support">Open a ticket</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/faq">Browse FAQ</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </Reveal>
+        </div>
+      </section>
+
+      <CtaBand />
+    </>
+  );
+}

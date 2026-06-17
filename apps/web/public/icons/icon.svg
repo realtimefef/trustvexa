@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="TrustVexa">
+  <rect width="512" height="512" rx="96" fill="#0b1120" />
+  <path d="M256 80 416 152v104c0 99-68 153-160 196-92-43-160-97-160-196V152L256 80z" fill="none" stroke="#38bdf8" stroke-width="28" stroke-linejoin="round" />
+  <path d="M196 262l44 44 84-92" fill="none" stroke="#38bdf8" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

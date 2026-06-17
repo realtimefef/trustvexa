@@ -1,0 +1,99 @@
+// Payout queue two-step signing and cause-based refund fee rules (task 5.23).
+// Pure state transitions; persistence (payout_queue, version_no) lives in the
+// repository. A payout cannot broadcast without two distinct signatures.
+// (Requirements 22.1, 22.2, 22.12, 22.13)
+
+export type PayoutQueueStatus =
+  | 'pending'
+  | 'awaiting_second_signature'
+  | 'approved'
+  | 'broadcast'
+  | 'confirmed'
+  | 'cancelled';
+
+export interface PayoutApprovalState {
+  status: PayoutQueueStatus;
+  approvers: readonly string[];
+}
+
+export class PayoutQueueError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PayoutQueueError';
+  }
+}
+
+export function initialPayoutState(): PayoutApprovalState {
+  return { status: 'pending', approvers: [] };
+}
+
+/** Add a distinct signer. Two signatures move the payout to `approved`. */
+export function addApproval(state: PayoutApprovalState, signerId: string): PayoutApprovalState {
+  if (state.status !== 'pending' && state.status !== 'awaiting_second_signature') {
+    throw new PayoutQueueError(`cannot sign a payout in status ${state.status}`);
+  }
+  if (state.approvers.includes(signerId)) {
+    throw new PayoutQueueError('a signer cannot approve the same payout twice');
+  }
+  const approvers = [...state.approvers, signerId];
+  const status: PayoutQueueStatus =
+    approvers.length >= 2 ? 'approved' : 'awaiting_second_signature';
+  return { status, approvers };
+}
+
+export function markBroadcast(state: PayoutApprovalState): PayoutApprovalState {
+  if (state.status !== 'approved') {
+    throw new PayoutQueueError('only an approved payout can broadcast');
+  }
+  return { ...state, status: 'broadcast' };
+}
+
+export function markConfirmed(state: PayoutApprovalState): PayoutApprovalState {
+  if (state.status !== 'broadcast') {
+    throw new PayoutQueueError('only a broadcast payout can confirm');
+  }
+  return { ...state, status: 'confirmed' };
+}
+
+export function cancel(state: PayoutApprovalState): PayoutApprovalState {
+  if (state.status === 'broadcast' || state.status === 'confirmed') {
+    throw new PayoutQueueError('cannot cancel a payout that already broadcast');
+  }
+  return { ...state, status: 'cancelled' };
+}
+
+export function isFullyAuthorized(state: PayoutApprovalState): boolean {
+  return state.status === 'approved' && new Set(state.approvers).size >= 2;
+}
+
+// ── Refund fee rules ────────────────────────────────────────────────────────
+// The platform absorbs gas when the fault is the platform's or the seller's;
+// the buyer bears the network cost on voluntary/mutual cancellations.
+export type RefundCause =
+  | 'platform_fault'
+  | 'seller_no_delivery'
+  | 'dispute_buyer_favor'
+  | 'buyer_cancel'
+  | 'mutual_cancel';
+
+export function refundFeeSmallestUnit(cause: RefundCause, gasCostSmallestUnit: bigint): bigint {
+  switch (cause) {
+    case 'platform_fault':
+    case 'seller_no_delivery':
+    case 'dispute_buyer_favor':
+      return 0n;
+    case 'buyer_cancel':
+    case 'mutual_cancel':
+      return gasCostSmallestUnit < 0n ? 0n : gasCostSmallestUnit;
+  }
+}
+
+export function refundAmountSmallestUnit(
+  escrowedSmallestUnit: bigint,
+  cause: RefundCause,
+  gasCostSmallestUnit: bigint,
+): bigint {
+  const fee = refundFeeSmallestUnit(cause, gasCostSmallestUnit);
+  const amount = escrowedSmallestUnit - fee;
+  return amount < 0n ? 0n : amount;
+}

@@ -1,0 +1,261 @@
+{
+  "app": {
+    "name": "TrustVexa",
+    "tagline": "Fideicomiso privado, seguro y solo con criptomonedas."
+  },
+  "nav": {
+    "dashboard": "Panel de control",
+    "deals": "Acuerdos",
+    "wallet": "Cartera",
+    "messages": "Mensajes",
+    "disputes": "Disputas",
+    "notifications": "Notificaciones",
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "support": "Soporte",
+    "signOut": "Cerrar sesión",
+    "signIn": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "admin": "Consola de administración",
+    "treasury": "Tesorería"
+  },
+  "marketing": {
+    "title": "TrustVexa",
+    "subtitle": "Intercambie productos digitales y cuentas de forma segura a través de un intermediario neutral.",
+    "hero": {
+      "heading": "Fideicomiso de criptomonedas en el que puedes confiar",
+      "subheading": "Los fondos del comprador se guardan de forma segura. Se liberan solo cuando estás satisfecho, o se devuelven completamente.",
+      "cta": "Iniciar un acuerdo",
+      "ctaSecondary": "Cómo funciona"
+    },
+    "features": {
+      "escrow": {
+        "title": "Fideicomiso seguro",
+        "description": "Los fondos se mantienen en carteras controladas por la plataforma hasta que ambas partes confirmen la entrega."
+      },
+      "middleman": {
+        "title": "Intermediario neutral",
+        "description": "Un mediador verificado y opcional resuelve las disputas de forma justa."
+      },
+      "crypto": {
+        "title": "Solo criptomonedas",
+        "description": "USDT, ETH, BNB, SOL, TRX — en redes ETH, BNB, TRON y Solana."
+      }
+    }
+  },
+  "auth": {
+    "title": "Acceso a la cuenta",
+    "login": {
+      "heading": "Bienvenido de nuevo",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contraseña",
+      "rememberMe": "Mantener sesión iniciada",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "noAccount": "¿No tienes una cuenta?",
+      "signUp": "Crear una",
+      "or": "o",
+      "continueWithGoogle": "Continuar con Google"
+    },
+    "register": {
+      "heading": "Crea tu cuenta",
+      "usernameLabel": "Nombre de usuario",
+      "emailLabel": "Correo electrónico",
+      "passwordLabel": "Contraseña",
+      "ageConfirm": "Confirmo que tengo 18 años o más",
+      "termsAccept": "Acepto los Términos de Servicio y la Política de Privacidad",
+      "submit": "Crear cuenta",
+      "hasAccount": "¿Ya tienes una cuenta?",
+      "signIn": "Iniciar sesión"
+    },
+    "forgotPassword": {
+      "heading": "Restablecer tu contraseña",
+      "description": "Ingresa tu correo y te enviaremos un enlace de restablecimiento.",
+      "emailLabel": "Correo electrónico",
+      "submit": "Enviar enlace de restablecimiento",
+      "successMessage": "Si ese correo está registrado, se ha enviado un enlace de restablecimiento.",
+      "backToLogin": "Volver a iniciar sesión"
+    },
+    "resetPassword": {
+      "heading": "Establecer nueva contraseña",
+      "passwordLabel": "Nueva contraseña",
+      "confirmLabel": "Confirmar contraseña",
+      "submit": "Restablecer contraseña",
+      "success": "Contraseña restablecida. Ya puedes iniciar sesión.",
+      "invalidToken": "Este enlace de restablecimiento no es válido o ha expirado."
+    },
+    "verifyEmail": {
+      "heading": "Verifica tu correo electrónico",
+      "pending": "Revisa tu bandeja de entrada para encontrar un enlace de verificación.",
+      "success": "Correo verificado. Ya puedes iniciar sesión.",
+      "expired": "El enlace de verificación ha expirado. Solicita uno nuevo.",
+      "resend": "Reenviar correo de verificación"
+    },
+    "totp": {
+      "heading": "Autenticación de dos factores",
+      "description": "Ingresa el código de 6 dígitos de tu aplicación de autenticación.",
+      "codeLabel": "Código de verificación",
+      "submit": "Verificar",
+      "useBackupCode": "Usar un código de respaldo"
+    },
+    "errors": {
+      "invalidCredentials": "Correo electrónico o contraseña incorrectos.",
+      "accountLocked": "Cuenta temporalmente bloqueada por demasiados intentos. Inténtalo de nuevo más tarde.",
+      "emailUnavailable": "Ese correo electrónico no se puede usar para registrarse.",
+      "usernameTaken": "Ese nombre de usuario ya está en uso.",
+      "weakPassword": "La contraseña es demasiado débil. Usa al menos 12 caracteres.",
+      "captchaRequired": "Por favor completa el CAPTCHA.",
+      "generic": "Algo salió mal. Por favor intenta de nuevo."
+    }
+  },
+  "dashboard": {
+    "title": "Panel de control",
+    "emptyState": {
+      "heading": "Aún no hay acuerdos",
+      "description": "Crea tu primer acuerdo para comenzar.",
+      "cta": "Nuevo acuerdo"
+    },
+    "filters": {
+      "all": "Todos",
+      "active": "Activos",
+      "completed": "Completados",
+      "disputed": "En disputa"
+    },
+    "deal": {
+      "asBuyer": "Como comprador",
+      "asSeller": "Como vendedor",
+      "asMiddleman": "Como intermediario"
+    }
+  },
+  "deal": {
+    "status": {
+      "Created": "Creado",
+      "Invited": "Invitado",
+      "Agreed": "Acordado",
+      "Verified": "Verificado",
+      "Confirmed": "Confirmado",
+      "Amended": "Modificado",
+      "Cancelled": "Cancelado",
+      "Funded": "Financiado",
+      "SellerHandover": "Entrega",
+      "MiddlemanVerified": "Verificado por intermediario",
+      "Delivered": "Entregado",
+      "Approved": "Aprobado",
+      "PayoutQueued": "Pago en cola",
+      "MilestoneReleased": "Hito liberado",
+      "Released": "Liberado",
+      "Disputed": "En disputa",
+      "Refunded": "Reembolsado",
+      "PartiallySettled": "Parcialmente liquidado",
+      "Expired": "Expirado",
+      "Paused": "Pausado"
+    },
+    "actions": {
+      "newDeal": "Nuevo acuerdo",
+      "invite": "Invitar contraparte",
+      "acceptTerms": "Aceptar términos",
+      "fund": "Financiar fideicomiso",
+      "submitHandover": "Enviar entrega",
+      "approvePayout": "Aprobar pago",
+      "raiseDispute": "Levantar disputa",
+      "viewDetails": "Ver detalles"
+    },
+    "labels": {
+      "amount": "Monto del acuerdo",
+      "coin": "Moneda",
+      "network": "Red",
+      "feePayer": "Pagador de comisión",
+      "buyer": "Comprador",
+      "seller": "Vendedor",
+      "middleman": "Intermediario",
+      "fundBy": "Financiar antes de",
+      "completeBy": "Completar antes de"
+    }
+  },
+  "wallet": {
+    "title": "Cartera",
+    "balance": "Saldo",
+    "addresses": "Direcciones de pago",
+    "addressBook": "Libreta de direcciones",
+    "withdraw": "Retirar",
+    "noAddresses": "No hay dirección de pago configurada.",
+    "addAddress": "Agregar dirección",
+    "changeRequests": "Solicitudes de cambio",
+    "noBalance": "Saldo no disponible — RPC no configurado.",
+    "status": {
+      "available": "Disponible",
+      "pending": "Pendiente",
+      "unavailable": "No disponible"
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "¡Todo al día!",
+    "markRead": "Marcar como leída",
+    "markAllRead": "Marcar todas como leídas",
+    "seeAll": "Ver todas las notificaciones"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": "Idioma",
+    "currency": "Moneda de visualización",
+    "theme": "Tema",
+    "notifications": "Preferencias de notificaciones",
+    "security": "Seguridad",
+    "totp": {
+      "title": "Autenticación de dos factores",
+      "enabled": "2FA está activado",
+      "disabled": "2FA está desactivado",
+      "enable": "Activar 2FA",
+      "disable": "Desactivar 2FA",
+      "backupCodes": "Códigos de respaldo"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La página que buscas no existe.",
+      "cta": "Ir al inicio"
+    },
+    "generic": {
+      "title": "Algo salió mal",
+      "description": "Ocurrió un error inesperado.",
+      "retry": "Intentar de nuevo"
+    }
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando…",
+    "submitting": "Enviando…",
+    "success": "Éxito",
+    "error": "Error",
+    "required": "Requerido",
+    "optional": "Opcional",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "close": "Cerrar",
+    "viewAll": "Ver todo",
+    "learnMore": "Saber más"
+  },
+  "theme": {
+    "toggle": "Alternar tema",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "scaffoldForm": {
+    "legend": "Comprobación de cableado del proveedor",
+    "coinLabel": "Moneda",
+    "submit": "Validar",
+    "valid": "Validación de esquema aprobada.",
+    "invalid": "Por favor seleccione una moneda admitida."
+  }
+}

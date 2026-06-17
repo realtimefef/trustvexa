@@ -1,0 +1,82 @@
+import { Router } from 'express';
+import { accountRouter, recoveryRouter, sessionsRouter, } from '../modules/auth/auth-extra.routes.js';
+import { authRouter } from '../modules/auth/auth.routes.js';
+import { totpRouter } from '../modules/auth/totp.routes.js';
+import { adminRouter } from '../modules/admin/admin.routes.js';
+import { consentRouter } from '../modules/consent/consent.routes.js';
+import { contactRouter } from '../modules/contact/contact.routes.js';
+import { dashboardRouter } from '../modules/dashboard/dashboard.routes.js';
+import { dealRouter } from '../modules/deal/deal.routes.js';
+import { inviteRouter } from '../modules/deal/invite.routes.js';
+import { disputeRouter } from '../modules/disputes/dispute.routes.js';
+import { documentsRouter } from '../modules/documents/documents.routes.js';
+import { handoverRouter } from '../modules/handover/handover.routes.js';
+import { onboardingRouter } from '../modules/launch/onboarding.routes.js';
+import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
+import { paymentRouter } from '../modules/payments/payment.routes.js';
+import { payoutsRouter } from '../modules/payouts/payouts.routes.js';
+import { refundsRouter } from '../modules/payouts/refunds.routes.js';
+import { profileRouter } from '../modules/profile/profile.routes.js';
+import { chatRouter } from '../modules/chat/chat.routes.js';
+import { supportRouter } from '../modules/support/support.routes.js';
+import { feedbackRouter } from '../modules/feedback/feedback.routes.js';
+import { announcementsRouter } from '../modules/announcements/announcements.routes.js';
+import { changelogRouter } from '../modules/changelog/changelog.routes.js';
+import { statusRouter } from '../modules/status/status.routes.js';
+import { referralsRouter } from '../modules/referrals/referrals.routes.js';
+import { publicRouter } from '../modules/public/public.routes.js';
+import { reviewsRouter } from '../modules/reviews/reviews.routes.js';
+import { treasuryRouter } from '../modules/treasury/treasury.routes.js';
+import { walletsRouter } from '../modules/wallets/wallets.routes.js';
+import { webhookRouter } from '../modules/webhooks/webhook.routes.js';
+import { storageRouter } from '../modules/storage/storage.routes.js';
+import { healthRouter } from './health.routes.js';
+import { middlemenRouter } from '../modules/admin/middlemen.routes.js';
+import { connectionsRouter } from '../modules/connections/connections.routes.js';
+import { partyDetailsRouter } from '../modules/deal/party-details.routes.js';
+/**
+ * Root API router mounted under the `/api/v1` prefix (Requirement 44.1).
+ * Feature routers are registered here as later tasks add them.
+ */
+export function apiRouter() {
+    const router = Router();
+    router.use('/health', healthRouter());
+    router.use('/auth', authRouter());
+    router.use('/auth/totp', totpRouter());
+    router.use('/auth', recoveryRouter());
+    router.use('/auth/sessions', sessionsRouter());
+    router.use('/account', accountRouter());
+    router.use('/admin', adminRouter());
+    router.use('/dashboard', dashboardRouter());
+    router.use('/deals', dealRouter());
+    router.use('/deals', paymentRouter());
+    router.use('/invites', inviteRouter());
+    router.use('/contact', contactRouter());
+    router.use('/consent', consentRouter());
+    router.use('/treasury', treasuryRouter());
+    router.use('/disputes', disputeRouter());
+    router.use('/reviews', reviewsRouter());
+    router.use('/documents', documentsRouter());
+    router.use('/handover', handoverRouter());
+    router.use('/onboarding', onboardingRouter());
+    router.use('/notifications', notificationsRouter());
+    router.use('/wallets', walletsRouter());
+    router.use('/webhooks', webhookRouter());
+    router.use('/payouts', payoutsRouter());
+    router.use('/refunds', refundsRouter());
+    router.use('/me', profileRouter());
+    router.use('/chats', chatRouter());
+    router.use('/support', supportRouter());
+    router.use('/feedback', feedbackRouter());
+    router.use('/announcements', announcementsRouter());
+    router.use('/changelog', changelogRouter());
+    router.use('/status', statusRouter());
+    router.use('/referrals', referralsRouter());
+    router.use('/public', publicRouter());
+    router.use('/storage', storageRouter());
+    router.use('/middlemen', middlemenRouter());
+    router.use('/connections', connectionsRouter());
+    router.use('/deals', partyDetailsRouter());
+    return router;
+}
+//# sourceMappingURL=index.js.map

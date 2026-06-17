@@ -1,0 +1,261 @@
+{
+  "app": {
+    "name": "TrustVexa",
+    "tagline": "Private, secure, crypto-only escrow."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "deals": "Deals",
+    "wallet": "Wallet",
+    "messages": "Messages",
+    "disputes": "Disputes",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "settings": "Settings",
+    "support": "Support",
+    "signOut": "Sign out",
+    "signIn": "Sign in",
+    "register": "Create account",
+    "admin": "Admin console",
+    "treasury": "Treasury"
+  },
+  "marketing": {
+    "title": "TrustVexa",
+    "subtitle": "Trade digital products and accounts safely through a neutral middleman.",
+    "hero": {
+      "heading": "Crypto escrow you can trust",
+      "subheading": "Buyer funds are held securely. Released only when you're satisfied — or fully refunded.",
+      "cta": "Start a deal",
+      "ctaSecondary": "Learn how it works"
+    },
+    "features": {
+      "escrow": {
+        "title": "Secure escrow",
+        "description": "Funds held in platform-controlled wallets until both parties confirm delivery."
+      },
+      "middleman": {
+        "title": "Neutral middleman",
+        "description": "An optional verified mediator resolves disputes fairly."
+      },
+      "crypto": {
+        "title": "Crypto-only",
+        "description": "USDT, ETH, BNB, SOL, TRX — on ETH, BNB, TRON and Solana networks."
+      }
+    }
+  },
+  "auth": {
+    "title": "Account access",
+    "login": {
+      "heading": "Welcome back",
+      "emailLabel": "Email address",
+      "passwordLabel": "Password",
+      "rememberMe": "Stay signed in",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Create one",
+      "or": "or",
+      "continueWithGoogle": "Continue with Google"
+    },
+    "register": {
+      "heading": "Create your account",
+      "usernameLabel": "Username",
+      "emailLabel": "Email address",
+      "passwordLabel": "Password",
+      "ageConfirm": "I confirm I am 18 or older",
+      "termsAccept": "I accept the Terms of Service and Privacy Policy",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "forgotPassword": {
+      "heading": "Reset your password",
+      "description": "Enter your email and we'll send a reset link.",
+      "emailLabel": "Email address",
+      "submit": "Send reset link",
+      "successMessage": "If that email is registered, a reset link has been sent.",
+      "backToLogin": "Back to sign in"
+    },
+    "resetPassword": {
+      "heading": "Set a new password",
+      "passwordLabel": "New password",
+      "confirmLabel": "Confirm password",
+      "submit": "Reset password",
+      "success": "Password reset. You can now sign in.",
+      "invalidToken": "This reset link is invalid or expired."
+    },
+    "verifyEmail": {
+      "heading": "Verify your email",
+      "pending": "Check your inbox for a verification link.",
+      "success": "Email verified. You can now sign in.",
+      "expired": "Verification link expired. Please request a new one.",
+      "resend": "Resend verification email"
+    },
+    "totp": {
+      "heading": "Two-factor authentication",
+      "description": "Enter the 6-digit code from your authenticator app.",
+      "codeLabel": "Verification code",
+      "submit": "Verify",
+      "useBackupCode": "Use a backup code"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "accountLocked": "Account temporarily locked due to too many attempts. Try again later.",
+      "emailUnavailable": "That email cannot be used to register.",
+      "usernameTaken": "That username is already taken.",
+      "weakPassword": "Password is too weak. Use at least 12 characters.",
+      "captchaRequired": "Please complete the CAPTCHA.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "emptyState": {
+      "heading": "No deals yet",
+      "description": "Create your first deal to get started.",
+      "cta": "New deal"
+    },
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "completed": "Completed",
+      "disputed": "Disputed"
+    },
+    "deal": {
+      "asBuyer": "As buyer",
+      "asSeller": "As seller",
+      "asMiddleman": "As middleman"
+    }
+  },
+  "deal": {
+    "status": {
+      "Created": "Created",
+      "Invited": "Invited",
+      "Agreed": "Agreed",
+      "Verified": "Verified",
+      "Confirmed": "Confirmed",
+      "Amended": "Amended",
+      "Cancelled": "Cancelled",
+      "Funded": "Funded",
+      "SellerHandover": "Handover",
+      "MiddlemanVerified": "Verified by middleman",
+      "Delivered": "Delivered",
+      "Approved": "Approved",
+      "PayoutQueued": "Payout queued",
+      "MilestoneReleased": "Milestone released",
+      "Released": "Released",
+      "Disputed": "Disputed",
+      "Refunded": "Refunded",
+      "PartiallySettled": "Partially settled",
+      "Expired": "Expired",
+      "Paused": "Paused"
+    },
+    "actions": {
+      "newDeal": "New deal",
+      "invite": "Invite counterparty",
+      "acceptTerms": "Accept terms",
+      "fund": "Fund escrow",
+      "submitHandover": "Submit handover",
+      "approvePayout": "Approve payout",
+      "raiseDispute": "Raise dispute",
+      "viewDetails": "View details"
+    },
+    "labels": {
+      "amount": "Deal amount",
+      "coin": "Coin",
+      "network": "Network",
+      "feePayer": "Fee payer",
+      "buyer": "Buyer",
+      "seller": "Seller",
+      "middleman": "Middleman",
+      "fundBy": "Fund by",
+      "completeBy": "Complete by"
+    }
+  },
+  "wallet": {
+    "title": "Wallet",
+    "balance": "Balance",
+    "addresses": "Payout addresses",
+    "addressBook": "Address book",
+    "withdraw": "Withdraw",
+    "noAddresses": "No payout address configured.",
+    "addAddress": "Add address",
+    "changeRequests": "Change requests",
+    "noBalance": "Balance unavailable — RPC not configured.",
+    "status": {
+      "available": "Available",
+      "pending": "Pending",
+      "unavailable": "Unavailable"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "All caught up!",
+    "markRead": "Mark read",
+    "markAllRead": "Mark all read",
+    "seeAll": "See all notifications"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "currency": "Display currency",
+    "theme": "Theme",
+    "notifications": "Notification preferences",
+    "security": "Security",
+    "totp": {
+      "title": "Two-factor authentication",
+      "enabled": "2FA is enabled",
+      "disabled": "2FA is disabled",
+      "enable": "Enable 2FA",
+      "disable": "Disable 2FA",
+      "backupCodes": "Backup codes"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page not found",
+      "description": "The page you're looking for doesn't exist.",
+      "cta": "Go home"
+    },
+    "generic": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred.",
+      "retry": "Try again"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "submitting": "Submitting…",
+    "success": "Success",
+    "error": "Error",
+    "required": "Required",
+    "optional": "Optional",
+    "search": "Search",
+    "filter": "Filter",
+    "back": "Back",
+    "next": "Next",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "close": "Close",
+    "viewAll": "View all",
+    "learnMore": "Learn more"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "scaffoldForm": {
+    "legend": "Provider wiring check",
+    "coinLabel": "Coin",
+    "submit": "Validate",
+    "valid": "Schema validation passed.",
+    "invalid": "Please select a supported coin."
+  }
+}

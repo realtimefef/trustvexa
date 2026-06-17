@@ -1,0 +1,1 @@
+{"version":3,"file":"treasury.controller.js","sourceRoot":"","sources":["../../../src/modules/treasury/treasury.controller.ts"],"names":[],"mappings":"AAMA,OAAO,KAAK,OAAO,MAAM,uBAAuB,CAAC;AAEjD,MAAM,CAAC,KAAK,UAAU,WAAW,CAAC,IAAa,EAAE,GAAa;IAC5D,MAAM,MAAM,GAAG,MAAM,OAAO,CAAC,WAAW,EAAE,CAAC;IAC3C,GAAG,CAAC,MAAM,CAAC,GAAG,CAAC,CAAC,IAAI,CAAC,MAAM,CAAC,CAAC;AAC/B,CAAC"}

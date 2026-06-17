@@ -1,0 +1,6 @@
+# TrustVexa security contact (RFC 9116)
+Contact: mailto:security@trustvexa.com
+Expires: 2027-06-11T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://trustvexa.com/.well-known/security.txt
+Policy: https://trustvexa.com/security

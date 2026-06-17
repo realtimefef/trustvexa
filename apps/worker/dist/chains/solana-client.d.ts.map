@@ -1,0 +1,1 @@
+{"version":3,"file":"solana-client.d.ts","sourceRoot":"","sources":["../../src/chains/solana-client.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;GAcG;AACH,OAAO,KAAK,EAAE,WAAW,EAAoB,MAAM,mBAAmB,CAAC;AAoJvE;;;GAGG;AACH,wBAAsB,gBAAgB,CAAC,MAAM,EAAE,MAAM,GAAG,MAAM,EAAE,GAAG,OAAO,CAAC,WAAW,GAAG,IAAI,CAAC,CAU7F"}
