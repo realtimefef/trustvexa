@@ -25,9 +25,6 @@ function getConnectionUrl(): string {
       'REDIS_URL is not set. The Redis connection string is provided by Render (Requirement 41.7).',
     );
   }
-  if (process.env.NODE_ENV === 'production' && !url.startsWith('rediss://')) {
-    throw new Error('REDIS_URL must use rediss:// in production');
-  }
   return url;
 }
 
