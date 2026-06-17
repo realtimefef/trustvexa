@@ -60,13 +60,13 @@ envVarGroups:
       - key: ENCRYPTION_MASTER_KEY
         value: "as4oIx4/puXWBjAaDUujlnXFk06v0dEL6wfSifczZcw="
 
-      # ── URLs (set after services are created) ─────────────────────────────
+      # ── URLs ──────────────────────────────────────────────────────────────
       - key: WEB_APP_URL
-        value: https://trustvexa.com
+        value: https://trustvexa-web.onrender.com
       - key: API_BASE_URL
-        value: https://api.trustvexa.com
+        value: https://trustvexa-api.onrender.com
       - key: CORS_ORIGINS
-        value: https://trustvexa.com,https://www.trustvexa.com
+        value: https://trustvexa-web.onrender.com
 
       # ── Google OAuth (leave blank — not used) ─────────────────────────────
       # Set these only if you add Google login in the future.
@@ -214,9 +214,9 @@ services:
       - key: PORT
         value: "3000"
       - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://api.trustvexa.com
+        value: https://trustvexa-api.onrender.com
       - key: NEXT_PUBLIC_WEB_URL
-        value: https://trustvexa.com
+        value: https://trustvexa-web.onrender.com
       - key: DATABASE_URL
         fromDatabase:
           name: trustvexa-postgres
