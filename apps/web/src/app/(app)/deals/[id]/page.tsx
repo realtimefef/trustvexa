@@ -266,30 +266,55 @@ function ActionCard({ title, description, icon: Icon, children, variant = 'defau
 function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
   const [open, setOpen] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
+
   return (
     <div className="rounded-xl border">
+      {/* Always-visible summary row */}
+      <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm border-b">
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Deal amount</span>
+          <span className="font-semibold">{cents(deal.dealAmountCents)}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Buyer sends</span>
+          <span className="font-semibold text-blue-600 dark:text-blue-400">{cents(deal.buyerTotalCents)}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Platform fee</span>
+          <span>{cents(deal.platformFeeCents)}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted-foreground">Seller receives</span>
+          <span className="font-semibold text-emerald-600">{cents(deal.sellerPayoutCents)}</span>
+        </div>
+      </div>
+
+      {/* Expand for more */}
       <button type="button" onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/30 transition-colors">
-        <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /> Deal details</span>
+        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-muted/30 transition-colors">
+        <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /> Full deal details & documents</span>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
+
       {open && (
         <div className="border-t px-4 py-3 space-y-1">
           <Row label="Deal ID" value={<span className="font-mono text-xs">{deal.id}</span>} />
           <Row label="Status" value={<StateBadge status={deal.status} />} />
           <Row label="Coin / Network" value={`${deal.coin} · ${deal.network}`} />
-          <Row label="Amount" value={cents(deal.dealAmountCents)} />
-          <Row label="Fee payer" value={deal.feePayer ?? '—'} />
-          <Row label="Platform fee" value={cents(deal.platformFeeCents)} />
+          <Row label="Fee payer" value={<span className="capitalize">{deal.feePayer ?? '—'}</span>} />
           <Row label="Seller settlement fee" value={cents(deal.sellerSettlementFeeCents)} />
-          <Row label="Buyer sends" value={cents(deal.buyerTotalCents)} />
-          <Row label="Seller receives" value={cents(deal.sellerPayoutCents)} />
           {deal.fundBy && <Row label="Fund deadline" value={fmtDate(deal.fundBy)} />}
           {deal.completeBy && <Row label="Complete by" value={fmtDate(deal.completeBy)} />}
           {deal.inspectionUntil && <Row label="Inspection until" value={fmtDate(deal.inspectionUntil)} />}
+          {deal.itemDescription && (
+            <div className="pt-1.5 space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Item</p>
+              <p className="text-sm">{deal.itemDescription}</p>
+            </div>
+          )}
           {deal.terms && (
-            <div className="pt-2 space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Terms</p>
+            <div className="pt-1.5 space-y-0.5">
+              <p className="text-xs font-medium text-muted-foreground">Deal terms</p>
               <p className="text-sm whitespace-pre-wrap">{deal.terms}</p>
             </div>
           )}
@@ -481,6 +506,62 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
   );
 }
 
+// ─── Edit deal before lock ────────────────────────────────────────────────────
+
+function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDetail; onSaved: () => void }) {
+  const [open, setOpen] = React.useState(false);
+  const [desc, setDesc] = React.useState(deal.itemDescription ?? '');
+  const [terms, setTerms] = React.useState(deal.terms ?? '');
+  const [saving, setSaving] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const [ok, setOk] = React.useState(false);
+
+  const save = async () => {
+    setSaving(true); setErr(null); setOk(false);
+    try {
+      await apiRequest(`/deals/${dealId}`, {
+        method: 'PATCH',
+        body: { itemDescription: desc, terms: terms || undefined },
+      });
+      setOk(true); setOpen(false); onSaved();
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Save failed.'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="rounded-xl border">
+      <button type="button" onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-muted/30 transition-colors">
+        <span className="flex items-center gap-2">
+          <Send className="h-4 w-4 text-muted-foreground" />
+          Edit deal details
+          <span className="text-xs text-muted-foreground">(before buyer joins)</span>
+        </span>
+        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="border-t px-4 py-3 space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-desc" className="text-sm">Item description</Label>
+            <textarea id="edit-desc" rows={2} value={desc} onChange={e => setDesc(e.target.value)}
+              className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Describe what you're selling" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-terms" className="text-sm">Deal terms <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <textarea id="edit-terms" rows={3} value={terms} onChange={e => setTerms(e.target.value)}
+              className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Conditions, deliverables, acceptance criteria…" />
+          </div>
+          {err && <p className="text-xs text-destructive">{err}</p>}
+          {ok && <p className="text-xs text-emerald-600">✓ Saved.</p>}
+          <Button size="sm" onClick={save} disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save changes'}</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── SELLER VIEW ──────────────────────────────────────────────────────────────
 
 interface SellerViewProps {
@@ -511,6 +592,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [submitCodeErr, setSubmitCodeErr] = React.useState<string | null>(null);
   const [agreeing, setAgreeing] = React.useState(false);
   const [agreeErr, setAgreeErr] = React.useState<string | null>(null);
+  const [agreedResult, setAgreedResult] = React.useState<{ sellerAgreed: boolean; buyerAgreed: boolean; locked: boolean } | null>(null);
 
   const generateInvite = async () => {
     setInviting(true); setInviteErr(null);
@@ -570,9 +652,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const handleAgree = async () => {
     setAgreeing(true); setAgreeErr(null);
     try {
-      await apiRequest(`/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean }>(
+        `/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() }
+      );
+      setAgreedResult(result);
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setAgreeErr(err instanceof Error ? err.message : 'Failed to agree.'); }
+    } catch (err) { setAgreeErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to agree.'); }
     finally { setAgreeing(false); }
   };
 
@@ -600,6 +685,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
       </div>
 
       <DealStepper status={deal.status} />
+
+      {/* Edit before lock — seller can modify the deal while it's not yet locked */}
+      {(deal.status === 'Created' || deal.status === 'Invited') && !deal.buyerId && (
+        <EditDealCard dealId={dealId} deal={deal} onSaved={() => qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
+      )}
 
       {/* Current action — SELLER */}
       {deal.status === 'Created' || deal.status === 'Invited' ? (
@@ -693,11 +783,38 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
       {/* Agree button for Invited/Created status when buyer joined */}
       {(deal.status === 'Created' || deal.status === 'Invited') && deal.buyerId && (
-        <ActionCard title="Agree to deal terms" icon={CheckCircle2}>
-          <p className="text-sm text-muted-foreground mb-3">Both parties must agree before the deal can be funded.</p>
-          {agreeErr && <p className="text-xs text-destructive mb-2">{agreeErr}</p>}
-          <Button onClick={handleAgree} disabled={agreeing} className="w-full">{agreeing ? 'Saving…' : 'I agree — lock the deal'}</Button>
-        </ActionCard>
+        agreedResult?.sellerAgreed ? (
+          <ActionCard title={agreedResult.locked ? '✓ Both parties agreed — deal locked!' : '✓ You agreed — waiting for buyer'} icon={CheckCircle2} variant="success">
+            <p className="text-sm text-muted-foreground">
+              {agreedResult.locked
+                ? 'Both parties agreed. The deal is now locked and the buyer can proceed to fund the escrow.'
+                : 'Your agreement is recorded. The deal will lock once the buyer also agrees.'}
+            </p>
+          </ActionCard>
+        ) : (
+          <ActionCard title="Agree to deal terms" icon={CheckCircle2}
+            description="Review the deal summary below. Both parties must agree before funding can start.">
+            {/* Deal terms */}
+            {deal.terms && (
+              <div className="rounded-lg bg-muted/40 border p-3 mb-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Deal terms</p>
+                <p className="text-sm whitespace-pre-wrap">{deal.terms}</p>
+              </div>
+            )}
+            {/* Key deal details */}
+            <div className="rounded-lg bg-muted/30 border px-3 py-2 mb-3 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Item</span><span className="font-medium">{deal.itemDescription ?? '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Seller receives</span><span className="font-semibold text-emerald-600">{cents(deal.sellerPayoutCents)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
+            </div>
+            {agreeErr && <p className="text-xs text-destructive mb-2">⚠️ {agreeErr}</p>}
+            <Button onClick={handleAgree} disabled={agreeing} className="w-full">
+              {agreeing ? 'Recording agreement…' : 'I agree — lock the deal'}
+            </Button>
+          </ActionCard>
+        )
       )}
 
       {/* Seller details form (post-lock) */}
@@ -707,15 +824,25 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
       {/* Request middleman */}
       {!deal.middlemanId && !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
-        <div className="rounded-xl border px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">Need a middleman?</p>
-            <p className="text-xs text-muted-foreground">One click — they verify delivery and handle disputes.</p>
+        <div className="rounded-xl border px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Need a middleman?</p>
+              <p className="text-xs text-muted-foreground">One click — they verify delivery and handle disputes.</p>
+            </div>
+            <Button size="sm" variant="outline" disabled={requestingMm} onClick={requestMm}>
+              <Shield className="h-3.5 w-3.5 mr-1" />{requestingMm ? 'Connecting…' : 'Add middleman'}
+            </Button>
           </div>
-          <div className="shrink-0">
-            {mmErr && <p className="text-xs text-destructive mb-1">{mmErr}</p>}
-            <Button size="sm" variant="outline" disabled={requestingMm} onClick={requestMm}><Shield className="h-3.5 w-3.5 mr-1" />{requestingMm ? 'Connecting…' : 'Add middleman'}</Button>
-          </div>
+          {mmErr && (
+            <div className="rounded-lg bg-muted/40 border px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-1.5">⚠️ {mmErr}</p>
+              <p className="text-xs text-muted-foreground mb-2">You can still open a chat with the TrustVexa team for assistance:</p>
+              <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                <Link href="/connect"><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open support chat</Link>
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -744,6 +871,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [payErr, setPayErr] = React.useState<string | null>(null);
   const [agreeing, setAgreeing] = React.useState(false);
   const [agreeErr, setAgreeErr] = React.useState<string | null>(null);
+  const [agreedResult, setAgreedResult] = React.useState<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean } | null>(null);
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
   const [approving, setApproving] = React.useState(false);
@@ -762,9 +890,12 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const handleAgree = async () => {
     setAgreeing(true); setAgreeErr(null);
     try {
-      await apiRequest(`/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean }>(
+        `/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() }
+      );
+      setAgreedResult(result);
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setAgreeErr(err instanceof Error ? err.message : 'Failed to agree.'); }
+    } catch (err) { setAgreeErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to agree.'); }
     finally { setAgreeing(false); }
   };
 
@@ -844,23 +975,54 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {/* Current action — BUYER */}
       {(deal.status === 'Created' || deal.status === 'Invited') && (
-        <ActionCard title="Review & agree to terms" icon={CheckCircle2} description="Review the deal terms below. Both parties must agree before funding.">
-          {deal.terms && <div className="rounded-lg bg-muted/40 p-3 mb-3 text-sm whitespace-pre-wrap">{deal.terms}</div>}
-          <div className="space-y-2 mb-3">
-            {[
-              { key: 'coinNet', label: 'I confirm the coin and network are correct.' },
-              { key: 'amount', label: 'I confirm the deal amount is correct.' },
-              { key: 'risk', label: 'I understand crypto transactions are irreversible.' },
-            ].map(item => (
-              <label key={item.key} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="h-4 w-4" checked={checkedItems[item.key as keyof typeof checkedItems]} onChange={e => setCheckedItems(prev => ({ ...prev, [item.key]: e.target.checked }))} />
-                <span className="text-sm">{item.label}</span>
-              </label>
-            ))}
-          </div>
-          {agreeErr && <p className="text-xs text-destructive mb-2">{agreeErr}</p>}
-          <Button onClick={handleAgree} disabled={agreeing || !Object.values(checkedItems).every(Boolean)} className="w-full">{agreeing ? 'Saving…' : 'I agree — confirm deal terms'}</Button>
-        </ActionCard>
+        agreedResult?.buyerAgreed ? (
+          <ActionCard title={agreedResult.locked ? '✓ Both parties agreed — deal locked!' : '✓ Your agreement recorded — waiting for seller'} icon={CheckCircle2} variant="success">
+            <p className="text-sm text-muted-foreground">
+              {agreedResult.locked
+                ? 'Both parties agreed. You can now fund the escrow to start the deal.'
+                : 'Your agreement is recorded. The deal will advance once the seller also agrees.'}
+            </p>
+          </ActionCard>
+        ) : (
+          <ActionCard title="Review & agree to terms" icon={CheckCircle2}
+            description="Both parties must agree before funding can begin.">
+            {/* Deal terms */}
+            {deal.terms && (
+              <div className="rounded-lg bg-muted/40 border p-3 mb-3">
+                <p className="text-xs font-semibold text-muted-foreground mb-1.5">Deal terms</p>
+                <p className="text-sm whitespace-pre-wrap">{deal.terms}</p>
+              </div>
+            )}
+            {/* Fee summary */}
+            <div className="rounded-lg bg-muted/30 border px-3 py-2 mb-3 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Item</span><span className="font-medium">{deal.itemDescription ?? '—'}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
+              <div className="flex justify-between text-primary font-semibold"><span>You will send</span><span>{cents(deal.buyerTotalCents)}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-muted-foreground">Includes platform fee</span><span className="text-muted-foreground">{cents(deal.platformFeeCents)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
+            </div>
+            {/* Confirmations */}
+            <div className="space-y-2 mb-3">
+              {[
+                { key: 'coinNet', label: `I confirm ${deal.coin} on ${deal.network} is correct.` },
+                { key: 'amount', label: `I confirm the amount ${cents(deal.buyerTotalCents)} is correct.` },
+                { key: 'risk', label: 'I understand crypto transactions are irreversible.' },
+              ].map(item => (
+                <label key={item.key} className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0"
+                    checked={checkedItems[item.key as keyof typeof checkedItems]}
+                    onChange={e => setCheckedItems(prev => ({ ...prev, [item.key]: e.target.checked }))} />
+                  <span className="text-sm">{item.label}</span>
+                </label>
+              ))}
+            </div>
+            {agreeErr && <p className="text-xs text-destructive mb-2">⚠️ {agreeErr}</p>}
+            <Button onClick={handleAgree} disabled={agreeing || !Object.values(checkedItems).every(Boolean)} className="w-full">
+              {agreeing ? 'Recording agreement…' : 'I agree — confirm deal terms'}
+            </Button>
+          </ActionCard>
+        )
       )}
 
       {deal.status === 'Agreed' && (
@@ -963,15 +1125,25 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {/* Request middleman */}
       {!deal.middlemanId && !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
-        <div className="rounded-xl border px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">Need a middleman?</p>
-            <p className="text-xs text-muted-foreground">They verify delivery and handle any disputes.</p>
+        <div className="rounded-xl border px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Need a middleman?</p>
+              <p className="text-xs text-muted-foreground">They verify delivery and handle any disputes.</p>
+            </div>
+            <Button size="sm" variant="outline" disabled={requestingMm} onClick={requestMm}>
+              <Shield className="h-3.5 w-3.5 mr-1" />{requestingMm ? '…' : 'Add middleman'}
+            </Button>
           </div>
-          <div className="shrink-0">
-            {mmErr && <p className="text-xs text-destructive mb-1">{mmErr}</p>}
-            <Button size="sm" variant="outline" disabled={requestingMm} onClick={requestMm}><Shield className="h-3.5 w-3.5 mr-1" />{requestingMm ? '…' : 'Add middleman'}</Button>
-          </div>
+          {mmErr && (
+            <div className="rounded-lg bg-muted/40 border px-3 py-2">
+              <p className="text-xs text-muted-foreground mb-1.5">⚠️ {mmErr}</p>
+              <p className="text-xs text-muted-foreground mb-2">Contact support for assistance:</p>
+              <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                <Link href="/connect"><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open support chat</Link>
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
