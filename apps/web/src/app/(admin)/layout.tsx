@@ -1,9 +1,20 @@
-import { requireRole } from '@/lib/auth/guard';
+import { ClientAuthGuard } from '@/components/client-auth-guard';
+import { ClientRoleGuard } from '@/components/client-role-guard';
 import { AdminShell } from '@/components/admin-shell';
 
-// Middleman-only (admin) route group. Server-side role guard runs first, then the
-// client admin console shell provides the sidebar + top bar chrome.
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireRole('middleman');
-  return <AdminShell>{children}</AdminShell>;
+/**
+ * Middleman-only (admin) route group layout.
+ * Auth + role check done client-side (same reason as app layout — server-side
+ * cookie reads fail in cross-origin Render deployments).
+ */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminShell>
+      <ClientAuthGuard>
+        <ClientRoleGuard requiredRole="middleman">
+          {children}
+        </ClientRoleGuard>
+      </ClientAuthGuard>
+    </AdminShell>
+  );
 }
