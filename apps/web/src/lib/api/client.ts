@@ -3,16 +3,19 @@ import type { ApiErrorBody } from './types';
 /**
  * Browser API client for the TrustVexa REST API.
  *
- * - Base URL comes from `NEXT_PUBLIC_API_BASE_URL` (the API runs as a separate
- *   Render service); it falls back to a same-origin relative path for local
- *   single-origin setups.
- * - The short-lived access token is held in memory only (never localStorage) and
- *   sent as a Bearer header. The rotating refresh token lives in an httpOnly
- *   cookie, so we always send credentials and can silently refresh on a 401.
- * - Errors are surfaced as a typed {@link ApiError} carrying the server's
- *   `error_code` and `request_id` for support correlation.
+ * Two deployment modes:
+ *
+ * 1. PROXY MODE (recommended for Render cross-origin): Set
+ *    NEXT_PUBLIC_API_BASE_URL to empty or the same origin as the web app.
+ *    Next.js rewrites /api/v1/* to the API service. Cookies are set on the
+ *    web domain so the middleware can read them. (Default for production.)
+ *
+ * 2. DIRECT MODE (local dev or single-origin): Set NEXT_PUBLIC_API_BASE_URL
+ *    to http://localhost:4000. The browser talks directly to the API.
+ *    The middleware reads the cookie from localhost:3000 (only works when
+ *    REFRESH_COOKIE_PATH='/' i.e. non-production mode).
  */
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
 const API_PREFIX = '/api/v1';
 
 let accessToken: string | null = null;
