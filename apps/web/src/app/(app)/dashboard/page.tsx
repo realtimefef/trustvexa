@@ -12,8 +12,11 @@ import {
   Gavel,
   Handshake,
   LifeBuoy,
+  LogIn,
   MessageCircle,
+  Phone,
   Plus,
+  Star,
   Wallet,
 } from 'lucide-react';
 
@@ -169,6 +172,29 @@ function ActiveDeals({ deals }: { deals: DealSummary[] }) {
   );
 }
 
+function JoinChatWidget() {
+  const [code, setCode] = React.useState('');
+  const router = useRouter();
+  return (
+    <form
+      className="flex items-center gap-2 max-w-xs"
+      onSubmit={e => { e.preventDefault(); const t = code.trim().toUpperCase(); if (t) router.push('/connect?join=' + t); }}
+    >
+      <input
+        value={code}
+        onChange={e => setCode(e.target.value.toUpperCase())}
+        maxLength={8}
+        placeholder="Join code…"
+        className="flex-1 h-8 rounded-lg bg-white/20 border border-white/30 text-white placeholder:text-white/50 px-3 text-sm font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-white/40"
+      />
+      <button type="submit" disabled={!code.trim()}
+        className="h-8 w-8 flex items-center justify-center rounded-lg bg-white/20 border border-white/30 text-white hover:bg-white/30 transition-colors disabled:opacity-40">
+        <LogIn className="h-4 w-4" />
+      </button>
+    </form>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { status, user } = useAuth();
@@ -244,12 +270,30 @@ export default function DashboardPage() {
             <p className="mt-1 text-sm text-white/80">
               Here’s what’s happening with your escrow deals today.
             </p>
+            {user?.id && (
+              <p className="mt-1.5 text-xs text-white/60">
+                Your ID:{' '}
+                <span className="font-mono bg-white/10 rounded px-1.5 py-0.5 text-white/90 select-all">
+                  {user.id.replace(/-/g, '').slice(0, 8).toUpperCase()}
+                </span>
+              </p>
+            )}
           </div>
-          <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
-            <Link href="/connect">
-              <Handshake className="h-4 w-4" aria-hidden="true" /> Connect &amp; Chat
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild size="sm" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Link href="/contact">
+                <Phone className="h-4 w-4 mr-1" aria-hidden="true" /> Contact Us
+              </Link>
+            </Button>
+            <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
+              <Link href="/connect">
+                <Handshake className="h-4 w-4 mr-1" aria-hidden="true" /> Connect &amp; Chat
+              </Link>
+            </Button>
+          </div>
+          <div className="relative mt-3">
+            <JoinChatWidget />
+          </div>
         </div>
       </div>
 
@@ -328,8 +372,8 @@ export default function DashboardPage() {
         {[
           { href: '/connect', label: 'Connect & Chat', desc: 'Talk before the deal', icon: Handshake },
           { href: '/calculator', label: 'Fee calculator', desc: 'Estimate fees', icon: Calculator },
-          { href: '/wallet', label: 'Wallet', desc: 'Balances & addresses', icon: Wallet },
-          { href: '/support', label: 'Get help', desc: 'Guides & support', icon: LifeBuoy },
+          { href: '/reviews', label: 'Reviews', desc: 'What traders say', icon: Star },
+          { href: '/contact', label: 'Contact Us', desc: 'Get help fast', icon: LifeBuoy },
         ].map((a) => (
           <Link
             key={a.href}
