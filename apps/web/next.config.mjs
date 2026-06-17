@@ -25,11 +25,38 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingRoot: path.resolve(appRoot, '../..'),
-  // The dedicated root `pnpm lint` command remains the authoritative lint gate.
   eslint: { ignoreDuringBuilds: true },
-  // @trustvexa/shared is a workspace package shipped as TS-compiled JS; transpile it
-  // so client/server share the same Zod schemas and types.
   transpilePackages: ['@trustvexa/shared'],
+
+  /**
+   * Proxy /api/v1/* → API service.
+   *
+   * WHY THIS IS REQUIRED:
+   * The web app (trustvexa-web.onrender.com) and the API
+   * (trustvexa-api.onrender.com) are on different domains. The API sets the
+   * httpOnly refresh-token cookie (`tv_refresh`) scoped to its own domain.
+   * The Next.js middleware — which runs on the web server — cannot read a
+   * cookie belonging to the API domain, so it always sees "no token" and
+   * redirects every authenticated user back to /login (infinite loop).
+   *
+   * By proxying all /api/v1/* requests through the Next.js server, the
+   * Set-Cookie header from the API is forwarded to the browser with the web
+   * domain, so the middleware can read it on subsequent requests.
+   *
+   * Environment variables needed on Render:
+   *   API_BASE_URL           = https://trustvexa-api.onrender.com  (server-side)
+   *   NEXT_PUBLIC_API_BASE_URL = (leave EMPTY or set to web origin) (client-side)
+   */
+  async rewrites() {
+    const apiBase = process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+    if (!apiBase) return [];
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiBase}/api/v1/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
