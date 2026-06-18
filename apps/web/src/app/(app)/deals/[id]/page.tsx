@@ -46,6 +46,10 @@ type DealDetail = BaseDealDetail & {
   middlemanId?: string | null;
   itemDescription?: string | null;
   terms?: string | null;
+  // Agreement status fields (from getDealDetail response)
+  lockedAt?: string | null;
+  buyerAgreedAt?: string | null;
+  sellerAgreedAt?: string | null;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -727,6 +731,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     finally { setAgreeing(false); }
   };
 
+  // Determine agreement state from the deal itself (survives page refresh)
+  // OR from local handleAgree result (for immediate feedback without re-fetching)
+  const sellerAlreadyAgreed = !!(deal.sellerAgreedAt) || !!(agreedResult?.sellerAgreed);
+  const bothAgreed = !!(deal.lockedAt) || !!(agreedResult?.locked);
+
   const isPostLock = POST_LOCK_STATES.has(deal.status);
   const counterparty = deal.buyerId ? 'Buyer connected' : 'Waiting for buyer';
   const mmName = deal.middlemanId ? `⚖️ Middleman assigned` : 'No middleman yet';
@@ -859,13 +868,33 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
       {/* Agree button for Invited/Created status when buyer joined */}
       {(deal.status === 'Created' || deal.status === 'Invited') && deal.buyerId && (
-        agreedResult?.sellerAgreed ? (
-          <ActionCard title={agreedResult.locked ? '✓ Both parties agreed — deal locked!' : '✓ You agreed — waiting for buyer'} icon={CheckCircle2} variant="success">
-            <p className="text-sm text-muted-foreground">
-              {agreedResult.locked
-                ? 'Both parties agreed. The deal is now locked and the buyer can proceed to fund the escrow.'
-                : 'Your agreement is recorded. The deal will lock once the buyer also agrees.'}
-            </p>
+        sellerAlreadyAgreed ? (
+          <ActionCard
+            title={bothAgreed ? '✓ Both parties agreed — deal locked!' : '✓ You agreed — waiting for buyer to agree'}
+            icon={CheckCircle2} variant="success">
+            {bothAgreed ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Both parties agreed. Deal is locked. <strong>Enter your payout wallet below</strong>, then wait for the buyer to fund the escrow.
+                </p>
+                <div className="rounded-xl border bg-background/60 p-3 space-y-2">
+                  <p className="text-xs font-semibold">Your {deal.coin} payout address ({deal.network})</p>
+                  <p className="text-xs text-muted-foreground">Where you want to receive payment when the deal is released.</p>
+                  <div className="flex gap-2">
+                    <Input value={payoutAddr} onChange={e => setPayoutAddr(e.target.value)} placeholder={`Your ${deal.network} address`} className="flex-1 font-mono text-xs" />
+                    <Button size="sm" onClick={savePayout} disabled={paySubmitting || !payoutAddr.trim()}>{paySubmitting ? '…' : 'Save'}</Button>
+                  </div>
+                  {payMsg && <p className="text-xs text-emerald-600">✓ {payMsg}</p>}
+                  {payErr && <p className="text-xs text-destructive">{payErr}</p>}
+                </div>
+                <Button onClick={() => window.location.reload()} variant="outline" size="sm">Refresh to see next steps</Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">✓ Your agreement is saved in our system. Waiting for the buyer to also agree.</p>
+                <p className="text-xs text-muted-foreground">You can safely refresh this page — your agreement won't be lost.</p>
+              </div>
+            )}
           </ActionCard>
         ) : (
           <ActionCard title="Agree to deal terms" icon={CheckCircle2}
@@ -970,6 +999,9 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
+  // Persistent agree state — survives page refresh via the API-returned fields
+  const buyerAlreadyAgreed = !!(deal.buyerAgreedAt) || !!(agreedResult?.buyerAgreed);
+  const dealLockedAt = !!(deal.lockedAt) || !!(agreedResult?.locked);
 
   const handleAgree = async () => {
     setAgreeing(true); setAgreeErr(null);
@@ -1059,11 +1091,10 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {/* Current action — BUYER */}
       {(deal.status === 'Created' || deal.status === 'Invited') && (
-        agreedResult?.buyerAgreed ? (
-          <ActionCard title={agreedResult.locked ? '✓ Both parties agreed — deal locked!' : '✓ Your agreement recorded — waiting for seller'} icon={CheckCircle2} variant="success">
+        buyerAlreadyAgreed ? (
+          <ActionCard title={dealLockedAt ? '✓ Both parties agreed — deal locked!' : '✓ Your agreement recorded — waiting for seller'} icon={CheckCircle2} variant="success">
             <p className="text-sm text-muted-foreground">
-              {agreedResult.locked
-                ? 'Both parties agreed. You can now fund the escrow to start the deal.'
+              {dealLockedAt ? 'Both parties agreed. You can now fund the escrow to start the deal.'
                 : 'Your agreement is recorded. The deal will advance once the seller also agrees.'}
             </p>
           </ActionCard>

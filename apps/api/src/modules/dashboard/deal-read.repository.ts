@@ -44,6 +44,10 @@ export interface DealRow {
   version_no: number;
   created_at: Date | string;
   updated_at: Date | string;
+  /** Agreement progress columns (added by migration 1700002000000_deal_agreement_lock). */
+  buyer_agreed_at: Date | string | null;
+  seller_agreed_at: Date | string | null;
+  locked_at: Date | string | null;
 }
 
 /** Exact column list shared by the list and detail reads. */
@@ -53,7 +57,8 @@ const DEAL_COLUMNS = `
   price_tolerance_pct, fee_payer, platform_fee, seller_settlement_fee,
   transaction_fee, buyer_total, seller_payout, status, hold_status, legal_hold,
   attempt_no, risk_score, fund_by, complete_by, inspection_until,
-  last_activity_at, version_no, created_at, updated_at`;
+  last_activity_at, version_no, created_at, updated_at,
+  buyer_agreed_at, seller_agreed_at, locked_at`;
 
 /** All deals the user is a party to, most-recently-active first. */
 export async function listDealsForUser(userId: string): Promise<DealRow[]> {

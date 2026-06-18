@@ -108,6 +108,11 @@ export interface DealDetail extends DealSummary {
   /** Set when the deal has a confirmed buyer already (e.g. created from a connection). */
   buyerId?: string | null;
   sellerId?: string | null;
+  /** Agreement progress — used to show "you already agreed" on page reload
+   * even before the other party agrees (status stays Created/Invited). */
+  lockedAt?: string | null;
+  buyerAgreedAt?: string | null;
+  sellerAgreedAt?: string | null;
 }
 
 /** Response body of GET /dashboard. */

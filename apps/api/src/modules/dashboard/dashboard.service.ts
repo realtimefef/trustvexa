@@ -61,6 +61,11 @@ export interface DealDetail extends DealSummary {
   /** Party IDs — lets the UI skip the invite flow when a deal was created from a connection. */
   buyerId: string | null;
   sellerId: string | null;
+  /** Agreement progress — exposed so the UI can show "you already agreed"
+   * even when the other party hasn't agreed yet (status stays 'Created'). */
+  lockedAt: string | null;
+  buyerAgreedAt: string | null;
+  sellerAgreedAt: string | null;
 }
 
 /** Determine which party the user is for this deal, or `null` if none. */
@@ -181,9 +186,12 @@ export async function getDealDetail(userId: string, dealId: string): Promise<Dea
     versionNo: row.version_no,
     timeline,
     tags,
-    // Expose party IDs so the UI can skip the invite flow when the deal was
-    // created from a connection (both parties already linked).
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
+    // Agreement progress — exposed so the UI can show "you already agreed"
+    // even when the other party hasn't agreed yet (status stays 'Created').
+    lockedAt: row.locked_at ? new Date(row.locked_at as string).toISOString() : null,
+    buyerAgreedAt: row.buyer_agreed_at ? new Date(row.buyer_agreed_at as string).toISOString() : null,
+    sellerAgreedAt: row.seller_agreed_at ? new Date(row.seller_agreed_at as string).toISOString() : null,
   };
 }

@@ -14,7 +14,8 @@ const DEAL_COLUMNS = `
   price_tolerance_pct, fee_payer, platform_fee, seller_settlement_fee,
   transaction_fee, buyer_total, seller_payout, status, hold_status, legal_hold,
   attempt_no, risk_score, fund_by, complete_by, inspection_until,
-  last_activity_at, version_no, created_at, updated_at`;
+  last_activity_at, version_no, created_at, updated_at,
+  buyer_agreed_at, seller_agreed_at, locked_at`;
 /** All deals the user is a party to, most-recently-active first. */
 export async function listDealsForUser(userId) {
     const res = await query(`SELECT ${DEAL_COLUMNS}

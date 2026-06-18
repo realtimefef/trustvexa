@@ -41,6 +41,11 @@ export interface DealDetail extends DealSummary {
     /** Party IDs — lets the UI skip the invite flow when a deal was created from a connection. */
     buyerId: string | null;
     sellerId: string | null;
+    /** Agreement progress — exposed so the UI can show "you already agreed"
+     * even when the other party hasn't agreed yet (status stays 'Created'). */
+    lockedAt: string | null;
+    buyerAgreedAt: string | null;
+    sellerAgreedAt: string | null;
 }
 /** Buyer/seller/middleman dashboard: every deal the user is a party to. */
 export declare function getDashboard(userId: string): Promise<{

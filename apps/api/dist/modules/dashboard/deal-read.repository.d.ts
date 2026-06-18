@@ -33,6 +33,10 @@ export interface DealRow {
     version_no: number;
     created_at: Date | string;
     updated_at: Date | string;
+    /** Agreement progress columns (added by migration 1700002000000_deal_agreement_lock). */
+    buyer_agreed_at: Date | string | null;
+    seller_agreed_at: Date | string | null;
+    locked_at: Date | string | null;
 }
 /** All deals the user is a party to, most-recently-active first. */
 export declare function listDealsForUser(userId: string): Promise<DealRow[]>;

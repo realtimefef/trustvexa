@@ -122,10 +122,13 @@ export async function getDealDetail(userId, dealId) {
         versionNo: row.version_no,
         timeline,
         tags,
-        // Expose party IDs so the UI can skip the invite flow when the deal was
-        // created from a connection (both parties already linked).
         buyerId: row.buyer_id,
         sellerId: row.seller_id,
+        // Agreement progress — exposed so the UI can show "you already agreed"
+        // even when the other party hasn't agreed yet (status stays 'Created').
+        lockedAt: row.locked_at ? new Date(row.locked_at).toISOString() : null,
+        buyerAgreedAt: row.buyer_agreed_at ? new Date(row.buyer_agreed_at).toISOString() : null,
+        sellerAgreedAt: row.seller_agreed_at ? new Date(row.seller_agreed_at).toISOString() : null,
     };
 }
 //# sourceMappingURL=dashboard.service.js.map
