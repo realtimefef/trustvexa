@@ -49,9 +49,9 @@ function WriteReviewCard({ dealId, counterpartyLabel, onDone }: {
     if (!rating) { setError('Please select a star rating first.'); return; }
     setSubmitting(true); setError(null);
     try {
-      await apiRequest('/reviews', {
+      await apiRequest(`/reviews/deals/${dealId}`, {
         method: 'POST',
-        body: { dealId, rating, comment: comment.trim() || undefined },
+        body: { rating, comment: comment.trim() || undefined },
         idempotencyKey: newIdempotencyKey(),
       });
       setDone(true);
