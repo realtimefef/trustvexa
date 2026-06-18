@@ -14,6 +14,8 @@ export declare function listDrafts(req: Request, res: Response): Promise<void>;
 export declare function getDraft(req: Request, res: Response): Promise<void>;
 export declare function deleteDraft(req: Request, res: Response): Promise<void>;
 export declare function updateTags(req: Request, res: Response): Promise<void>;
+/** Seller edits deal parameters before both parties lock. */
+export declare function updateDeal(req: Request, res: Response): Promise<void>;
 /** Mark deal done — closes all chat rooms for the deal. */
 export declare function markDealDone(req: Request, res: Response): Promise<void>;
 /** One-click: attach an available middleman to the deal (buyer or seller). */

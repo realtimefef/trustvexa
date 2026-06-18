@@ -53,13 +53,13 @@ export declare const createDealSchema: z.ZodEffects<z.ZodObject<{
     dealAmountCents: number;
     feePayer: "buyer" | "seller" | "split";
     confirmLegal: true;
-    terms?: string | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
     isPractice?: boolean | undefined;
     productType?: "digital" | "account" | undefined;
     itemDescription?: string | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
@@ -73,13 +73,13 @@ export declare const createDealSchema: z.ZodEffects<z.ZodObject<{
     dealAmountCents: number;
     feePayer: "buyer" | "seller" | "split";
     confirmLegal: true;
-    terms?: string | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
     isPractice?: boolean | undefined;
     productType?: "digital" | "account" | undefined;
     itemDescription?: string | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
@@ -93,13 +93,13 @@ export declare const createDealSchema: z.ZodEffects<z.ZodObject<{
     dealAmountCents: number;
     feePayer: "buyer" | "seller" | "split";
     confirmLegal: true;
-    terms?: string | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
     isPractice?: boolean | undefined;
     productType?: "digital" | "account" | undefined;
     itemDescription?: string | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
@@ -113,13 +113,13 @@ export declare const createDealSchema: z.ZodEffects<z.ZodObject<{
     dealAmountCents: number;
     feePayer: "buyer" | "seller" | "split";
     confirmLegal: true;
-    terms?: string | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
     isPractice?: boolean | undefined;
     productType?: "digital" | "account" | undefined;
     itemDescription?: string | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
@@ -150,7 +150,6 @@ export declare const draftDataSchema: z.ZodObject<{
     templateId: z.ZodOptional<z.ZodString>;
     productId: z.ZodOptional<z.ZodString>;
 }, "strict", z.ZodTypeAny, {
-    terms?: string | undefined;
     coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
     network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
@@ -160,11 +159,11 @@ export declare const draftDataSchema: z.ZodObject<{
     feePayer?: "buyer" | "seller" | "split" | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
 }, {
-    terms?: string | undefined;
     coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
     network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
     networkMode?: "mainnet" | "testnet" | undefined;
@@ -174,6 +173,7 @@ export declare const draftDataSchema: z.ZodObject<{
     feePayer?: "buyer" | "seller" | "split" | undefined;
     feeSplitBuyerBps?: number | undefined;
     priceTolerancePct?: number | undefined;
+    terms?: string | undefined;
     inspectionWindowDays?: number | undefined;
     templateId?: string | undefined;
     productId?: string | undefined;
@@ -197,7 +197,6 @@ export declare const saveDraftSchema: z.ZodObject<{
         templateId: z.ZodOptional<z.ZodString>;
         productId: z.ZodOptional<z.ZodString>;
     }, "strict", z.ZodTypeAny, {
-        terms?: string | undefined;
         coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
         network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
         networkMode?: "mainnet" | "testnet" | undefined;
@@ -207,11 +206,11 @@ export declare const saveDraftSchema: z.ZodObject<{
         feePayer?: "buyer" | "seller" | "split" | undefined;
         feeSplitBuyerBps?: number | undefined;
         priceTolerancePct?: number | undefined;
+        terms?: string | undefined;
         inspectionWindowDays?: number | undefined;
         templateId?: string | undefined;
         productId?: string | undefined;
     }, {
-        terms?: string | undefined;
         coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
         network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
         networkMode?: "mainnet" | "testnet" | undefined;
@@ -221,13 +220,14 @@ export declare const saveDraftSchema: z.ZodObject<{
         feePayer?: "buyer" | "seller" | "split" | undefined;
         feeSplitBuyerBps?: number | undefined;
         priceTolerancePct?: number | undefined;
+        terms?: string | undefined;
         inspectionWindowDays?: number | undefined;
         templateId?: string | undefined;
         productId?: string | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
+    lastStep: string;
     data: {
-        terms?: string | undefined;
         coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
         network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
         networkMode?: "mainnet" | "testnet" | undefined;
@@ -237,15 +237,15 @@ export declare const saveDraftSchema: z.ZodObject<{
         feePayer?: "buyer" | "seller" | "split" | undefined;
         feeSplitBuyerBps?: number | undefined;
         priceTolerancePct?: number | undefined;
+        terms?: string | undefined;
         inspectionWindowDays?: number | undefined;
         templateId?: string | undefined;
         productId?: string | undefined;
     };
-    lastStep: string;
     draftId?: string | undefined;
 }, {
+    lastStep: string;
     data: {
-        terms?: string | undefined;
         coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
         network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
         networkMode?: "mainnet" | "testnet" | undefined;
@@ -255,11 +255,11 @@ export declare const saveDraftSchema: z.ZodObject<{
         feePayer?: "buyer" | "seller" | "split" | undefined;
         feeSplitBuyerBps?: number | undefined;
         priceTolerancePct?: number | undefined;
+        terms?: string | undefined;
         inspectionWindowDays?: number | undefined;
         templateId?: string | undefined;
         productId?: string | undefined;
     };
-    lastStep: string;
     draftId?: string | undefined;
 }>;
 export type SaveDraftInput = z.infer<typeof saveDraftSchema>;
@@ -286,6 +286,51 @@ export declare const updateTagsSchema: z.ZodObject<{
 }>;
 export type UpdateTagsInput = z.infer<typeof updateTagsSchema>;
 /**
+ * Schema for the seller's pre-lock deal edit (PATCH /deals/:id).
+ */
+export declare const updateDealSchema: z.ZodEffects<z.ZodObject<{
+    dealAmountCents: z.ZodOptional<z.ZodNumber>;
+    feePayer: z.ZodOptional<z.ZodEnum<["buyer", "seller", "split"]>>;
+    feeSplitBuyerBps: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
+    coin: z.ZodOptional<z.ZodEnum<["USDT", "SOL", "BNB", "ETH", "TRX"]>>;
+    network: z.ZodOptional<z.ZodEnum<["ETH", "BNB", "TRON", "SOLANA"]>>;
+    itemDescription: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+    terms: z.ZodNullable<z.ZodOptional<z.ZodString>>;
+}, "strict", z.ZodTypeAny, {
+    coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
+    network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
+    itemDescription?: string | null | undefined;
+    dealAmountCents?: number | undefined;
+    feePayer?: "buyer" | "seller" | "split" | undefined;
+    feeSplitBuyerBps?: number | null | undefined;
+    terms?: string | null | undefined;
+}, {
+    coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
+    network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
+    itemDescription?: string | null | undefined;
+    dealAmountCents?: number | undefined;
+    feePayer?: "buyer" | "seller" | "split" | undefined;
+    feeSplitBuyerBps?: number | null | undefined;
+    terms?: string | null | undefined;
+}>, {
+    coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
+    network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
+    itemDescription?: string | null | undefined;
+    dealAmountCents?: number | undefined;
+    feePayer?: "buyer" | "seller" | "split" | undefined;
+    feeSplitBuyerBps?: number | null | undefined;
+    terms?: string | null | undefined;
+}, {
+    coin?: "USDT" | "SOL" | "BNB" | "ETH" | "TRX" | undefined;
+    network?: "BNB" | "ETH" | "TRON" | "SOLANA" | undefined;
+    itemDescription?: string | null | undefined;
+    dealAmountCents?: number | undefined;
+    feePayer?: "buyer" | "seller" | "split" | undefined;
+    feeSplitBuyerBps?: number | null | undefined;
+    terms?: string | null | undefined;
+}>;
+export type UpdateDealInputSchema = z.infer<typeof updateDealSchema>;
+/**
  * Schema for the middleman-only deal update endpoint.
  * All fields are optional — only provided fields are applied.
  */
@@ -295,14 +340,14 @@ export declare const middlemanUpdateDealSchema: z.ZodObject<{
     statusOverride: z.ZodNullable<z.ZodOptional<z.ZodEnum<["Cancelled", "Disputed", "Released", "Refunded"]>>>;
     note: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
-    terms?: string | null | undefined;
     dealAmountCents?: number | null | undefined;
-    statusOverride?: "Cancelled" | "Released" | "Disputed" | "Refunded" | null | undefined;
+    terms?: string | null | undefined;
+    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
     note?: string | null | undefined;
 }, {
-    terms?: string | null | undefined;
     dealAmountCents?: number | null | undefined;
-    statusOverride?: "Cancelled" | "Released" | "Disputed" | "Refunded" | null | undefined;
+    terms?: string | null | undefined;
+    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
     note?: string | null | undefined;
 }>;
 export type MiddlemanUpdateDealInput = z.infer<typeof middlemanUpdateDealSchema>;

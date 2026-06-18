@@ -77,6 +77,8 @@ export interface DealSummary {
   dealAmountCents: string | null;
   amountCoin: string | null;
   feePayer: string | null;
+  /** Buyer's share of platform fee in basis points (0-10000). Null when feePayer != 'split'. */
+  feeSplitBuyerBps: number | null;
   buyerTotalCents: string | null;
   sellerPayoutCents: string | null;
   holdStatus: string | null;
@@ -90,6 +92,8 @@ export interface DealSummary {
   nextActions: NextAction[];
   waitingOnYou: boolean;
   tags?: string[];
+  /** Short label for the deal item, shown as title. */
+  itemDescription: string | null;
 }
 
 /** Full deal-detail view: summary + extra money/meta fields + timeline. */

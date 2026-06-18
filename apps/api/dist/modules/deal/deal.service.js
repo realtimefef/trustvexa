@@ -255,20 +255,22 @@ export async function requestMiddleman(userId, dealId) {
 }
 /**
  * Mark the calling party's agreement on a deal. When BOTH the buyer and seller
- * have agreed, the deal locks (immutable) and the pay step opens. Idempotent:
- * re-agreeing is a no-op. Only the deal's buyer or seller may agree.
+ * have agreed the deal locks (immutable) AND the status advances to 'Agreed'
+ * in the SAME transaction — so the caller sees the new status immediately
+ * without needing a second round-trip. Idempotent: re-agreeing is a no-op.
+ * Only the deal's buyer or seller may agree.
  */
 export async function agreeToDeal(userId, dealId) {
     const client = await acquireClient();
     try {
         await client.query('BEGIN');
-        const dealRes = await client.query(`SELECT buyer_id, seller_id, buyer_agreed_at, seller_agreed_at, locked_at
+        const dealRes = await client.query(`SELECT buyer_id, seller_id, buyer_agreed_at, seller_agreed_at, locked_at, status, version_no
          FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
         const deal = dealRes.rows[0];
         if (!deal) {
             throw new AppError('deal_not_found', 'Deal was not found.', 404);
         }
-        // Once locked, no further agreement changes are accepted — the deal is immutable.
+        // Once locked the deal is immutable — return current state idempotently.
         if (deal.locked_at) {
             await client.query('COMMIT');
             return {
@@ -277,6 +279,7 @@ export async function agreeToDeal(userId, dealId) {
                 sellerAgreed: deal.seller_agreed_at !== null,
                 locked: true,
                 lockedAt: typeof deal.locked_at === 'string' ? deal.locked_at : new Date(deal.locked_at).toISOString(),
+                status: deal.status,
             };
         }
         const isBuyer = deal.buyer_id === userId;
@@ -297,37 +300,124 @@ export async function agreeToDeal(userId, dealId) {
             sellerAgreedAt = r.rows[0]?.seller_agreed_at ?? sellerAgreedAt;
         }
         let lockedAt = deal.locked_at;
+        let finalStatus = deal.status;
         if (!lockedAt && buyerAgreedAt && sellerAgreedAt) {
+            // Both parties have agreed — lock the deal AND advance to 'Agreed' atomically.
             const r = await client.query(`UPDATE deals SET locked_at = now(), updated_at = now() WHERE id = $1
          RETURNING locked_at`, [dealId]);
             lockedAt = r.rows[0]?.locked_at ?? null;
+            // Only advance status if the deal hasn't already been moved to Agreed
+            // by the invite-acceptance path (acceptInvite also fires PartiesAgreed).
+            if (deal.status === 'Created' || deal.status === 'Invited') {
+                const prevHash = await loadLastEntryHash(client, dealId);
+                const createdAt = new Date().toISOString();
+                const reqId = `agree-lock:${dealId}:${Date.now()}`;
+                const entry = appendEntry({
+                    dealId,
+                    fromState: deal.status,
+                    toState: 'Agreed',
+                    actorId: userId,
+                    requestId: reqId,
+                    createdAt,
+                }, prevHash);
+                await client.query(`UPDATE deals SET status = 'Agreed', version_no = version_no + 1 WHERE id = $1`, [dealId]);
+                await insertEscrowLog(client, entry, 'PartiesAgreed', 'user', userId);
+                finalStatus = 'Agreed';
+            }
         }
         await client.query('COMMIT');
-        // BUGFIX: When both parties have now agreed (lockedAt just set), trigger
-        // the PartiesAgreed state transition so the deal advances from
-        // Created/Invited → Agreed. Without this the status never changes.
-        const justLocked = !deal.locked_at && lockedAt !== null;
-        if (justLocked) {
-            try {
-                await applyDealTransition({
-                    dealId,
-                    event: 'PartiesAgreed',
-                    actorId: userId,
-                    requestId: `agree-both-parties:${dealId}:${Date.now()}`,
-                });
-            }
-            catch {
-                // State may already be Agreed or the transition was applied concurrently.
-                // Non-fatal — the lock is set, the deal advances on next reload.
-            }
-        }
         return {
             dealId,
             buyerAgreed: buyerAgreedAt !== null,
             sellerAgreed: sellerAgreedAt !== null,
             locked: lockedAt !== null,
             lockedAt,
+            status: finalStatus,
         };
+    }
+    catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        }
+        catch {
+            /* already aborted */
+        }
+        throw err;
+    }
+    finally {
+        client.release();
+    }
+}
+/**
+ * Allow the seller to modify a deal's core parameters BEFORE both parties have
+ * agreed (i.e. before locked_at is set). After locking the deal is immutable
+ * for the parties; only the assigned middleman may adjust it post-lock.
+ */
+export async function updateDeal(sellerId, dealId, input) {
+    const client = await acquireClient();
+    try {
+        await client.query('BEGIN');
+        const dealRes = await client.query(`SELECT seller_id, locked_at, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+        const deal = dealRes.rows[0];
+        if (!deal) {
+            throw new AppError('deal_not_found', 'Deal was not found.', 404);
+        }
+        if (deal.seller_id !== sellerId) {
+            throw new AppError('forbidden', 'Only the deal creator can edit it before locking.', 403);
+        }
+        if (deal.locked_at) {
+            throw new AppError('deal_locked', 'Deal is locked and can no longer be edited.', 409);
+        }
+        if (!['Created', 'Invited'].includes(deal.status)) {
+            throw new AppError('invalid_state', `Deal can only be edited in Created/Invited state (current: ${deal.status}).`, 409);
+        }
+        const setClauses = [];
+        const values = [dealId]; // $1
+        let i = 2;
+        const updated = [];
+        if (input.dealAmountCents !== undefined) {
+            setClauses.push(`deal_amount = $${i++}`);
+            values.push(input.dealAmountCents);
+            updated.push('dealAmountCents');
+        }
+        if (input.feePayer !== undefined) {
+            setClauses.push(`fee_payer = $${i++}`);
+            values.push(input.feePayer);
+            updated.push('feePayer');
+        }
+        if (input.feeSplitBuyerBps !== undefined) {
+            setClauses.push(`fee_split_buyer_bps = $${i++}`);
+            values.push(input.feeSplitBuyerBps);
+            updated.push('feeSplitBuyerBps');
+        }
+        if (input.coin !== undefined) {
+            setClauses.push(`coin = $${i++}`);
+            values.push(input.coin);
+            updated.push('coin');
+        }
+        if (input.network !== undefined) {
+            setClauses.push(`network = $${i++}`);
+            values.push(input.network);
+            updated.push('network');
+        }
+        if (input.itemDescription !== undefined) {
+            setClauses.push(`item_description = $${i++}`);
+            values.push(input.itemDescription);
+            updated.push('itemDescription');
+        }
+        if (setClauses.length > 0) {
+            setClauses.push(`updated_at = now()`);
+            await client.query(`UPDATE deals SET ${setClauses.join(', ')} WHERE id = $1`, values);
+        }
+        // Terms are stored in a separate versioned snapshot table.
+        if (input.terms !== undefined && input.terms !== null && input.terms.trim().length > 0) {
+            const versionRes = await client.query(`SELECT MAX(version) AS max_version FROM deal_terms WHERE deal_id = $1`, [dealId]);
+            const nextVersion = (versionRes.rows[0]?.max_version ?? 0) + 1;
+            await client.query(`INSERT INTO deal_terms (deal_id, version, terms_snapshot) VALUES ($1, $2, $3)`, [dealId, nextVersion, input.terms.trim()]);
+            updated.push('terms');
+        }
+        await client.query('COMMIT');
+        return { dealId, updated };
     }
     catch (err) {
         try {

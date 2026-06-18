@@ -129,6 +129,7 @@ export async function createDeal(args) {
             templateId: input.templateId ?? null,
             productId: input.productId ?? null,
             preferredMiddlemanId: input.preferredMiddlemanId ?? null,
+            itemDescription: input.itemDescription ?? null,
         });
         if (input.terms !== undefined && input.terms.trim() !== '') {
             await insertDealTermsSnapshot(client, deal.id, 1, input.terms);

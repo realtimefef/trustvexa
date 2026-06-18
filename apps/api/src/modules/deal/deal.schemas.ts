@@ -127,6 +127,38 @@ export const updateTagsSchema = z.object({
 export type UpdateTagsInput = z.infer<typeof updateTagsSchema>;
 
 /**
+ * Schema for the seller's pre-lock deal edit (PATCH /deals/:id).
+ */
+export const updateDealSchema = z
+  .object({
+    dealAmountCents: z
+      .number()
+      .int()
+      .min(MIN_DEAL_AMOUNT_CENTS)
+      .max(MAX_DEAL_AMOUNT_CENTS)
+      .optional(),
+    feePayer: feePayerSchema.optional(),
+    feeSplitBuyerBps: z.number().int().min(0).max(10_000).optional().nullable(),
+    coin: coinSchema.optional(),
+    network: networkSchema.optional(),
+    itemDescription: z.string().max(5_000).optional().nullable(),
+    terms: z.string().max(20_000).optional().nullable(),
+  })
+  .strict()
+  .superRefine((val, ctx) => {
+    if (val.coin !== undefined && val.network !== undefined) {
+      if (!isCoinNetworkSupported(val.coin, val.network)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['network'],
+          message: `Coin ${val.coin} is not supported on network ${val.network}.`,
+        });
+      }
+    }
+  });
+export type UpdateDealInputSchema = z.infer<typeof updateDealSchema>;
+
+/**
  * Schema for the middleman-only deal update endpoint.
  * All fields are optional — only provided fields are applied.
  */

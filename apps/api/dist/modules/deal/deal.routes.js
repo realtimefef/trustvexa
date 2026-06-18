@@ -15,7 +15,7 @@ import { apiChain } from '../../routes/api-chain.js';
 import * as amendmentController from './amendment.controller.js';
 import { amendmentParamSchema, cancellationParamSchema, decisionSchema, middlemanDecisionSchema, requestAmendmentSchema, requestCancellationSchema, } from './amendment.schemas.js';
 import * as controller from './deal.controller.js';
-import { createDealSchema, dealIdParamSchema, draftIdParamSchema, middlemanUpdateDealSchema, saveDraftSchema, updateTagsSchema, } from './deal.schemas.js';
+import { createDealSchema, dealIdParamSchema, draftIdParamSchema, middlemanUpdateDealSchema, saveDraftSchema, updateDealSchema, updateTagsSchema, } from './deal.schemas.js';
 import * as inviteController from './invite.controller.js';
 import { createInviteSchema } from './invite.schemas.js';
 import * as termsController from './terms.controller.js';
@@ -40,6 +40,11 @@ export function dealRouter() {
         roles: [...ACCOUNT_ROLES],
         enforceIdempotency: true,
     }), asyncHandler(controller.duplicateDeal));
+    // Seller edits deal parameters before locking (amount, feePayer, coin, network, terms, etc.)
+    router.patch('/:id', ...apiChain({
+        schemas: { params: dealIdParamSchema, body: updateDealSchema },
+        roles: [...ACCOUNT_ROLES],
+    }), asyncHandler(controller.updateDeal));
     // --- Invites (task 4.3) ------------------------------------------------
     router.post('/:id/invites', ...apiChain({
         schemas: { params: dealIdParamSchema, body: createInviteSchema },

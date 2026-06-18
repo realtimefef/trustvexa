@@ -26,6 +26,7 @@ export interface InsertDealParams {
   templateId: string | null;
   productId: string | null;
   preferredMiddlemanId?: string | null;
+  itemDescription?: string | null;
 }
 
 export interface InsertedDealRow {
@@ -47,8 +48,9 @@ export async function insertDeal(
   const res = await client.query<InsertedDealRow>(
     `INSERT INTO deals
        (seller_id, buyer_id, coin, network, network_mode, is_practice,
-        deal_amount, fee_payer, fee_split_buyer_bps, price_tolerance_pct, template_id, product_id, preferred_middleman_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        deal_amount, fee_payer, fee_split_buyer_bps, price_tolerance_pct,
+        template_id, product_id, preferred_middleman_id, item_description)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING id, status, created_at`,
     [
       params.sellerId,
@@ -64,9 +66,9 @@ export async function insertDeal(
       params.templateId,
       params.productId,
       params.preferredMiddlemanId ?? null,
+      params.itemDescription ?? null,
     ],
   );
-  // A single-row INSERT ... RETURNING always yields exactly one row.
   return res.rows[0] as InsertedDealRow;
 }
 

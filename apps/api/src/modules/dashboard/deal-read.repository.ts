@@ -48,6 +48,8 @@ export interface DealRow {
   buyer_agreed_at: Date | string | null;
   seller_agreed_at: Date | string | null;
   locked_at: Date | string | null;
+  /** Free-text item label (added by migration 1700002800000_deal_item_description). */
+  item_description: string | null;
 }
 
 /** Exact column list shared by the list and detail reads. */
@@ -58,7 +60,8 @@ const DEAL_COLUMNS = `
   transaction_fee, buyer_total, seller_payout, status, hold_status, legal_hold,
   attempt_no, risk_score, fund_by, complete_by, inspection_until,
   last_activity_at, version_no, created_at, updated_at,
-  buyer_agreed_at, seller_agreed_at, locked_at`;
+  buyer_agreed_at, seller_agreed_at, locked_at,
+  item_description`;
 
 /** All deals the user is a party to, most-recently-active first. */
 export async function listDealsForUser(userId: string): Promise<DealRow[]> {

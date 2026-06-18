@@ -47,13 +47,36 @@ export interface AgreementResult {
     sellerAgreed: boolean;
     locked: boolean;
     lockedAt: string | null;
+    /** Deal status after the agreement — 'Agreed' when both parties locked, else unchanged. */
+    status: string;
 }
 /**
  * Mark the calling party's agreement on a deal. When BOTH the buyer and seller
- * have agreed, the deal locks (immutable) and the pay step opens. Idempotent:
- * re-agreeing is a no-op. Only the deal's buyer or seller may agree.
+ * have agreed the deal locks (immutable) AND the status advances to 'Agreed'
+ * in the SAME transaction — so the caller sees the new status immediately
+ * without needing a second round-trip. Idempotent: re-agreeing is a no-op.
+ * Only the deal's buyer or seller may agree.
  */
 export declare function agreeToDeal(userId: string, dealId: string): Promise<AgreementResult>;
+export interface UpdateDealInput {
+    dealAmountCents?: number;
+    feePayer?: 'buyer' | 'seller' | 'split';
+    feeSplitBuyerBps?: number | null;
+    coin?: string;
+    network?: string;
+    itemDescription?: string | null;
+    terms?: string | null;
+}
+export interface UpdateDealResult {
+    dealId: string;
+    updated: string[];
+}
+/**
+ * Allow the seller to modify a deal's core parameters BEFORE both parties have
+ * agreed (i.e. before locked_at is set). After locking the deal is immutable
+ * for the parties; only the assigned middleman may adjust it post-lock.
+ */
+export declare function updateDeal(sellerId: string, dealId: string, input: UpdateDealInput): Promise<UpdateDealResult>;
 export interface MiddlemanUpdateDealInput {
     /** The amount change, in integer USD cents (null = no change). */
     dealAmountCents?: number | null;

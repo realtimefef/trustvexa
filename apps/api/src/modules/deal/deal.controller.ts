@@ -12,7 +12,6 @@ import * as creation from './deal-creation.service.js';
 import * as drafts from './deal-draft.service.js';
 import * as service from './deal.service.js';
 import type { CreateDealInput, SaveDraftInput, UpdateTagsInput } from './deal.schemas.js';
-
 function requireUserId(req: Request): string {
   const userId = req.auth?.userId;
   if (!userId) {
@@ -65,6 +64,14 @@ export async function updateTags(req: Request, res: Response): Promise<void> {
   const body = req.body as UpdateTagsInput;
   await service.updateDealTags(userId, dealId, body.tags);
   res.status(200).json({ success: true });
+}
+
+/** Seller edits deal parameters before both parties lock. */
+export async function updateDeal(req: Request, res: Response): Promise<void> {
+  const sellerId = requireUserId(req);
+  const dealId = req.params.id!;
+  const result = await service.updateDeal(sellerId, dealId, req.body as service.UpdateDealInput);
+  res.status(200).json(result);
 }
 
 /** Mark deal done — closes all chat rooms for the deal. */

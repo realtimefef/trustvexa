@@ -14,6 +14,7 @@ export interface InsertDealParams {
     templateId: string | null;
     productId: string | null;
     preferredMiddlemanId?: string | null;
+    itemDescription?: string | null;
 }
 export interface InsertedDealRow {
     id: string;

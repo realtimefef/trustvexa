@@ -44,7 +44,7 @@ import {
 /** Extended deal detail — includes fields the API returns but the base type omits */
 type DealDetail = BaseDealDetail & {
   middlemanId?: string | null;
-  itemDescription?: string | null;
+  /** terms are returned by the API from the latest deal_terms snapshot */
   terms?: string | null;
   // Agreement status fields (from getDealDetail response)
   lockedAt?: string | null;
@@ -55,6 +55,15 @@ type DealDetail = BaseDealDetail & {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+
+/** Which networks each coin can settle on. */
+const COIN_NETWORKS: Record<string, string[]> = {
+  USDT: ['TRON', 'ETH', 'BNB', 'SOLANA'],
+  SOL: ['SOLANA'],
+  BNB: ['BNB'],
+  ETH: ['ETH'],
+  TRX: ['TRON'],
+};
 
 const TERMINAL_STATES = new Set([
   'Released', 'Refunded', 'PartiallySettled', 'Cancelled', 'Expired',
@@ -561,17 +570,36 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
 function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDetail; onSaved: () => void }) {
   const [open, setOpen] = React.useState(false);
   const [desc, setDesc] = React.useState(deal.itemDescription ?? '');
-  const [terms, setTerms] = React.useState(deal.terms ?? '');
+  const [termsText, setTermsText] = React.useState(deal.terms ?? '');
+  const [amount, setAmount] = React.useState(deal.dealAmountCents ? (Number(deal.dealAmountCents) / 100).toFixed(2) : '');
+  const [coin, setCoin] = React.useState(deal.coin);
+  const [network, setNetwork] = React.useState(deal.network);
+  const [feePayer, setFeePayer] = React.useState<'buyer' | 'seller' | 'split'>((deal.feePayer as 'buyer' | 'seller' | 'split') ?? 'buyer');
+  const [feeSplitPct, setFeeSplitPct] = React.useState(deal.feeSplitBuyerBps != null ? Math.round(deal.feeSplitBuyerBps / 100) : 50);
   const [saving, setSaving] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState(false);
 
+  const availableNetworks = COIN_NETWORKS[coin] ?? [deal.network];
+
   const save = async () => {
     setSaving(true); setErr(null); setOk(false);
+    const amountCents = Math.round(Number(amount) * 100);
+    if (!amount || isNaN(amountCents) || amountCents < 40000 || amountCents > 5_000_000) {
+      setErr('Amount must be between $400 and $50,000.'); setSaving(false); return;
+    }
     try {
       await apiRequest(`/deals/${dealId}`, {
         method: 'PATCH',
-        body: { itemDescription: desc, terms: terms || undefined },
+        body: {
+          dealAmountCents: amountCents,
+          coin,
+          network,
+          feePayer,
+          ...(feePayer === 'split' ? { feeSplitBuyerBps: feeSplitPct * 100 } : { feeSplitBuyerBps: null }),
+          itemDescription: desc.trim() || null,
+          ...(termsText.trim() ? { terms: termsText.trim() } : {}),
+        },
       });
       setOk(true); setOpen(false); onSaved();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save failed.'); }
@@ -585,27 +613,93 @@ function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDet
         <span className="flex items-center gap-2">
           <Send className="h-4 w-4 text-muted-foreground" />
           Edit deal details
-          <span className="text-xs text-muted-foreground">(before buyer joins)</span>
+          <span className="text-xs text-muted-foreground">(before both parties agree)</span>
         </span>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
       {open && (
-        <div className="border-t px-4 py-3 space-y-3">
+        <div className="border-t px-4 py-4 space-y-4">
+          {/* Item description */}
           <div className="space-y-1.5">
-            <Label htmlFor="edit-desc" className="text-sm">Item description</Label>
-            <textarea id="edit-desc" rows={2} value={desc} onChange={e => setDesc(e.target.value)}
-              className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Describe what you're selling" />
+            <Label htmlFor="edit-desc">Item / deal description</Label>
+            <Input id="edit-desc" value={desc} onChange={e => setDesc(e.target.value)} placeholder="What is being bought/sold?" />
           </div>
+
+          {/* Amount + Fee payer */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-amount">Deal amount (USD)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input id="edit-amount" value={amount} onChange={e => setAmount(e.target.value)}
+                  className="pl-6" placeholder="1000.00" type="number" min="400" max="50000" step="0.01" />
+              </div>
+              <p className="text-xs text-muted-foreground">Min $400 · Max $50,000</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-feepayer">Who pays platform fee?</Label>
+              <select id="edit-feepayer" value={feePayer} onChange={e => setFeePayer(e.target.value as 'buyer' | 'seller' | 'split')}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="buyer">Buyer pays all fees</option>
+                <option value="seller">Seller pays all fees</option>
+                <option value="split">Split fees between both</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Fee split slider */}
+          {feePayer === 'split' && (
+            <div className="space-y-2 rounded-lg bg-muted/30 border px-3 py-3">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium">Fee split</span>
+                <span className="text-muted-foreground">Buyer: <strong>{feeSplitPct}%</strong> · Seller: <strong>{100 - feeSplitPct}%</strong></span>
+              </div>
+              <input type="range" min={0} max={100} step={5} value={feeSplitPct} onChange={e => setFeeSplitPct(Number(e.target.value))}
+                className="w-full accent-primary" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0% buyer (seller pays all)</span>
+                <span>50/50</span>
+                <span>100% buyer (buyer pays all)</span>
+              </div>
+            </div>
+          )}
+
+          {/* Coin + Network */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-coin">Cryptocurrency</Label>
+              <select id="edit-coin" value={coin} onChange={e => {
+                const c = e.target.value;
+                setCoin(c);
+                const nets = COIN_NETWORKS[c] ?? [];
+                if (!nets.includes(network)) setNetwork(nets[0] ?? '');
+              }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                {Object.keys(COIN_NETWORKS).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-network">Network</Label>
+              <select id="edit-network" value={network} onChange={e => setNetwork(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                {availableNetworks.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Terms */}
           <div className="space-y-1.5">
-            <Label htmlFor="edit-terms" className="text-sm">Deal terms <span className="text-muted-foreground text-xs">(optional)</span></Label>
-            <textarea id="edit-terms" rows={3} value={terms} onChange={e => setTerms(e.target.value)}
+            <Label htmlFor="edit-terms">Deal terms <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <textarea id="edit-terms" rows={3} value={termsText} onChange={e => setTermsText(e.target.value)}
               className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Conditions, deliverables, acceptance criteria…" />
           </div>
-          {err && <p className="text-xs text-destructive">{err}</p>}
-          {ok && <p className="text-xs text-emerald-600">✓ Saved.</p>}
-          <Button size="sm" onClick={save} disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save changes'}</Button>
+
+          {err && <p className="text-xs text-destructive">⚠️ {err}</p>}
+          {ok && <p className="text-xs text-emerald-600">✓ Deal updated successfully.</p>}
+          <div className="flex gap-2">
+            <Button size="sm" onClick={save} disabled={saving} className="flex-1">{saving ? 'Saving…' : 'Save changes'}</Button>
+            <Button size="sm" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          </div>
         </div>
       )}
     </div>
@@ -722,7 +816,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const handleAgree = async () => {
     setAgreeing(true); setAgreeErr(null);
     try {
-      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean }>(
+      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean; status: string }>(
         `/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() }
       );
       setAgreedResult(result);
@@ -761,9 +855,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
       <DealStepper status={deal.status} />
 
-      {/* Edit before lock — seller can modify the deal while it's not yet locked */}
-      {(deal.status === 'Created' || deal.status === 'Invited') && !deal.buyerId && (
-        <EditDealCard dealId={dealId} deal={deal} onSaved={() => qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
+      {/* Edit before lock — show as long as the deal isn't locked yet */}
+      {!deal.lockedAt && !isPostLock && (
+        <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
       )}
 
       {/* Current action — SELLER */}
@@ -875,7 +969,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {bothAgreed ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Both parties agreed. Deal is locked. <strong>Enter your payout wallet below</strong>, then wait for the buyer to fund the escrow.
+                  Both parties agreed. Deal is locked. <strong>Save your payout wallet below</strong>, then the page will show your next step automatically.
                 </p>
                 <div className="rounded-xl border bg-background/60 p-3 space-y-2">
                   <p className="text-xs font-semibold">Your {deal.coin} payout address ({deal.network})</p>
@@ -887,12 +981,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
                   {payMsg && <p className="text-xs text-emerald-600">✓ {payMsg}</p>}
                   {payErr && <p className="text-xs text-destructive">{payErr}</p>}
                 </div>
-                <Button onClick={() => window.location.reload()} variant="outline" size="sm">Refresh to see next steps</Button>
+                <p className="text-xs text-muted-foreground">Next step: you will be asked to share a verification code with the buyer.</p>
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">✓ Your agreement is saved in our system. Waiting for the buyer to also agree.</p>
-                <p className="text-xs text-muted-foreground">You can safely refresh this page — your agreement won't be lost.</p>
+                <p className="text-sm text-muted-foreground">✓ Your agreement is saved. Waiting for the buyer to also agree.</p>
+                <p className="text-xs text-muted-foreground">You can safely refresh this page — your agreement is recorded in our system.</p>
               </div>
             )}
           </ActionCard>
@@ -984,7 +1078,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [payErr, setPayErr] = React.useState<string | null>(null);
   const [agreeing, setAgreeing] = React.useState(false);
   const [agreeErr, setAgreeErr] = React.useState<string | null>(null);
-  const [agreedResult, setAgreedResult] = React.useState<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean } | null>(null);
+  const [agreedResult, setAgreedResult] = React.useState<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean; status?: string } | null>(null);
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
   const [approving, setApproving] = React.useState(false);
@@ -1006,7 +1100,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const handleAgree = async () => {
     setAgreeing(true); setAgreeErr(null);
     try {
-      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean }>(
+      const result = await apiRequest<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean; status: string }>(
         `/deals/${dealId}/agree`, { method: 'POST', idempotencyKey: newIdempotencyKey() }
       );
       setAgreedResult(result);
@@ -1093,10 +1187,22 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {(deal.status === 'Created' || deal.status === 'Invited') && (
         buyerAlreadyAgreed ? (
           <ActionCard title={dealLockedAt ? '✓ Both parties agreed — deal locked!' : '✓ Your agreement recorded — waiting for seller'} icon={CheckCircle2} variant="success">
-            <p className="text-sm text-muted-foreground">
-              {dealLockedAt ? 'Both parties agreed. You can now fund the escrow to start the deal.'
-                : 'Your agreement is recorded. The deal will advance once the seller also agrees.'}
-            </p>
+            {dealLockedAt ? (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Both parties agreed. The deal is locked and advancing to verification.</p>
+                <div className="rounded-lg bg-muted/40 border px-3 py-2 space-y-1">
+                  <p className="text-xs font-semibold">What happens next:</p>
+                  <p className="text-xs text-muted-foreground">1. The seller will share a one-time verification code with you.</p>
+                  <p className="text-xs text-muted-foreground">2. You share your code back with the seller.</p>
+                  <p className="text-xs text-muted-foreground">3. You will then be asked to send funds to the escrow address.</p>
+                </div>
+                <p className="text-xs text-muted-foreground">If the page doesn&apos;t update in a few seconds, refresh once.</p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Your agreement is recorded. The page will update automatically once the seller also agrees.
+              </p>
+            )}
           </ActionCard>
         ) : (
           <ActionCard title="Review & agree to terms" icon={CheckCircle2}

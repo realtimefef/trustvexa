@@ -62,6 +62,7 @@ function toSummary(deal, role) {
         updatedAt: toIso(deal.updated_at) ?? '',
         nextActions: nextActionsFor(role, deal.status),
         waitingOnYou: isWaitingOn(role, deal.status),
+        itemDescription: deal.item_description,
     };
 }
 /** Buyer/seller/middleman dashboard: every deal the user is a party to. */

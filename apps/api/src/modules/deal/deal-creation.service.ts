@@ -209,6 +209,7 @@ export async function createDeal(args: CreateDealArgs): Promise<CreatedDealResul
       templateId: input.templateId ?? null,
       productId: input.productId ?? null,
       preferredMiddlemanId: input.preferredMiddlemanId ?? null,
+      itemDescription: input.itemDescription ?? null,
     });
 
     if (input.terms !== undefined && input.terms.trim() !== '') {

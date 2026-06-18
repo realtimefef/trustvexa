@@ -44,6 +44,7 @@ export interface DealSummary {
   nextActions: readonly NextAction[];
   waitingOnYou: boolean;
   tags?: string[];
+  itemDescription: string | null;
 }
 
 export interface DealDetail extends DealSummary {
@@ -115,6 +116,7 @@ function toSummary(deal: DealRow, role: DealRole): DealSummary {
     updatedAt: toIso(deal.updated_at) ?? '',
     nextActions: nextActionsFor(role, deal.status),
     waitingOnYou: isWaitingOn(role, deal.status),
+    itemDescription: deal.item_description,
   };
 }
 

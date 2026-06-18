@@ -47,6 +47,13 @@ export async function updateTags(req, res) {
     await service.updateDealTags(userId, dealId, body.tags);
     res.status(200).json({ success: true });
 }
+/** Seller edits deal parameters before both parties lock. */
+export async function updateDeal(req, res) {
+    const sellerId = requireUserId(req);
+    const dealId = req.params.id;
+    const result = await service.updateDeal(sellerId, dealId, req.body);
+    res.status(200).json(result);
+}
 /** Mark deal done — closes all chat rooms for the deal. */
 export async function markDealDone(req, res) {
     const userId = requireUserId(req);

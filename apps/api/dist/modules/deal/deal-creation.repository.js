@@ -17,8 +17,9 @@ import { query } from '@trustvexa/shared';
 export async function insertDeal(client, params) {
     const res = await client.query(`INSERT INTO deals
        (seller_id, buyer_id, coin, network, network_mode, is_practice,
-        deal_amount, fee_payer, fee_split_buyer_bps, price_tolerance_pct, template_id, product_id, preferred_middleman_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        deal_amount, fee_payer, fee_split_buyer_bps, price_tolerance_pct,
+        template_id, product_id, preferred_middleman_id, item_description)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING id, status, created_at`, [
         params.sellerId,
         params.buyerId ?? null,
@@ -33,8 +34,8 @@ export async function insertDeal(client, params) {
         params.templateId,
         params.productId,
         params.preferredMiddlemanId ?? null,
+        params.itemDescription ?? null,
     ]);
-    // A single-row INSERT ... RETURNING always yields exactly one row.
     return res.rows[0];
 }
 /** Insert a versioned terms snapshot for a deal. */

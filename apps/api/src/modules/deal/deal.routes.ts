@@ -29,6 +29,7 @@ import {
   draftIdParamSchema,
   middlemanUpdateDealSchema,
   saveDraftSchema,
+  updateDealSchema,
   updateTagsSchema,
 } from './deal.schemas.js';
 import * as inviteController from './invite.controller.js';
@@ -83,6 +84,16 @@ export function dealRouter(): Router {
       enforceIdempotency: true,
     }),
     asyncHandler(controller.duplicateDeal),
+  );
+
+  // Seller edits deal parameters before locking (amount, feePayer, coin, network, terms, etc.)
+  router.patch(
+    '/:id',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema, body: updateDealSchema },
+      roles: [...ACCOUNT_ROLES],
+    }),
+    asyncHandler(controller.updateDeal),
   );
 
   // --- Invites (task 4.3) ------------------------------------------------

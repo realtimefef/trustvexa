@@ -25,6 +25,7 @@ export interface DealSummary {
     nextActions: readonly NextAction[];
     waitingOnYou: boolean;
     tags?: string[];
+    itemDescription: string | null;
 }
 export interface DealDetail extends DealSummary {
     amountSmallestUnit: string | null;
