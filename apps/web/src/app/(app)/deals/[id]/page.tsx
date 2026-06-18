@@ -34,7 +34,12 @@ import { WalletInput } from '@/components/wallet-input';
 import { apiRequest, getAccessToken, newIdempotencyKey, ApiError } from '@/lib/api/client';
 import type { DealDetail as BaseDealDetail } from '@/lib/api/types';
 import { useAuth } from '@/lib/auth/auth-context';
-import { formatUsdCents } from '@/lib/fees';
+import {
+  estimateFees,
+  estimateGasCents,
+  formatUsdCents,
+  type FeePayer,
+} from '@/lib/fees';
 
 /** Extended deal detail — includes fields the API returns but the base type omits */
 type DealDetail = BaseDealDetail & {
@@ -267,32 +272,73 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
   const [open, setOpen] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
 
+  // Calculate fee estimate client-side for when API values are null (pre-funding)
+  const dealCents = Number(deal.dealAmountCents ?? '0');
+  const feePayerKey = (deal.feePayer ?? 'buyer') as FeePayer;
+  const gasCents = estimateGasCents(deal.network);
+  const estimate = dealCents >= 40000 ? estimateFees(dealCents, feePayerKey, 5000, gasCents) : null;
+
+  const buyerSendsDisplay = deal.buyerTotalCents
+    ? cents(deal.buyerTotalCents)
+    : estimate ? `~${formatUsdCents(estimate.buyerSendsCents)}` : '—';
+  const sellerGetsDisplay = deal.sellerPayoutCents
+    ? cents(deal.sellerPayoutCents)
+    : estimate ? `~${formatUsdCents(estimate.sellerReceivesCents)}` : '—';
+  const platformFeeDisplay = deal.platformFeeCents
+    ? cents(deal.platformFeeCents)
+    : estimate ? `~${formatUsdCents(estimate.platformFeeCents)}` : '—';
+  const isEstimate = !deal.buyerTotalCents && !!estimate;
+
   return (
     <div className="rounded-xl border">
-      {/* Always-visible summary row */}
-      <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm border-b">
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Deal amount</span>
-          <span className="font-semibold">{cents(deal.dealAmountCents)}</span>
+      {/* Always-visible fee summary with real or estimated values */}
+      <div className="px-4 py-3 border-b space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Fee summary
+          {isEstimate && <span className="ml-1.5 font-normal text-muted-foreground/60 normal-case">(~ estimated · locked at funding)</span>}
+        </p>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Deal amount</span>
+            <span className="font-semibold">{cents(deal.dealAmountCents)}</span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Fee payer</span>
+            <span className="capitalize font-medium">{deal.feePayer ?? '—'}</span>
+          </div>
+          <div className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Platform fee</span>
+            <span>{platformFeeDisplay}</span>
+          </div>
+          {estimate && (
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">Network gas</span>
+              <span>~{formatUsdCents(gasCents)}</span>
+            </div>
+          )}
+          <div className="col-span-2 border-t border-border/40 pt-1.5 grid grid-cols-2 gap-x-6">
+            <div className="flex justify-between gap-2">
+              <span className="text-blue-600 dark:text-blue-400 font-semibold">💳 Buyer sends</span>
+              <span className="font-bold text-blue-600 dark:text-blue-400">{buyerSendsDisplay}</span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-emerald-600 font-semibold">💰 Seller receives</span>
+              <span className="font-bold text-emerald-600">{sellerGetsDisplay}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Buyer sends</span>
-          <span className="font-semibold text-blue-600 dark:text-blue-400">{cents(deal.buyerTotalCents)}</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Platform fee</span>
-          <span>{cents(deal.platformFeeCents)}</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted-foreground">Seller receives</span>
-          <span className="font-semibold text-emerald-600">{cents(deal.sellerPayoutCents)}</span>
-        </div>
+        {isEstimate && (
+          <p className="text-[10px] text-muted-foreground">
+            ~ Estimates based on current fee rates. Exact amounts locked when buyer funds the escrow.
+            {' '}<a href="/calculator" className="text-primary underline">Open fee calculator →</a>
+          </p>
+        )}
       </div>
 
-      {/* Expand for more */}
+      {/* Expand for full details */}
       <button type="button" onClick={() => setOpen(v => !v)}
         className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-muted/30 transition-colors">
-        <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /> Full deal details & documents</span>
+        <span className="flex items-center gap-2"><FileText className="h-4 w-4 text-muted-foreground" /> Full deal details &amp; documents</span>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
 
@@ -836,7 +882,15 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               <div className="flex justify-between"><span className="text-muted-foreground">Item</span><span className="font-medium">{deal.itemDescription ?? '—'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Seller receives</span><span className="font-semibold text-emerald-600">{cents(deal.sellerPayoutCents)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">💰 You receive (est.)</span>
+                <span className="font-semibold text-emerald-600">
+                  {deal.sellerPayoutCents ? cents(deal.sellerPayoutCents) : (() => {
+                    const d = Number(deal.dealAmountCents ?? 0);
+                    const e = d >= 40000 ? estimateFees(d, (deal.feePayer ?? 'buyer') as FeePayer, 5000, estimateGasCents(deal.network)) : null;
+                    return e ? `~${formatUsdCents(e.sellerReceivesCents)}` : '—';
+                  })()}
+                </span>
+              </div>
               <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
             </div>
             {agreeErr && <p className="text-xs text-destructive mb-2">⚠️ {agreeErr}</p>}
@@ -1028,7 +1082,15 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <div className="flex justify-between"><span className="text-muted-foreground">Item</span><span className="font-medium">{deal.itemDescription ?? '—'}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
-              <div className="flex justify-between text-primary font-semibold"><span>You will send</span><span>{cents(deal.buyerTotalCents)}</span></div>
+              <div className="flex justify-between text-primary font-semibold"><span>💳 You will send</span>
+                <span>
+                  {deal.buyerTotalCents ? cents(deal.buyerTotalCents) : (() => {
+                    const d = Number(deal.dealAmountCents ?? 0);
+                    const e = d >= 40000 ? estimateFees(d, (deal.feePayer ?? 'buyer') as FeePayer, 5000, estimateGasCents(deal.network)) : null;
+                    return e ? `~${formatUsdCents(e.buyerSendsCents)}` : '—';
+                  })()}
+                </span>
+              </div>
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">Includes platform fee</span><span className="text-muted-foreground">{cents(deal.platformFeeCents)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
             </div>
@@ -1081,7 +1143,20 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {(deal.status === 'Confirmed' || deal.status === 'Amended') && (
-        <ActionCard title="Fund the escrow" icon={Wallet} description={`Send exactly the required amount of ${deal.coin} on ${deal.network} to the address below.`}>
+        <ActionCard title="Fund the escrow — send exactly this amount" icon={Wallet}
+          description={`Send the exact ${deal.coin} amount below. Wrong amount or wrong network = permanent loss.`}>
+          {/* Exact amount box — prominent */}
+          <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-4 py-3 mb-4 text-center">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Send exactly</p>
+            <p className="font-display text-2xl font-bold text-primary">
+              {deal.amountCoin ? `${deal.amountCoin} ${deal.coin}` : (() => {
+                const d = Number(deal.dealAmountCents ?? 0);
+                const e = d >= 40000 ? estimateFees(d, (deal.feePayer ?? 'buyer') as FeePayer, 5000, estimateGasCents(deal.network)) : null;
+                return e ? `~${formatUsdCents(e.buyerSendsCents)} USD worth of ${deal.coin}` : `${deal.coin} amount TBD`;
+              })()}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">on <strong>{deal.network}</strong> network</p>
+          </div>
           {escrow ? (
             <div className="space-y-4">
               <WalletInput address={escrow.address} coin={escrow.coin} network={escrow.network} explorerUrl={escrow.explorerAddressUrl || undefined} {...(deal.amountCoin ? { amountText: `${deal.amountCoin} ${deal.coin}` } : {})} />
