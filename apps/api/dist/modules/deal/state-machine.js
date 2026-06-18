@@ -64,7 +64,7 @@ export const DEAL_EVENTS = [
  * (state, event) pair absent here is rejected and leaves the deal unchanged.
  */
 export const TRANSITIONS = {
-    Created: { SecureInviteSent: 'Invited', EmergencyPause: 'Paused' },
+    Created: { SecureInviteSent: 'Invited', PartiesAgreed: 'Agreed', EmergencyPause: 'Paused' },
     Invited: { PartiesAgreed: 'Agreed', EmergencyPause: 'Paused' },
     Agreed: { CodeVerified: 'Verified' },
     Verified: { TermsAccepted: 'Confirmed', FundingWindowExpired: 'Expired' },

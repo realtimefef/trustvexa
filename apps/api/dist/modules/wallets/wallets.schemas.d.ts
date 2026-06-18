@@ -49,14 +49,14 @@ export declare const changeRequestSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     coin: "USDT" | "SOL" | "BNB" | "ETH" | "TRX";
     network: "BNB" | "ETH" | "TRON" | "SOLANA";
-    walletType: "payout" | "refund";
+    walletType: "refund" | "payout";
     newAddress: string;
     dealId?: string | null | undefined;
     oldAddress?: string | null | undefined;
 }, {
     coin: "USDT" | "SOL" | "BNB" | "ETH" | "TRX";
     network: "BNB" | "ETH" | "TRON" | "SOLANA";
-    walletType: "payout" | "refund";
+    walletType: "refund" | "payout";
     newAddress: string;
     dealId?: string | null | undefined;
     oldAddress?: string | null | undefined;

@@ -297,12 +297,12 @@ export declare const middlemanUpdateDealSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     terms?: string | null | undefined;
     dealAmountCents?: number | null | undefined;
-    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
+    statusOverride?: "Cancelled" | "Released" | "Disputed" | "Refunded" | null | undefined;
     note?: string | null | undefined;
 }, {
     terms?: string | null | undefined;
     dealAmountCents?: number | null | undefined;
-    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
+    statusOverride?: "Cancelled" | "Released" | "Disputed" | "Refunded" | null | undefined;
     note?: string | null | undefined;
 }>;
 export type MiddlemanUpdateDealInput = z.infer<typeof middlemanUpdateDealSchema>;

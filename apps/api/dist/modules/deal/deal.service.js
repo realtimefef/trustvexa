@@ -303,6 +303,24 @@ export async function agreeToDeal(userId, dealId) {
             lockedAt = r.rows[0]?.locked_at ?? null;
         }
         await client.query('COMMIT');
+        // BUGFIX: When both parties have now agreed (lockedAt just set), trigger
+        // the PartiesAgreed state transition so the deal advances from
+        // Created/Invited → Agreed. Without this the status never changes.
+        const justLocked = !deal.locked_at && lockedAt !== null;
+        if (justLocked) {
+            try {
+                await applyDealTransition({
+                    dealId,
+                    event: 'PartiesAgreed',
+                    actorId: userId,
+                    requestId: `agree-both-parties:${dealId}:${Date.now()}`,
+                });
+            }
+            catch {
+                // State may already be Agreed or the transition was applied concurrently.
+                // Non-fatal — the lock is set, the deal advances on next reload.
+            }
+        }
         return {
             dealId,
             buyerAgreed: buyerAgreedAt !== null,

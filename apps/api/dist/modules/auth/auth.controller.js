@@ -24,7 +24,7 @@ function setRefreshCookie(res, token, expiresAt) {
     res.append('Set-Cookie', serializeCookie(cfg.refreshCookieName, token, {
         httpOnly: true,
         secure: cfg.cookieSecure,
-        sameSite: 'strict',
+        sameSite: cfg.cookieSecure ? 'none' : 'lax',
         path: REFRESH_COOKIE_PATH,
         expires: expiresAt,
     }));
@@ -34,7 +34,7 @@ function clearRefreshCookie(res) {
     res.append('Set-Cookie', serializeCookie(cfg.refreshCookieName, '', {
         httpOnly: true,
         secure: cfg.cookieSecure,
-        sameSite: 'strict',
+        sameSite: cfg.cookieSecure ? 'none' : 'lax',
         path: REFRESH_COOKIE_PATH,
         maxAge: 0,
     }));
