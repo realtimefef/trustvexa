@@ -11,7 +11,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { EyeOff, Eye, ShieldCheck, Star, Search, Gavel } from 'lucide-react';
+import { EyeOff, Eye, ShieldCheck, Star, Search, Gavel, PenLine, CheckCircle2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,12 +23,94 @@ import { DashboardPageHeader } from '@/components/dashboard-page-header';
 import { ApiError, apiRequest, newIdempotencyKey } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/auth-context';
 import type {
+  DashboardResponse,
   ModerateReviewResponse,
   ModerationReview,
   ReviewModerationResponse,
   TrustStatusResponse,
   UserReviewsResponse,
 } from '@/lib/api/types';
+
+
+// ── Write a review inline form ──────────────────────────────────────────────
+function WriteReviewCard({ dealId, counterpartyLabel, onDone }: {
+  dealId: string;
+  counterpartyLabel: string;
+  onDone: () => void;
+}) {
+  const [rating, setRating] = React.useState(0);
+  const [hover, setHover] = React.useState(0);
+  const [comment, setComment] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const submit = async () => {
+    if (!rating) { setError('Please select a star rating first.'); return; }
+    setSubmitting(true); setError(null);
+    try {
+      await apiRequest('/reviews', {
+        method: 'POST',
+        body: { dealId, rating, comment: comment.trim() || undefined },
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setDone(true);
+      setTimeout(onDone, 800);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to submit.');
+    } finally { setSubmitting(false); }
+  };
+
+  if (done) {
+    return (
+      <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
+        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+        <p className="text-sm text-emerald-600 font-medium">Review submitted! Thank you.</p>
+      </div>
+    );
+  }
+
+  return (
+    <Card className="rounded-2xl border-primary/30 shadow-soft">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <PenLine className="h-4 w-4 text-primary" /> Write a review
+        </CardTitle>
+        <CardDescription>{counterpartyLabel}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1.5">
+          <Label className="text-sm font-medium">Your rating <span className="text-destructive">*</span></Label>
+          <div className="flex items-center gap-1">
+            {[1,2,3,4,5].map(n => (
+              <button key={n} type="button"
+                className="transition-transform hover:scale-110 focus:outline-none"
+                onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => setRating(n)}
+                aria-label={`${n} star`}>
+                <Star className={`h-7 w-7 transition-colors ${n <= (hover || rating) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30'}`} />
+              </button>
+            ))}
+            {rating > 0 && <span className="ml-2 text-sm text-muted-foreground">{['','Terrible','Poor','Okay','Good','Excellent'][rating]}</span>}
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="rc" className="text-sm font-medium">Comment <span className="text-muted-foreground text-xs">(optional)</span></Label>
+          <textarea id="rc" rows={3} value={comment} onChange={e => setComment(e.target.value)}
+            className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Describe your experience trading with this person…" maxLength={500} />
+          <p className="text-xs text-muted-foreground text-right">{comment.length}/500</p>
+        </div>
+        {error && <p className="text-xs text-destructive">⚠ {error}</p>}
+        <Button onClick={submit} disabled={submitting || !rating} className="w-full">
+          {submitting ? 'Submitting…' : 'Submit review'}
+        </Button>
+        <p className="text-xs text-center text-muted-foreground">
+          Reviews are public and permanent. Your identity is kept private.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -57,11 +139,21 @@ export default function ReviewsPage() {
   const router = useRouter();
   const { status, user } = useAuth();
   const queryClient = useQueryClient();
-  // FE-CRIT-2 FIX: PublicUser has `role`, not `account_type`. The previous code
-  // also checked user?.account_type which is always undefined — dead code.
   const isMiddleman = user?.role === 'middleman';
 
   const [lookupId, setLookupId] = React.useState('');
+  const [expandedWriteId, setExpandedWriteId] = React.useState<string | null>(null);
+
+  const completedDeals = useQuery({
+    queryKey: ['completed-deals-for-review'],
+    enabled: status === 'authenticated',
+    queryFn: async () => {
+      const res = await apiRequest<DashboardResponse>('/dashboard');
+      return res.deals.filter((d: DashboardResponse['deals'][number]) =>
+        ['Released', 'PartiallySettled'].includes(d.status)
+      );
+    },
+  });
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -144,6 +236,58 @@ export default function ReviewsPage() {
         title="Reviews & ratings"
         description="Your reputation is built from real, completed deals. Reviews are public; only your username is ever shown."
       />
+
+      {/* ── WRITE A REVIEW ─────────────────────────────────────────── */}
+      <Card className="rounded-2xl shadow-soft">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PenLine className="h-4 w-4 text-primary" aria-hidden="true" /> Write a review for a completed deal
+          </CardTitle>
+          <CardDescription>
+            Rate your counterparty after any settled deal. Both buyer and seller can review each other.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {completedDeals.isLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : (completedDeals.data?.length ?? 0) === 0 ? (
+            <div className="rounded-xl bg-muted/40 border border-dashed px-4 py-5 text-center">
+              <p className="text-sm text-muted-foreground">No completed deals to review yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Once a deal settles you can leave a rating here.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {completedDeals.data!.map((deal: DashboardResponse['deals'][number]) => (
+                <div key={deal.id} className="space-y-2">
+                  <button type="button"
+                    onClick={() => setExpandedWriteId(expandedWriteId === deal.id ? null : deal.id)}
+                    className={`w-full text-left rounded-xl border px-4 py-3 hover:bg-muted/40 transition-colors ${expandedWriteId === deal.id ? 'border-primary bg-primary/5' : ''}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Deal <span className="font-mono">{deal.id.slice(0,8)}</span></p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{deal.coin} · {deal.network} · {deal.status} · As {deal.role}</p>
+                      </div>
+                      <span className="text-xs font-medium text-primary shrink-0">
+                        {expandedWriteId === deal.id ? 'Cancel' : '+ Write review'}
+                      </span>
+                    </div>
+                  </button>
+                  {expandedWriteId === deal.id && (
+                    <WriteReviewCard
+                      dealId={deal.id}
+                      counterpartyLabel={`Your role: ${deal.role} · ${deal.coin} deal settled`}
+                      onDone={() => {
+                        setExpandedWriteId(null);
+                        void queryClient.invalidateQueries({ queryKey: ['my-reviews', user?.id] });
+                      }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Your reputation */}
       <Card className="rounded-2xl shadow-soft">
