@@ -271,15 +271,44 @@ export async function agreeToDeal(userId, dealId) {
             throw new AppError('deal_not_found', 'Deal was not found.', 404);
         }
         // Once locked the deal is immutable — return current state idempotently.
+        // STATUS REPAIR: if the deal was locked before the inline transition was
+        // deployed, status may still be 'Created'/'Invited'. Fix it now so the
+        // caller immediately sees 'Agreed' without needing a separate API call.
         if (deal.locked_at) {
+            let repairedStatus = deal.status;
+            if ((deal.status === 'Created' || deal.status === 'Invited') &&
+                deal.buyer_agreed_at !== null &&
+                deal.seller_agreed_at !== null) {
+                const prevHash = await loadLastEntryHash(client, dealId);
+                const repairAt = new Date().toISOString();
+                const repairReqId = `agree-repair:${dealId}:${Date.now()}`;
+                const repairEntry = appendEntry({
+                    dealId,
+                    fromState: deal.status,
+                    toState: 'Agreed',
+                    actorId: userId,
+                    requestId: repairReqId,
+                    createdAt: repairAt,
+                }, prevHash);
+                // UPDATE only if status is still in the stale set (guard against races)
+                const repairRes = await client.query(`UPDATE deals SET status = 'Agreed', version_no = version_no + 1, updated_at = now()
+            WHERE id = $1 AND status IN ('Created','Invited')
+            RETURNING id`, [dealId]);
+                if (repairRes.rowCount && repairRes.rowCount > 0) {
+                    await insertEscrowLog(client, repairEntry, 'PartiesAgreed', 'user', userId);
+                    repairedStatus = 'Agreed';
+                }
+            }
             await client.query('COMMIT');
             return {
                 dealId,
                 buyerAgreed: deal.buyer_agreed_at !== null,
                 sellerAgreed: deal.seller_agreed_at !== null,
                 locked: true,
-                lockedAt: typeof deal.locked_at === 'string' ? deal.locked_at : new Date(deal.locked_at).toISOString(),
-                status: deal.status,
+                lockedAt: typeof deal.locked_at === 'string'
+                    ? deal.locked_at
+                    : new Date(deal.locked_at).toISOString(),
+                status: repairedStatus,
             };
         }
         const isBuyer = deal.buyer_id === userId;

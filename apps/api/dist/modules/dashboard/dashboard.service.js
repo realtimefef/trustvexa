@@ -125,6 +125,7 @@ export async function getDealDetail(userId, dealId) {
         tags,
         buyerId: row.buyer_id,
         sellerId: row.seller_id,
+        middlemanId: row.middleman_id,
         // Agreement progress — exposed so the UI can show "you already agreed"
         // even when the other party hasn't agreed yet (status stays 'Created').
         lockedAt: row.locked_at ? new Date(row.locked_at).toISOString() : null,

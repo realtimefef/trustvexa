@@ -43,13 +43,8 @@ import {
 
 /** Extended deal detail — includes fields the API returns but the base type omits */
 type DealDetail = BaseDealDetail & {
-  middlemanId?: string | null;
   /** terms are returned by the API from the latest deal_terms snapshot */
   terms?: string | null;
-  // Agreement status fields (from getDealDetail response)
-  lockedAt?: string | null;
-  buyerAgreedAt?: string | null;
-  sellerAgreedAt?: string | null;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -832,7 +827,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
   const counterparty = deal.buyerId ? 'Buyer connected' : 'Waiting for buyer';
-  const mmName = deal.middlemanId ? `⚖️ Middleman assigned` : 'No middleman yet';
+  const mmName = deal.middlemanId ? `⚖️ Middleman: ${deal.middlemanId.slice(0,8)}` : 'No middleman yet';
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -860,8 +855,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
       )}
 
-      {/* Current action — SELLER */}
-      {deal.status === 'Created' || deal.status === 'Invited' ? (
+      {/* Current action — SELLER
+          Rule: when deal is locked (bothAgreed), never show the pre-lock "waiting/invite" card;
+          jump straight to the Agreed-state card (verification code) even if the DB status
+          hasn't been updated yet (data-repair migration + idempotent path will fix it). */}
+      {(deal.status === 'Created' || deal.status === 'Invited') && !bothAgreed ? (
         <ActionCard title={deal.buyerId ? 'Waiting for buyer to join' : 'Invite your buyer'} icon={UserPlus}>
           {!deal.buyerId ? (
             <div className="space-y-3">
@@ -883,7 +881,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm text-muted-foreground">Buyer has joined. Waiting for both parties to agree to terms.</p>
           )}
         </ActionCard>
-      ) : deal.status === 'Agreed' ? (
+      ) : deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
         <ActionCard title="Step 1: Get your verification code" icon={KeyRound} description="Get a one-time code and share it with the buyer to advance the deal.">
           <div className="space-y-3">
             {codeErr && <p className="text-xs text-destructive">{codeErr}</p>}
@@ -1029,8 +1027,16 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
-      {/* Request middleman */}
-      {!deal.middlemanId && !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
+      {/* Middleman status */}
+      {deal.middlemanId ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 flex items-center gap-3">
+          <Shield className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">⚖️ Middleman assigned</p>
+            <p className="text-xs text-muted-foreground font-mono">ID: {deal.middlemanId.slice(0,8)}</p>
+          </div>
+        </div>
+      ) : !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
         <div className="rounded-xl border px-4 py-3 space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -1254,9 +1260,10 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         )
       )}
 
-      {deal.status === 'Agreed' && (
-        <ActionCard title="Get verification code from seller" icon={KeyRound} description="Ask the seller for their verification code, then come back to enter it here.">
-          <p className="text-sm text-muted-foreground">The seller will share a one-time code with you. This confirms both parties are legitimate.</p>
+      {/* Show "Get verification code" instruction when Agreed, OR when locked but status not yet updated */}
+      {(deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && dealLockedAt)) && (
+        <ActionCard title="Next: get verification code from seller" icon={KeyRound} description="Ask the seller for their verification code, then come back to enter it here.">
+          <p className="text-sm text-muted-foreground">The seller will share a one-time code with you. This confirms both parties are legitimate. Once both codes are exchanged, you will be asked to fund the escrow.</p>
         </ActionCard>
       )}
 
@@ -1365,8 +1372,16 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         <BuyerDetailsForm dealId={dealId} existing={partyDetails?.buyerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
-      {/* Request middleman */}
-      {!deal.middlemanId && !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
+      {/* Middleman status */}
+      {deal.middlemanId ? (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 flex items-center gap-3">
+          <Shield className="h-4 w-4 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">⚖️ Middleman assigned</p>
+            <p className="text-xs text-muted-foreground font-mono">ID: {deal.middlemanId.slice(0,8)}</p>
+          </div>
+        </div>
+      ) : !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
         <div className="rounded-xl border px-4 py-3 space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div>

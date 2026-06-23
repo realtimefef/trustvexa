@@ -112,6 +112,9 @@ export interface DealDetail extends DealSummary {
   /** Set when the deal has a confirmed buyer already (e.g. created from a connection). */
   buyerId?: string | null;
   sellerId?: string | null;
+  /** The assigned middleman's user ID — null when no middleman has been added yet.
+   * Used by the UI to hide the "Add middleman" button when one is already assigned. */
+  middlemanId?: string | null;
   /** Agreement progress — used to show "you already agreed" on page reload
    * even before the other party agrees (status stays Created/Invited). */
   lockedAt?: string | null;

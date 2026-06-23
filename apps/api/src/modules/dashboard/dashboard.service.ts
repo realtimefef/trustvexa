@@ -62,6 +62,9 @@ export interface DealDetail extends DealSummary {
   /** Party IDs — lets the UI skip the invite flow when a deal was created from a connection. */
   buyerId: string | null;
   sellerId: string | null;
+  /** The assigned middleman's ID — null when no middleman has been added yet.
+   * Used by the UI to hide the "Add middleman" button when one is already assigned. */
+  middlemanId: string | null;
   /** Agreement progress — exposed so the UI can show "you already agreed"
    * even when the other party hasn't agreed yet (status stays 'Created'). */
   lockedAt: string | null;
@@ -190,6 +193,7 @@ export async function getDealDetail(userId: string, dealId: string): Promise<Dea
     tags,
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
+    middlemanId: row.middleman_id,
     // Agreement progress — exposed so the UI can show "you already agreed"
     // even when the other party hasn't agreed yet (status stays 'Created').
     lockedAt: row.locked_at ? new Date(row.locked_at as string).toISOString() : null,
