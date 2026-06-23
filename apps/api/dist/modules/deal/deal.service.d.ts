@@ -109,6 +109,17 @@ export interface MiddlemanUpdateDealResult {
  */
 export declare function middlemanUpdateDeal(middlemanId: string, dealId: string, input: MiddlemanUpdateDealInput): Promise<MiddlemanUpdateDealResult>;
 /**
+ * Middleman marks a deal complete — drives it through the remaining state
+ * transitions to Released so both parties see the "Complete" stage. Used for
+ * the simplified middleman-driven completion (Delivered → Released). Only the
+ * deal's assigned middleman may call this. The real on-chain payout is handled
+ * separately by the payout service; this advances the deal lifecycle status.
+ */
+export declare function markDealComplete(middlemanId: string, dealId: string, requestId: string): Promise<{
+    dealId: string;
+    status: string;
+}>;
+/**
  * Manually advance a deal from Confirmed → Funded. Used when the buyer has
  * sent payment and wants to proceed without waiting for the automatic
  * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock

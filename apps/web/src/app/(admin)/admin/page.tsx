@@ -166,6 +166,10 @@ function DealActionsPanel({ dealId, status, qc }: { dealId: string; status: stri
 
   const verifyHandover = () => doAction('verify', () => apiRequest(`/deals/${dealId}/handover/verify`, { method: 'POST', idempotencyKey: newIdempotencyKey() }));
   const deliverToBuyer = () => doAction('deliver', () => apiRequest(`/deals/${dealId}/deliver`, { method: 'POST', idempotencyKey: newIdempotencyKey() }));
+  const markComplete = () => {
+    if (!confirm('Mark this deal complete and release the payout to the seller? This cannot be undone.')) return;
+    void doAction('complete', () => apiRequest(`/deals/${dealId}/complete`, { method: 'POST', idempotencyKey: newIdempotencyKey() }));
+  };
   const cancelDeal = () => {
     if (!confirm('Cancel this deal? This is irreversible.')) return;
     void doAction('cancel', () => apiRequest(`/deals/${dealId}/middleman-update`, { method: 'PATCH', body: { statusOverride: 'Cancelled', note: 'Middleman cancelled.' }, idempotencyKey: newIdempotencyKey() }));
@@ -194,6 +198,11 @@ function DealActionsPanel({ dealId, status, qc }: { dealId: string; status: stri
         {status === 'MiddlemanVerified' && (
           <Button size="sm" disabled={!!busy} onClick={deliverToBuyer} className="bg-emerald-600 hover:bg-emerald-700 text-white">
             <Send className="h-3.5 w-3.5 mr-1.5" />{busy === 'deliver' ? 'Delivering…' : 'Deliver to Buyer'}
+          </Button>
+        )}
+        {(status === 'Delivered' || status === 'Approved' || status === 'PayoutQueued') && (
+          <Button size="sm" disabled={!!busy} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />{busy === 'complete' ? 'Completing…' : 'Mark Complete & Release'}
           </Button>
         )}
         {status === 'Disputed' && (

@@ -98,6 +98,15 @@ export async function agreeToDeal(req: Request, res: Response): Promise<void> {
   res.status(200).json(result);
 }
 
+/** Middleman marks the deal complete — chains transitions to Released. */
+export async function markDealComplete(req: Request, res: Response): Promise<void> {
+  const middlemanId = requireUserId(req);
+  const dealId = req.params.id!;
+  const requestId = req.header('Idempotency-Key') ?? `${dealId}:complete:${middlemanId}`;
+  const result = await service.markDealComplete(middlemanId, dealId, requestId);
+  res.status(200).json(result);
+}
+
 /** Buyer/middleman manually confirms funding — transitions Confirmed → Funded. */
 export async function confirmFunding(req: Request, res: Response): Promise<void> {
   const userId = requireUserId(req);

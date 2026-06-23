@@ -884,6 +884,72 @@ export async function middlemanUpdateDeal(
 }
 
 /**
+ * Middleman marks a deal complete — drives it through the remaining state
+ * transitions to Released so both parties see the "Complete" stage. Used for
+ * the simplified middleman-driven completion (Delivered → Released). Only the
+ * deal's assigned middleman may call this. The real on-chain payout is handled
+ * separately by the payout service; this advances the deal lifecycle status.
+ */
+export async function markDealComplete(
+  middlemanId: string,
+  dealId: string,
+  requestId: string,
+): Promise<{ dealId: string; status: string }> {
+  const client = await acquireClient();
+  let status: string;
+  try {
+    await client.query('BEGIN');
+    const dealRes = await client.query<{ middleman_id: string | null; status: string }>(
+      `SELECT middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`,
+      [dealId],
+    );
+    const deal = dealRes.rows[0];
+    if (!deal) throw new AppError('deal_not_found', 'Deal was not found.', 404);
+    if (deal.middleman_id !== middlemanId) {
+      throw new AppError('forbidden', 'Only the assigned middleman can complete this deal.', 403);
+    }
+    status = deal.status;
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  if (status === 'Released') {
+    return { dealId, status: 'Released' };
+  }
+
+  // Chain the lifecycle events from the current state to Released.
+  // Each step is guarded by the state machine; we stop if a step is invalid.
+  const chain: Array<{ from: string[]; event: DealEvent }> = [
+    { from: ['Delivered'], event: 'BuyerApproved' },
+    { from: ['Approved'], event: 'PayoutEnteredReview' },
+    { from: ['PayoutQueued'], event: 'PayoutReleased' },
+  ];
+
+  let current = status;
+  for (const step of chain) {
+    if (!step.from.includes(current)) continue;
+    try {
+      const r = await applyDealTransition({
+        dealId,
+        event: step.event,
+        actorId: middlemanId,
+        requestId: `${requestId}:${step.event}`,
+      });
+      current = r.to;
+    } catch {
+      // Stop on the first invalid transition; return whatever state we reached.
+      break;
+    }
+  }
+
+  return { dealId, status: current };
+}
+
+/**
  * Manually advance a deal from Confirmed → Funded. Used when the buyer has
  * sent payment and wants to proceed without waiting for the automatic
  * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock

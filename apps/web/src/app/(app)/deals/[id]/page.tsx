@@ -1564,6 +1564,18 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
   const [delivering, setDelivering] = React.useState(false);
   const [deliverErr, setDeliverErr] = React.useState<string | null>(null);
   const [verifyingParty, setVerifyingParty] = React.useState<'seller' | 'buyer' | null>(null);
+  const [completing, setCompleting] = React.useState(false);
+  const [completeErr, setCompleteErr] = React.useState<string | null>(null);
+
+  const markComplete = async () => {
+    if (!window.confirm('Mark this deal complete and release the payout to the seller? This cannot be undone.')) return;
+    setCompleting(true); setCompleteErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/complete`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) { setCompleteErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to complete deal.'); }
+    finally { setCompleting(false); }
+  };
 
   const verifyHandover = async () => {
     setVerifying(true); setVerifyErr(null);
@@ -1647,6 +1659,16 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         <ActionCard title="Confirm delivery to buyer" icon={CheckCircle2} description="After confirming, the deal moves to Delivered and the buyer's inspection window starts." variant="warning">
           {deliverErr && <p className="text-xs text-destructive mb-2">{deliverErr}</p>}
           <Button onClick={deliverToBuyer} disabled={delivering} className="w-full">{delivering ? 'Confirming…' : 'Confirm delivery to buyer ✓'}</Button>
+        </ActionCard>
+      )}
+
+      {(deal.status === 'Delivered' || deal.status === 'Approved') && (
+        <ActionCard title="Complete the deal" icon={CheckCircle2} description="Confirm the buyer has received everything as agreed, then mark the deal complete and release the payout to the seller." variant="warning">
+          <NoRollbackBanner text="Marking complete releases the seller's payout. This cannot be undone — confirm both parties are satisfied first." />
+          {completeErr && <p className="text-xs text-destructive mt-2">⚠️ {completeErr}</p>}
+          <Button onClick={markComplete} disabled={completing} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <CheckCircle2 className="h-4 w-4 mr-1.5" />{completing ? 'Completing…' : 'Mark complete & release payout ✓'}
+          </Button>
         </ActionCard>
       )}
 

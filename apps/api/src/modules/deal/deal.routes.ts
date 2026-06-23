@@ -273,6 +273,17 @@ export function dealRouter(): Router {
     asyncHandler(controller.approveDeal),
   );
 
+  // Middleman marks the deal complete — chains Delivered → Released.
+  router.post(
+    '/:id/complete',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(controller.markDealComplete),
+  );
+
   // Buyer/middleman manually confirms funding — Confirmed → Funded.
   router.post(
     '/:id/confirm-funding',

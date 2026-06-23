@@ -20,6 +20,7 @@ import { getDealConfig } from './deal.config.js';
 import { acquireClient } from './deal.repository.js';
 import type { TxClient } from './deal.repository.js';
 import { applyDealTransition } from './deal.service.js';
+import { ensureChat, type ChatTxClient } from '../chat/chat.repository.js';
 import {
   evaluateInvite,
   generateInviteToken,
@@ -282,6 +283,14 @@ export async function acceptInvite(args: {
     if (!attached) {
       throw new AppError('deal_already_joined', 'This deal already has a counterparty.', 409);
     }
+
+    // Ensure the deal's chat rooms exist so the buyer can chat immediately
+    // (idempotent — older deals created before chat auto-provisioning are
+    // backfilled here, newer deals already have them).
+    const chatTx = client as unknown as ChatTxClient;
+    await ensureChat(chatTx, invite.deal_id, 'buyer_seller');
+    await ensureChat(chatTx, invite.deal_id, 'buyer_mm');
+    await ensureChat(chatTx, invite.deal_id, 'seller_mm');
 
     const stats = await loadCounterpartyStats(client, args.userId);
     const safety = deriveSafety(stats);
