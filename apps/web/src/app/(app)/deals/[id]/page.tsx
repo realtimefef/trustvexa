@@ -834,11 +834,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2000);
   };
 
-  const getVerCode = async () => {
-    // Not used in SellerView — only buyer generates verification code.
-    // Kept as a safety no-op to satisfy any stale references.
-  };
-
   const submitBuyerCode = async () => {
     if (!sellerCodeInput.trim()) return;
     setSubmittingCode(true); setSubmitCodeErr(null);
@@ -1357,30 +1352,44 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         )
       )}
 
-      {/* Show "Get verification code" instruction when Agreed, OR when locked but status not yet updated */}
+      {/* Show "Get verification code" at Agreed — buyer generates code, shares with seller via chat */}
       {(deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && dealLockedAt)) && (
-        <ActionCard title="Next: get verification code from seller" icon={KeyRound} description="Ask the seller for their verification code, then come back to enter it here.">
-          <p className="text-sm text-muted-foreground">The seller will share a one-time code with you. This confirms both parties are legitimate. Once both codes are exchanged, you will be asked to fund the escrow.</p>
-        </ActionCard>
-      )}
-
-      {deal.status === 'Verified' && (
-        <ActionCard title="Share your verification code with the seller" icon={KeyRound} description="Get your code and share it with the seller. They will enter it to advance the deal.">
+        <ActionCard title="Step 1: Get your verification code" icon={KeyRound}
+          description="Generate a one-time code and share it with the seller via the deal chat.">
           <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Generate the code below, copy it, and send it to the seller in the deal chat.
+              Once the seller enters it, the deal will advance to the next step.
+            </p>
             {codeErr && <p className="text-xs text-destructive">{codeErr}</p>}
             {verCode ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm break-all">{verCode}</code>
-                  <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard?.writeText(verCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 1500); }}>{codeCopied ? '✓' : <Copy className="h-3.5 w-3.5" />}</Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    void navigator.clipboard?.writeText(verCode);
+                    setCodeCopied(true); setTimeout(() => setCodeCopied(false), 1500);
+                  }}>{codeCopied ? '✓ Copied' : <><Copy className="h-3.5 w-3.5" /> Copy</>}</Button>
                 </div>
                 {verCodeExpiry && <p className="text-xs text-muted-foreground">Expires: {fmtDate(verCodeExpiry)}</p>}
+                <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
+                  <p className="text-xs font-semibold text-primary mb-1">Next step:</p>
+                  <p className="text-xs text-muted-foreground">Share this code with the seller via the deal chat. They will enter it to advance the deal.</p>
+                </div>
               </div>
             ) : (
-              <Button onClick={getVerCode} disabled={gettingCode} className="w-full">{gettingCode ? 'Generating…' : 'Get my verification code'}</Button>
+              <Button onClick={getVerCode} disabled={gettingCode} className="w-full">
+                {gettingCode ? 'Generating…' : 'Generate my verification code'}
+              </Button>
             )}
           </div>
         </ActionCard>
+      )}
+
+      {/* Verified → both parties accept terms; once both accept → Confirmed */}
+      {deal.status === 'Verified' && (
+        <TermsAcceptCard dealId={dealId} role="buyer" deal={deal}
+          onAccepted={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
       )}
 
       {(deal.status === 'Confirmed' || deal.status === 'Amended') && (

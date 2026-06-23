@@ -22,6 +22,8 @@ export declare function markDealDone(req: Request, res: Response): Promise<void>
 export declare function requestMiddleman(req: Request, res: Response): Promise<void>;
 /** Mark the caller's agreement; locks the deal once both parties agree. */
 export declare function agreeToDeal(req: Request, res: Response): Promise<void>;
+/** Seller submits handover — transitions Funded → SellerHandover. */
+export declare function sellerHandover(req: Request, res: Response): Promise<void>;
 /** Middleman confirms delivery to buyer — transitions MiddlemanVerified → Delivered. */
 export declare function deliverToBuyer(req: Request, res: Response): Promise<void>;
 /** Buyer approves delivery — transitions Delivered → Approved. */

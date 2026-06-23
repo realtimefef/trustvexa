@@ -890,7 +890,8 @@ export async function sellerHandover(
   return { dealId, status: result.to };
 }
 
-
+/**
+ * Middleman confirms that the seller has completed the handover.
  * Transitions the deal from SellerHandover → MiddlemanVerified.
  * Only the deal's assigned middleman account may call this.
  */

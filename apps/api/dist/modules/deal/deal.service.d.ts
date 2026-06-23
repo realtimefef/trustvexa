@@ -109,6 +109,15 @@ export interface MiddlemanUpdateDealResult {
  */
 export declare function middlemanUpdateDeal(middlemanId: string, dealId: string, input: MiddlemanUpdateDealInput): Promise<MiddlemanUpdateDealResult>;
 /**
+ * Seller confirms they have delivered the item to the buyer (or initiated
+ * the digital transfer). Transitions the deal Funded → SellerHandover.
+ * Only the deal's seller may call this.
+ */
+export declare function sellerHandover(sellerId: string, dealId: string, requestId: string): Promise<{
+    dealId: string;
+    status: string;
+}>;
+/**
  * Middleman confirms that the seller has completed the handover.
  * Transitions the deal from SellerHandover → MiddlemanVerified.
  * Only the deal's assigned middleman account may call this.
