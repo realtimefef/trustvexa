@@ -71,11 +71,10 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
-// Party detail forms (product/receiving) are only shown at the Funded step —
-// after the buyer has funded the escrow. The seller then fills product/delivery
-// details and the buyer fills receiving details; the middleman uses both to
-// coordinate delivery. They are NOT shown at earlier steps (Agreed/Confirmed).
-const DETAIL_FORM_STATES = new Set(['Funded']);
+// Seller product/delivery details form is shown from Confirmed through Funded
+// (the seller prepares details while waiting for funding, and during delivery).
+// The buyer's receiving details are filled inline in the funding card instead.
+const DETAIL_FORM_STATES = new Set(['Confirmed', 'Amended', 'Funded']);
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
@@ -980,7 +979,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-xs text-muted-foreground">Buyer already paid but the deal hasn&apos;t advanced? You can mark it funded:</p>
             {sellerFundingErr && <p className="text-xs text-destructive">⚠️ {sellerFundingErr}</p>}
             <Button size="sm" variant="outline" onClick={sellerConfirmFunding} disabled={sellerConfirmingFunding}>
-              {sellerConfirmingFunding ? 'Confirming…' : '✓ Buyer has funded — continue to delivery'}
+              {sellerConfirmingFunding ? 'Confirming…' : '✓ Buyer has paid — mark as Funded'}
             </Button>
           </div>
         </ActionCard>
