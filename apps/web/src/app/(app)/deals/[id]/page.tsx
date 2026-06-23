@@ -904,7 +904,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     try {
       await apiRequest(`/deals/${dealId}/cancellations`, {
         method: 'POST',
-        body: { reason: 'Seller initiated voluntary refund', type: 'seller_requested' },
+        body: { reason: 'Seller initiated voluntary refund' },
         idempotencyKey: newIdempotencyKey(),
       });
       setRefundOk(true);
