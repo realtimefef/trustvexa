@@ -14,7 +14,7 @@
  * recording on retries.
  */
 import { notFound, AppError } from '../../errors/app-error.js';
-import { sealPii } from '../crypto/key-provider.js';
+import { sealPii, openPii } from '../crypto/key-provider.js';
 import {
   explorerAddressUrl,
   isValidAddress,
@@ -26,6 +26,7 @@ import { runMoneyWrite, type MoneyTxClient } from '../money/money-write.js';
 import {
   getDealForPayment,
   getEscrowAddressByDeal,
+  getLatestWalletEnc,
   listPaymentStatusEvents,
   type PaymentDealRow,
   type PaymentStatusEventRow,
@@ -119,6 +120,10 @@ export interface PaymentStatusEventView {
 export interface PaymentStatusView {
   dealId: string;
   events: PaymentStatusEventView[];
+  /** Seller's saved payout wallet address (decrypted, full) — null if not set. */
+  payoutAddress: string | null;
+  /** Buyer's most recently submitted transaction hash — null if none. */
+  submittedTxHash: string | null;
 }
 
 /** Return the payment status timeline for a deal (parties only). */
@@ -128,6 +133,22 @@ export async function getPaymentStatusForUser(
 ): Promise<PaymentStatusView> {
   await requireDealParty(dealId, userId);
   const rows = await listPaymentStatusEvents(dealId);
+
+  // Decrypt the seller's saved payout wallet so the form can pre-fill on reload.
+  const payoutEnc = await getLatestWalletEnc(dealId, 'payout');
+  const payoutAddress = payoutEnc ? await openPii(payoutEnc) : null;
+
+  // Find the most recent buyer-submitted tx hash from the timeline.
+  let submittedTxHash: string | null = null;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    if (rows[i]!.status_step === 'buyer_submitted_tx' && rows[i]!.message) {
+      try {
+        const parsed = JSON.parse(rows[i]!.message as string) as { txHash?: string };
+        if (parsed.txHash) { submittedTxHash = parsed.txHash; break; }
+      } catch { /* not JSON — skip */ }
+    }
+  }
+
   return {
     dealId,
     events: rows.map((r: PaymentStatusEventRow) => ({
@@ -137,6 +158,8 @@ export async function getPaymentStatusForUser(
       message: r.message,
       createdAt: toIso(r.created_at),
     })),
+    payoutAddress,
+    submittedTxHash,
   };
 }
 

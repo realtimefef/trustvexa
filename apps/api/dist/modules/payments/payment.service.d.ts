@@ -27,6 +27,10 @@ export interface PaymentStatusEventView {
 export interface PaymentStatusView {
     dealId: string;
     events: PaymentStatusEventView[];
+    /** Seller's saved payout wallet address (decrypted, full) — null if not set. */
+    payoutAddress: string | null;
+    /** Buyer's most recently submitted transaction hash — null if none. */
+    submittedTxHash: string | null;
 }
 /** Return the payment status timeline for a deal (parties only). */
 export declare function getPaymentStatusForUser(userId: string, dealId: string): Promise<PaymentStatusView>;

@@ -14,10 +14,10 @@
  * recording on retries.
  */
 import { notFound, AppError } from '../../errors/app-error.js';
-import { sealPii } from '../crypto/key-provider.js';
+import { sealPii, openPii } from '../crypto/key-provider.js';
 import { explorerAddressUrl, isValidAddress, shortAddressPreview, } from '../money/escrow-address.js';
 import { runMoneyWrite } from '../money/money-write.js';
-import { getDealForPayment, getEscrowAddressByDeal, listPaymentStatusEvents, } from './payment-read.repository.js';
+import { getDealForPayment, getEscrowAddressByDeal, getLatestWalletEnc, listPaymentStatusEvents, } from './payment-read.repository.js';
 const SUPPORTED_NETWORKS = ['ETH', 'BNB', 'TRON', 'SOLANA'];
 function roleForUser(deal, userId) {
     if (deal.buyer_id === userId)
@@ -76,6 +76,23 @@ export async function getEscrowAddressForUser(userId, dealId) {
 export async function getPaymentStatusForUser(userId, dealId) {
     await requireDealParty(dealId, userId);
     const rows = await listPaymentStatusEvents(dealId);
+    // Decrypt the seller's saved payout wallet so the form can pre-fill on reload.
+    const payoutEnc = await getLatestWalletEnc(dealId, 'payout');
+    const payoutAddress = payoutEnc ? await openPii(payoutEnc) : null;
+    // Find the most recent buyer-submitted tx hash from the timeline.
+    let submittedTxHash = null;
+    for (let i = rows.length - 1; i >= 0; i--) {
+        if (rows[i].status_step === 'buyer_submitted_tx' && rows[i].message) {
+            try {
+                const parsed = JSON.parse(rows[i].message);
+                if (parsed.txHash) {
+                    submittedTxHash = parsed.txHash;
+                    break;
+                }
+            }
+            catch { /* not JSON — skip */ }
+        }
+    }
     return {
         dealId,
         events: rows.map((r) => ({
@@ -85,6 +102,8 @@ export async function getPaymentStatusForUser(userId, dealId) {
             message: r.message,
             createdAt: toIso(r.created_at),
         })),
+        payoutAddress,
+        submittedTxHash,
     };
 }
 /**

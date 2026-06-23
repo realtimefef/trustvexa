@@ -27,4 +27,6 @@ export interface PaymentStatusEventRow {
 }
 /** The deal's payment status timeline, oldest first. */
 export declare function listPaymentStatusEvents(dealId: string): Promise<PaymentStatusEventRow[]>;
+/** Latest saved wallet address (encrypted) for a deal + wallet type. */
+export declare function getLatestWalletEnc(dealId: string, walletType: 'payout' | 'refund'): Promise<string | null>;
 //# sourceMappingURL=payment-read.repository.d.ts.map

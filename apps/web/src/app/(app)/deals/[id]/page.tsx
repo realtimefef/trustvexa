@@ -29,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StateBadge } from '@/components/ui/state-badge';
 import { PaymentInstructions } from '@/components/payment-instructions';
+import { ConfirmationCounter } from '@/components/confirmation-counter';
 import { WalletInput } from '@/components/wallet-input';
 import { apiRequest, getAccessToken, newIdempotencyKey, ApiError } from '@/lib/api/client';
 import type { DealDetail as BaseDealDetail } from '@/lib/api/types';
@@ -124,6 +125,23 @@ function usePartyDetails(dealId: string, enabled: boolean) {
   });
 }
 
+interface PaymentStatusView {
+  dealId: string;
+  events: { id: string; statusStep: string | null; message: string | null; createdAt: string | null }[];
+  payoutAddress: string | null;
+  submittedTxHash: string | null;
+}
+
+function usePaymentStatus(dealId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ['payment-status', dealId], enabled,
+    queryFn: async () => {
+      try { return await apiRequest<PaymentStatusView>(`/deals/${dealId}/payment/status`); }
+      catch { return null; }
+    },
+  });
+}
+
 function useDealDispute(dealId: string, enabled: boolean) {
   return useQuery({
     queryKey: ['deal-dispute', dealId], enabled,
@@ -162,6 +180,15 @@ function toPublicUrl(url: string): string {
 
 
 // ─── Deal Status Stepper ──────────────────────────────────────────────────────
+
+function getRequiredConfirmations(network: string): number {
+  const n = network.toUpperCase();
+  if (n.includes('ETH')) return 12;
+  if (n.includes('BNB')) return 15;
+  if (n.includes('TRON') || n.includes('TRX')) return 20;
+  if (n.includes('SOLANA') || n.includes('SOL')) return 1;
+  return 12;
+}
 
 const STAGES = ['Created', 'Agreed', 'Funded', 'In Progress', 'Delivered', 'Complete'] as const;
 
@@ -746,6 +773,15 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [paySubmitting, setPaySubmitting] = React.useState(false);
   const [payMsg, setPayMsg] = React.useState<string | null>(null);
   const [payErr, setPayErr] = React.useState<string | null>(null);
+
+  // Read back the saved payout wallet so it persists across refreshes.
+  const paymentStatusQ = usePaymentStatus(dealId, true);
+  React.useEffect(() => {
+    if (paymentStatusQ.data?.payoutAddress) {
+      setPayoutAddr(paymentStatusQ.data.payoutAddress);
+    }
+  }, [paymentStatusQ.data?.payoutAddress]);
+  const payoutAlreadySaved = !!paymentStatusQ.data?.payoutAddress;
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
   const [agreeing, setAgreeing] = React.useState(false);
@@ -773,6 +809,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     try {
       await apiRequest(`/deals/${dealId}/payout-wallet`, { method: 'POST', body: { address: payoutAddr.trim() }, idempotencyKey: newIdempotencyKey() });
       setPayMsg('Payout wallet saved. You will be paid here on release.');
+      void qc.invalidateQueries({ queryKey: ['payment-status', dealId] });
     } catch (err) { setPayErr(err instanceof Error ? err.message : 'Failed to save wallet.'); }
     finally { setPaySubmitting(false); }
   };
@@ -906,9 +943,10 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <div className="space-y-2">
             <Label htmlFor="payoutAddr">Your {deal.coin} payout address ({deal.network})</Label>
             <p className="text-xs text-muted-foreground">Double-check the address — payouts are irreversible.</p>
+            {payoutAlreadySaved && <p className="text-xs text-emerald-600 font-medium">✓ Saved — edit below to change.</p>}
             <div className="flex gap-2">
               <Input id="payoutAddr" value={payoutAddr} onChange={e => setPayoutAddr(e.target.value)} placeholder={`Your ${deal.network} address`} className="flex-1 font-mono text-xs" />
-              <Button onClick={savePayout} disabled={paySubmitting || !payoutAddr.trim()}>{paySubmitting ? '…' : 'Save'}</Button>
+              <Button onClick={savePayout} disabled={paySubmitting || !payoutAddr.trim()}>{paySubmitting ? '…' : payoutAlreadySaved ? 'Update' : 'Save'}</Button>
             </div>
             {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
             {payErr && <p className="text-xs text-destructive">{payErr}</p>}
@@ -1146,6 +1184,14 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const escrowQuery = useEscrowAddress(dealId, ['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded'].includes(deal.status));
   const escrow = escrowQuery.data;
   const [txHash, setTxHash] = React.useState('');
+  // Read back the saved tx hash so it persists across refreshes.
+  const buyerPaymentStatusQ = usePaymentStatus(dealId, true);
+  React.useEffect(() => {
+    if (buyerPaymentStatusQ.data?.submittedTxHash) {
+      setTxHash(buyerPaymentStatusQ.data.submittedTxHash);
+    }
+  }, [buyerPaymentStatusQ.data?.submittedTxHash]);
+  const txAlreadySaved = !!buyerPaymentStatusQ.data?.submittedTxHash;
   const [paySubmitting, setPaySubmitting] = React.useState(false);
   const [payMsg, setPayMsg] = React.useState<string | null>(null);
   const [payErr, setPayErr] = React.useState<string | null>(null);
@@ -1195,7 +1241,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
     setPaySubmitting(true); setPayErr(null);
     try {
       await apiRequest(`/deals/${dealId}/payment/submit-tx`, { method: 'POST', body: { txHash: txHash.trim() }, idempotencyKey: newIdempotencyKey() });
-      setPayMsg('Payment submitted. Auto-detection usually takes a few minutes.'); setTxHash('');
+      setPayMsg('Transaction hash saved.');
       void qc.invalidateQueries({ queryKey: ['payment-status', dealId] });
     } catch (err) { setPayErr(err instanceof Error ? err.message : 'Failed to submit.'); }
     finally { setPaySubmitting(false); }
@@ -1346,9 +1392,10 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <PaymentInstructions coin={escrow.coin} network={escrow.network} />
               <div className="space-y-1.5">
                 <Label htmlFor="txhash">Paste your transaction hash <span className="text-muted-foreground text-xs">(optional, for your records)</span></Label>
+                {txAlreadySaved && <p className="text-xs text-emerald-600 font-medium">✓ Transaction hash saved.</p>}
                 <div className="flex gap-2">
                   <Input id="txhash" value={txHash} onChange={e => setTxHash(e.target.value)} placeholder="0x… or TX ID" className="flex-1 font-mono text-xs" />
-                  <Button variant="outline" onClick={submitTxHash} disabled={paySubmitting || !txHash.trim()}>{paySubmitting ? '…' : 'Save'}</Button>
+                  <Button variant="outline" onClick={submitTxHash} disabled={paySubmitting || !txHash.trim()}>{paySubmitting ? '…' : txAlreadySaved ? 'Update' : 'Save'}</Button>
                 </div>
                 {payMsg && <p className="text-xs text-emerald-600">✓ {payMsg}</p>}
                 {payErr && <p className="text-xs text-destructive">{payErr}</p>}
@@ -1497,6 +1544,7 @@ interface MiddlemanViewProps {
 
 function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
   const disputeQuery = useDealDispute(dealId, deal.status === 'Disputed');
+  const mmPaymentStatus = usePaymentStatus(dealId, ['Funded', 'SellerHandover'].includes(deal.status)).data;
   const [verifying, setVerifying] = React.useState(false);
   const [verifyErr, setVerifyErr] = React.useState<string | null>(null);
   const [delivering, setDelivering] = React.useState(false);
@@ -1556,6 +1604,22 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
       </div>
 
       <DealStepper status={deal.status} />
+
+      {/* Middleman: verify the buyer's deposit transaction (Funded onward) */}
+      {(deal.status === 'Funded' || deal.status === 'SellerHandover') && (
+        <ActionCard title="Verify buyer's deposit" icon={Wallet} description="Confirm the buyer's payment has arrived on-chain before the seller's delivery is released.">
+          <ConfirmationCounter dealId={dealId} requiredConfirmations={getRequiredConfirmations(deal.network)} />
+          {mmPaymentStatus?.submittedTxHash && (
+            <div className="mt-3 rounded-lg border bg-muted/30 px-3 py-2">
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Buyer-submitted transaction hash</p>
+              <p className="font-mono text-xs break-all">{mmPaymentStatus.submittedTxHash}</p>
+            </div>
+          )}
+          {!mmPaymentStatus?.submittedTxHash && (
+            <p className="text-xs text-muted-foreground mt-2">The buyer has not pasted a transaction hash. Confirm the deposit via your own on-chain check.</p>
+          )}
+        </ActionCard>
+      )}
 
       {/* Middleman action */}
       {deal.status === 'SellerHandover' && (

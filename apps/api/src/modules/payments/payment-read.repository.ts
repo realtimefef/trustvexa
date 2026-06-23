@@ -72,3 +72,19 @@ export async function listPaymentStatusEvents(dealId: string): Promise<PaymentSt
   );
   return res.rows;
 }
+
+/** Latest saved wallet address (encrypted) for a deal + wallet type. */
+export async function getLatestWalletEnc(
+  dealId: string,
+  walletType: 'payout' | 'refund',
+): Promise<string | null> {
+  const res = await query<{ new_address_enc: string }>(
+    `SELECT new_address_enc
+       FROM wallet_change_requests
+      WHERE deal_id = $1 AND wallet_type = $2
+      ORDER BY created_at DESC
+      LIMIT 1`,
+    [dealId, walletType],
+  );
+  return res.rows[0]?.new_address_enc ?? null;
+}
