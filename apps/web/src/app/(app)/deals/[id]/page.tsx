@@ -741,6 +741,53 @@ function NextStep({ text }: { text: string }) {
   );
 }
 
+// ─── Deal Review Summary ───────────────────────────────────────────────────
+// Read-only consolidated review of everything entered across the deal: amounts,
+// fees, the buyer's receiving details and the seller's product/delivery details.
+// Shown at the Funded / In Progress / Delivered stages so each party can review
+// before/after the handover. Each party sees their own details; the middleman
+// sees both (the party-details API already enforces this visibility).
+
+function DealReviewSummary({ deal, partyDetails }: { deal: DealDetail; partyDetails: PartyDetailsResult | undefined }) {
+  const seller = partyDetails?.sellerDetails;
+  const buyer = partyDetails?.buyerDetails;
+  return (
+    <div className="rounded-xl border bg-muted/10 px-4 py-3 space-y-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deal review — all details</p>
+
+      {/* Money summary */}
+      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Item</span><span className="font-medium truncate">{deal.itemDescription ?? '—'}</span></div>
+        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
+        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
+        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
+        <div className="flex justify-between gap-2"><span className="text-blue-600 dark:text-blue-400">Buyer sends</span><span className="font-semibold text-blue-600 dark:text-blue-400">{cents(deal.buyerTotalCents)}</span></div>
+        <div className="flex justify-between gap-2"><span className="text-emerald-600">Seller receives</span><span className="font-semibold text-emerald-600">{cents(deal.sellerPayoutCents)}</span></div>
+      </div>
+
+      {/* Seller's product & delivery details */}
+      {seller && (
+        <div className="rounded-lg border bg-background/50 px-3 py-2 space-y-0.5 text-xs">
+          <p className="font-semibold text-emerald-600 mb-1">Seller — product &amp; delivery</p>
+          {seller.productName && <div><span className="text-muted-foreground">Selling: </span>{seller.productName}</div>}
+          {seller.additionalNotes && <div><span className="text-muted-foreground">Seller email: </span>{seller.additionalNotes}</div>}
+          {seller.deliveryInstructions && <div><span className="text-muted-foreground">Middleman instructions: </span>{seller.deliveryInstructions}</div>}
+        </div>
+      )}
+
+      {/* Buyer's receiving details */}
+      {buyer && (
+        <div className="rounded-lg border bg-background/50 px-3 py-2 space-y-0.5 text-xs">
+          <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">Buyer — receiving details</p>
+          {buyer.receivingAddress && <div><span className="text-muted-foreground">Receiving account: </span>{buyer.receivingAddress}</div>}
+          {buyer.contactEmail && <div><span className="text-muted-foreground">Buyer email: </span>{buyer.contactEmail}</div>}
+          {buyer.specialInstructions && <div><span className="text-muted-foreground">Middleman instructions: </span>{buyer.specialInstructions}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Deal Progress CTA ─────────────────────────────────────────────────────
 // Shown after a step completes — gives user a clear "what to do next" action.
 
@@ -1053,16 +1100,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' ? (
-        <ActionCard title="Handover submitted — middleman is verifying" icon={Shield} variant="success">
+        <ActionCard title="In Progress — handover submitted, middleman verifying" icon={Shield} variant="success">
           <StepLabel step={4} total={6} label="In Progress — middleman verification" />
-          <p className="text-sm text-muted-foreground">The middleman is reviewing your handover and confirming delivery to the buyer.</p>
+          <p className="text-sm text-muted-foreground mb-3">The middleman is reviewing your handover and confirming delivery to the buyer. Final review of the deal:</p>
+          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
           <NextStep text="Once verified → buyer enters their inspection window → approves delivery → payout is sent to you." />
         </ActionCard>
       ) : deal.status === 'Delivered' ? (
-        <ActionCard title="Delivered — waiting for buyer approval" icon={CheckCircle2} variant="success">
+        <ActionCard title="🎉 Delivered — waiting for buyer approval" icon={CheckCircle2} variant="success">
           <StepLabel step={5} total={6} label="Buyer is inspecting the delivery" />
-          <p className="text-sm text-muted-foreground">Delivery confirmed to the buyer. They are in their inspection window.</p>
-          <NextStep text="Once the buyer approves → your payout is released to your wallet immediately." />
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mb-3 text-center">
+            <p className="font-semibold text-emerald-600">Delivery confirmed to the buyer!</p>
+            <p className="text-sm text-muted-foreground mt-1">The buyer is inspecting. Once they approve, your payout is released. You&apos;ll be notified by chat/email.</p>
+          </div>
+          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+          <NextStep text="Buyer approves → your payout is released to your wallet immediately." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
         <ActionCard title="Payment processing…" icon={Clock} variant="success">
@@ -1466,16 +1518,18 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {deal.status === 'Funded' && (
         <ActionCard title="Escrow funded — waiting for seller to deliver" icon={Clock} variant="success">
           <StepLabel step={3} total={6} label="Seller is preparing delivery" />
-          <p className="text-sm text-muted-foreground">Your funds are safely locked in escrow and your receiving details are saved. The seller will now deliver and submit a handover to the middleman.</p>
+          <p className="text-sm text-muted-foreground mb-3">Your funds are safely locked in escrow and your receiving details are saved. The seller will now deliver and submit a handover to the middleman.</p>
+          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
           <NextStep text="Seller delivers → submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
       )}
 
       {(deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified') && (
-        <ActionCard title="Middleman is verifying the delivery" icon={Shield} variant="success">
+        <ActionCard title="In Progress — middleman is verifying the delivery" icon={Shield} variant="success">
           <StepLabel step={4} total={6} label="In Progress — middleman verification" />
-          <p className="text-sm text-muted-foreground">The middleman is reviewing the seller's handover. You'll be notified once confirmed.</p>
-          <NextStep text="Once verified → you'll enter the inspection window and can approve or open a dispute." />
+          <p className="text-sm text-muted-foreground mb-3">The middleman is reviewing the seller&apos;s handover. Final review of the deal:</p>
+          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+          <NextStep text="Once verified → you'll enter your inspection window and can approve or open a dispute." />
         </ActionCard>
       )}
 
