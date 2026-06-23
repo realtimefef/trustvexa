@@ -875,6 +875,8 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const bothAgreed = !!(deal.lockedAt) || !!(agreedResult?.locked);
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
+  // Seller must save product details before submitting the handover.
+  const sellerDetailsSaved = !!(partyDetails?.sellerDetails?.productName);
   const counterparty = deal.buyerId ? 'Buyer connected' : 'Waiting for buyer';
   const mmName = deal.middlemanId ? `⚖️ Middleman: ${deal.middlemanId.slice(0,8)}` : 'No middleman yet';
 
@@ -989,9 +991,14 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
 
           {!handoverOk ? (
             <div className="space-y-3">
+              {!sellerDetailsSaved && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  ⚠️ Please fill in and save <strong>Your product &amp; delivery details</strong> below before submitting the handover.
+                </div>
+              )}
               <NoRollbackBanner text="Only click below after you have delivered. This moves the deal to middleman verification and cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
-              <Button onClick={submitHandover} disabled={submittingHandover} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
                 {submittingHandover ? 'Submitting…' : '✓ Delivered — submit handover to middleman'}
               </Button>
@@ -1220,6 +1227,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   };
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
+  // Buyer must save receiving details before they can confirm funding.
+  const buyerDetailsSaved = !!(partyDetails?.buyerDetails?.receivingAddress);
   // Persistent agree state — survives page refresh via the API-returned fields
   const buyerAlreadyAgreed = !!(deal.buyerAgreedAt) || !!(agreedResult?.buyerAgreed);
   const dealLockedAt = !!(deal.lockedAt) || !!(agreedResult?.locked);
@@ -1405,8 +1414,13 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <div className="border-t pt-4 space-y-2">
                 <p className="text-sm font-medium">Done paying? Confirm to continue</p>
                 <p className="text-xs text-muted-foreground">After sending the exact amount, click below to advance the deal to the delivery stage. The seller will then deliver and submit a handover.</p>
+                {!buyerDetailsSaved && (
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Please fill in and save <strong>Your receiving details</strong> below before continuing — the middleman needs to know where to deliver.
+                  </div>
+                )}
                 {confirmFundingErr && <p className="text-xs text-destructive">⚠️ {confirmFundingErr}</p>}
-                <Button onClick={confirmFunding} disabled={confirmingFunding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button onClick={confirmFunding} disabled={confirmingFunding || !buyerDetailsSaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                   <CheckCircle2 className="h-4 w-4 mr-1.5" />
                   {confirmingFunding ? 'Confirming…' : "✓ I've paid — continue to next step"}
                 </Button>
