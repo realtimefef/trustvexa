@@ -703,6 +703,35 @@ function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDet
   );
 }
 
+// ─── Deal step helpers ────────────────────────────────────────────────────────
+
+function StepLabel({ step, total, label }: { step: number; total: number; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-medium mb-2">
+      <span className="rounded-full bg-primary/10 text-primary px-2 py-0.5">Step {step}/{total}</span>
+      <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function NoRollbackBanner({ text }: { text: string }) {
+  return (
+    <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+      <span><strong>No rollback:</strong> {text}</span>
+    </div>
+  );
+}
+
+function NextStep({ text }: { text: string }) {
+  return (
+    <div className="mt-3 flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs">
+      <span className="font-semibold text-primary shrink-0">Next →</span>
+      <span className="text-muted-foreground">{text}</span>
+    </div>
+  );
+}
+
 // ─── SELLER VIEW ──────────────────────────────────────────────────────────────
 
 interface SellerViewProps {
@@ -878,11 +907,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <p className="text-xs text-muted-foreground mt-2">While you wait, fill in your product &amp; delivery details below so the middleman can verify your handover when it's time.</p>
         </ActionCard>
       ) : deal.status === 'Confirmed' || deal.status === 'Amended' ? (
-        <ActionCard title="Deal confirmed — waiting for buyer to fund" icon={Wallet} variant="success">
-          <p className="text-sm text-muted-foreground mb-3">Once the buyer sends the funds to escrow, you'll be notified to proceed with delivery.</p>
+        <ActionCard title="Deal confirmed — save your payout address" icon={Wallet} variant="success">
+          <StepLabel step={3} total={6} label="Waiting for buyer to fund escrow" />
+          <p className="text-sm text-muted-foreground mb-3">Save where you want to receive payment. The buyer is about to fund the escrow.</p>
           <div className="space-y-2">
             <Label htmlFor="payoutAddr">Your {deal.coin} payout address ({deal.network})</Label>
-            <p className="text-xs text-muted-foreground">Enter where you want to receive your payout after delivery is approved.</p>
+            <p className="text-xs text-muted-foreground">Double-check the address — payouts are irreversible.</p>
             <div className="flex gap-2">
               <Input id="payoutAddr" value={payoutAddr} onChange={e => setPayoutAddr(e.target.value)} placeholder={`Your ${deal.network} address`} className="flex-1 font-mono text-xs" />
               <Button onClick={savePayout} disabled={paySubmitting || !payoutAddr.trim()}>{paySubmitting ? '…' : 'Save'}</Button>
@@ -890,27 +920,32 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
             {payErr && <p className="text-xs text-destructive">{payErr}</p>}
           </div>
+          <NextStep text="Once the buyer funds escrow → you'll be asked to deliver the item and submit a handover to the middleman." />
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Deal is funded — deliver then submit handover" icon={Send} variant="warning">
-          <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Deliver the item as agreed, then click below to notify the middleman.</p>
-          {/* Submit handover */}
+        <ActionCard title="Escrow funded — deliver the item now" icon={Send} variant="warning">
+          <StepLabel step={4} total={6} label="Seller delivers and submits handover" />
+          <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Deliver the item exactly as agreed in the deal terms.</p>
           {!handoverOk ? (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-3">
+              <NoRollbackBanner text="Once you click 'Submit handover', the deal moves to middleman verification. Make sure you have actually delivered before proceeding." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : 'I have delivered — submit handover to middleman'}
+                {submittingHandover ? 'Submitting…' : '✓ I have delivered — submit handover to middleman'}
               </Button>
+              <NextStep text="Middleman verifies delivery → buyer inspects → you receive payment." />
             </div>
           ) : (
-            <p className="text-xs text-emerald-600 mt-2">✓ Handover submitted. The middleman will now verify your delivery.</p>
+            <>
+              <p className="text-xs text-emerald-600 mt-2">✓ Handover submitted. The middleman is now verifying your delivery.</p>
+              <NextStep text="Middleman will confirm delivery → buyer approves → payout released to your wallet." />
+            </>
           )}
-          {/* Free refund option */}
           <div className="mt-4 border-t pt-3">
-            <p className="text-xs text-muted-foreground mb-2">Changed your mind? You can issue a voluntary refund instead:</p>
+            <p className="text-xs text-muted-foreground mb-2">Changed your mind? Issue a voluntary refund to the buyer:</p>
             {refundErr && <p className="text-xs text-destructive mb-2">{refundErr}</p>}
-            {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund request submitted. The buyer will receive the full amount.</p>}
+            {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund submitted. Buyer receives the full amount.</p>}
             <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"
               disabled={refunding || refundOk} onClick={handleFreeRefund}>
               {refunding ? 'Processing…' : '↩ Issue free refund to buyer'}
@@ -918,20 +953,26 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' ? (
-        <ActionCard title="Handover sent — waiting for middleman verification" icon={Shield} variant="success">
-          <p className="text-sm text-muted-foreground">The middleman will verify your handover and confirm delivery to the buyer.</p>
+        <ActionCard title="Handover submitted — middleman is verifying" icon={Shield} variant="success">
+          <StepLabel step={5} total={6} label="Middleman verification in progress" />
+          <p className="text-sm text-muted-foreground">The middleman is reviewing your handover and confirming delivery to the buyer.</p>
+          <NextStep text="Once verified → buyer enters their inspection window → approves delivery → payout is sent to you." />
         </ActionCard>
       ) : deal.status === 'MiddlemanVerified' || deal.status === 'Delivered' ? (
-        <ActionCard title="Delivered — waiting for buyer approval" icon={CheckCircle2} variant="success">
-          <p className="text-sm text-muted-foreground">The buyer is in their inspection window. Once they approve, payout will be released to you.</p>
+        <ActionCard title="Delivery confirmed — waiting for buyer approval" icon={CheckCircle2} variant="success">
+          <StepLabel step={5} total={6} label="Buyer is inspecting the delivery" />
+          <p className="text-sm text-muted-foreground">Middleman verified your delivery. The buyer is in their inspection window.</p>
+          <NextStep text="Once the buyer approves → your payout is released to your wallet immediately." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
-        <ActionCard title="Payout processing…" icon={Clock} variant="success">
-          <p className="text-sm text-muted-foreground">Buyer approved the delivery. Your payout is being processed to your wallet.</p>
+        <ActionCard title="Payment processing…" icon={Clock} variant="success">
+          <StepLabel step={6} total={6} label="Payout in progress" />
+          <p className="text-sm text-muted-foreground">Buyer approved the delivery. Your payout is being sent to your saved wallet address.</p>
         </ActionCard>
       ) : deal.status === 'Released' ? (
         <ActionCard title="✓ Deal complete — payout released!" icon={CheckCircle2} variant="success">
-          <p className="text-sm text-muted-foreground">Funds have been sent to your payout address.</p>
+          <StepLabel step={6} total={6} label="Complete" />
+          <p className="text-sm text-muted-foreground">Funds have been sent to your payout address. Thank you for using TrustVexa.</p>
         </ActionCard>
       ) : deal.status === 'Disputed' ? (
         <ActionCard title="Dispute opened" icon={AlertTriangle} variant="warning">
@@ -1224,7 +1265,9 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {/* Show escrow funding at Agreed/Verified/Confirmed/Amended — buyer can fund immediately after both agree */}
       {(deal.status === 'Agreed' || deal.status === 'Verified' || deal.status === 'Confirmed' || deal.status === 'Amended') && (
         <ActionCard title="Fund the escrow — send exactly this amount" icon={Wallet}
-          description={`Send the exact ${deal.coin} amount below. Wrong amount or wrong network = permanent loss.`}>
+          description={`Send exact ${deal.coin} amount. Wrong amount or wrong network = permanent loss.`}>
+          <StepLabel step={3} total={6} label="Buyer funds the escrow" />
+          <NoRollbackBanner text="Once you send crypto to the escrow address it cannot be recalled. Only proceed after verifying all deal details." />
           {/* Exact amount box — prominent */}
           <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-4 py-3 mb-4 text-center">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Send exactly</p>
@@ -1254,46 +1297,56 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               </div>
             </div>
           ) : <Skeleton className="h-32 w-full rounded-xl" />}
+          <NextStep text="Seller delivers the item → submits handover to middleman → middleman verifies → you inspect and approve → deal complete." />
         </ActionCard>
       )}
 
       {deal.status === 'Funded' && (
-        <ActionCard title="Waiting for seller to deliver" icon={Clock} variant="success">
-          <p className="text-sm text-muted-foreground">Funds are safely held in escrow. The seller is preparing your delivery.</p>
+        <ActionCard title="Escrow funded — waiting for seller to deliver" icon={Clock} variant="success">
+          <StepLabel step={4} total={6} label="Seller is preparing delivery" />
+          <p className="text-sm text-muted-foreground">Your funds are safely locked in escrow. The seller will deliver the item and notify the middleman.</p>
+          <NextStep text="Seller delivers → submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
       )}
 
       {(deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified') && (
-        <ActionCard title="Middleman is verifying delivery" icon={Shield} variant="success">
-          <p className="text-sm text-muted-foreground">The middleman is reviewing the seller's handover. You'll be notified when delivery is confirmed.</p>
+        <ActionCard title="Middleman is verifying the delivery" icon={Shield} variant="success">
+          <StepLabel step={5} total={6} label="Middleman verification in progress" />
+          <p className="text-sm text-muted-foreground">The middleman is reviewing the seller's handover. You'll be notified once confirmed.</p>
+          <NextStep text="Once verified → you'll enter the inspection window and can approve or open a dispute." />
         </ActionCard>
       )}
 
       {deal.status === 'Delivered' && (
         <ActionCard title="Delivery confirmed — inspect & approve" icon={CheckCircle2} variant="warning">
-          <p className="text-sm text-muted-foreground mb-4">The item has been delivered. Review it carefully. If everything matches the agreement, approve to release the payout to the seller.</p>
-          {approveErr && <p className="text-xs text-destructive mb-2">{approveErr}</p>}
-          {disputeErr && <p className="text-xs text-destructive mb-2">{disputeErr}</p>}
-          <div className="flex gap-3">
-            <Button onClick={handleApprove} disabled={approving} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white">
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />{approving ? 'Approving…' : 'Approve & release payout'}
+          <StepLabel step={6} total={6} label="Your inspection window" />
+          <p className="text-sm text-muted-foreground mb-3">The middleman confirmed delivery. Inspect carefully — verify you received exactly what was agreed.</p>
+          <NoRollbackBanner text="Once you click 'Approve', the seller receives payment INSTANTLY. This cannot be reversed. Only approve if you are fully satisfied." />
+          <div className="mt-3 space-y-2">
+            {approveErr && <p className="text-xs text-destructive">{approveErr}</p>}
+            {disputeErr && <p className="text-xs text-destructive">{disputeErr}</p>}
+            <Button onClick={handleApprove} disabled={approving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />{approving ? 'Approving…' : 'Approve & release payment to seller'}
             </Button>
-            <Button onClick={openDispute} disabled={disputing} variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10">
-              {disputing ? '…' : 'Open dispute'}
+            <Button onClick={openDispute} disabled={disputing} variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10">
+              {disputing ? '…' : '⚠️ Item not as described — open dispute'}
             </Button>
+            <p className="text-xs text-muted-foreground text-center">Open a dispute if the item is not as described. A middleman will review your case.</p>
           </div>
         </ActionCard>
       )}
 
       {(deal.status === 'Approved' || deal.status === 'PayoutQueued') && (
-        <ActionCard title="Payout in progress…" icon={Clock} variant="success">
-          <p className="text-sm text-muted-foreground">You approved the delivery. The seller's payout is processing.</p>
+        <ActionCard title="Payment processing — almost done!" icon={Clock} variant="success">
+          <StepLabel step={6} total={6} label="Payout in progress" />
+          <p className="text-sm text-muted-foreground">You approved the delivery. The seller&apos;s payment is being processed.</p>
         </ActionCard>
       )}
 
       {deal.status === 'Released' && (
         <ActionCard title="✓ Deal complete" icon={CheckCircle2} variant="success">
-          <p className="text-sm text-muted-foreground">The deal is settled. Thank you for using TrustVexa.</p>
+          <StepLabel step={6} total={6} label="Complete" />
+          <p className="text-sm text-muted-foreground">The deal is fully settled. Thank you for using TrustVexa.</p>
         </ActionCard>
       )}
 
