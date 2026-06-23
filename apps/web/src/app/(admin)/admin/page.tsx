@@ -60,6 +60,14 @@ function primaryAction(actions: NextAction[]): NextAction | undefined {
   return actions.find(a => a.blocking) ?? actions[0];
 }
 
+function useSupportStats(en: boolean) {
+  return useQuery({ queryKey: ['admin-support-stats'], enabled: en, staleTime: 60_000,
+    queryFn: async () => {
+      const res = await apiRequest<{ tickets: unknown[]; stats: Record<string, number> }>('/support/admin/tickets?status=open');
+      return { open: res.stats?.open ?? 0, urgent: (res.stats?.urgent ?? 0) + (res.stats?.money_issue ?? 0), total: res.tickets.length };
+    } });
+}
+
 // ── Queries ───────────────────────────────────────────────────────────────────
 
 function useQueue(en: boolean) {
@@ -367,7 +375,7 @@ const NAV_CARDS = [
   { href: '/admin/disputes', icon: Gavel, label: 'Disputes', desc: 'All open cases' },
   { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor & delete chats' },
   { href: '/admin/reviews', icon: FileText, label: 'Reviews', desc: 'Moderate public + deal reviews' },
-  { href: '/admin/support', icon: TicketIcon, label: 'Support', desc: 'Tickets & replies' },
+  { href: '/admin/support', icon: TicketIcon, label: 'Support & Feedback', desc: 'User tickets & help requests' },
   { href: '/admin/operations', icon: BarChart3, label: 'Operations', desc: 'Analytics & circuit breakers' },
   { href: '/treasury', icon: DollarSign, label: 'Treasury', desc: 'On-chain reconciliation' },
 ];
@@ -419,6 +427,7 @@ export default function AdminConsolePage() {
   const queueQ = useQueue(status === 'authenticated');
   const disputesQ = useDisputes(status === 'authenticated');
   const chatsQ = useAdminChats(status === 'authenticated');
+  const supportQ = useSupportStats(status === 'authenticated');
 
   if (status !== 'authenticated') {
     return (
@@ -450,12 +459,13 @@ export default function AdminConsolePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-5">
         {[
           { label: 'Assigned', value: summary?.total ?? '—', icon: Layers, color: 'text-primary' },
           { label: 'Needs you', value: summary?.waiting ?? '—', icon: Clock, color: 'text-amber-500' },
           { label: 'On hold', value: summary?.onHold ?? '—', icon: Shield, color: 'text-blue-500' },
           { label: 'Disputes', value: disputes.length, icon: AlertTriangle, color: 'text-destructive' },
+          { label: 'Open support tickets', value: supportQ.data?.open ?? '—', icon: TicketIcon, color: supportQ.data?.urgent ? 'text-destructive' : 'text-violet-500' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
             <s.icon className={`h-5 w-5 shrink-0 ${s.color}`} />
@@ -466,6 +476,21 @@ export default function AdminConsolePage() {
           </div>
         ))}
       </div>
+
+      {/* Support inbox alert — only when urgent/unread tickets */}
+      {(supportQ.data?.urgent ?? 0) > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+            <p className="text-sm font-medium text-destructive">
+              {supportQ.data!.urgent} urgent support ticket{supportQ.data!.urgent > 1 ? 's' : ''} need your attention
+            </p>
+          </div>
+          <Button asChild size="sm" variant="destructive" className="shrink-0">
+            <Link href="/admin/support">View support inbox</Link>
+          </Button>
+        </div>
+      )}
 
       {/* Quick nav */}
       <div className="space-y-3">

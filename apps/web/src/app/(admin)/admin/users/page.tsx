@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   Search,
   ShieldCheck,
+  Trash2,
   TrendingDown,
   UserCheck,
   UserX,
@@ -86,7 +87,7 @@ const ACCOUNT_LABELS = [
   'middleman_verified',
 ] as const;
 
-type EnforceAction = 'block' | 'unblock' | 'label' | 'trust-downgrade';
+type EnforceAction = 'block' | 'unblock' | 'label' | 'trust-downgrade' | 'delete';
 
 interface EnforceDialog {
   userId: string;
@@ -119,6 +120,14 @@ export default function AdminUsersPage() {
       const body: Record<string, unknown> = { reason };
       if (input.action === 'label') body.label = label;
       if (input.action === 'trust-downgrade') body.amount = trustAmount;
+      // Delete uses HTTP DELETE; everything else uses POST
+      if (input.action === 'delete') {
+        return apiRequest(`/admin/users/${input.userId}`, {
+          method: 'DELETE',
+          body,
+          idempotencyKey: newIdempotencyKey(),
+        });
+      }
       return apiRequest(`/admin/users/${input.userId}/${input.action}`, {
         method: 'POST',
         body,
@@ -284,6 +293,17 @@ export default function AdminUsersPage() {
                         >
                           <TrendingDown className="h-3.5 w-3.5" />
                         </Button>
+                        {user.accountStatus !== 'deleted' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-destructive hover:bg-destructive/10"
+                            title="Delete account"
+                            onClick={() => openDialog(user, 'delete')}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -303,9 +323,15 @@ export default function AdminUsersPage() {
               {dialog?.action === 'unblock' && <><UserCheck className="h-4 w-4 text-emerald-500" /> Unblock user</>}
               {dialog?.action === 'label' && <><ShieldCheck className="h-4 w-4 text-primary" /> Set account label</>}
               {dialog?.action === 'trust-downgrade' && <><TrendingDown className="h-4 w-4 text-amber-500" /> Downgrade trust</>}
+              {dialog?.action === 'delete' && <><Trash2 className="h-4 w-4 text-destructive" /> Delete account</>}
             </DialogTitle>
             <DialogDescription>
               Action on <strong>@{dialog?.username}</strong>. A reason is required for all enforcement actions.
+              {dialog?.action === 'delete' && (
+                <span className="block mt-1 text-destructive font-medium">
+                  ⚠ This permanently marks the account as deleted. This cannot be undone.
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -361,13 +387,13 @@ export default function AdminUsersPage() {
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setDialog(null)}>Cancel</Button>
               <Button
-                variant={dialog?.action === 'block' ? 'destructive' : 'default'}
+                variant={dialog?.action === 'block' || dialog?.action === 'delete' ? 'destructive' : 'default'}
                 disabled={!reason.trim() || enforceMutation.isPending}
                 onClick={() => {
                   if (dialog) enforceMutation.mutate({ userId: dialog.userId, action: dialog.action });
                 }}
               >
-                {enforceMutation.isPending ? 'Applying…' : 'Confirm'}
+                {enforceMutation.isPending ? 'Applying…' : dialog?.action === 'delete' ? '⚠ Delete permanently' : 'Confirm'}
               </Button>
             </div>
           </div>

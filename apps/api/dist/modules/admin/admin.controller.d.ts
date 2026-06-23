@@ -19,5 +19,6 @@ export declare function rollbackSettingChange(req: Request, res: Response): Prom
  */
 export declare function enforce(req: Request, res: Response): Promise<void>;
 export declare function blockUser(req: Request, res: Response): Promise<void>;
+/** Permanently soft-delete a user account (audited, requires reason). */
 export declare function deleteUser(req: Request, res: Response): Promise<void>;
 //# sourceMappingURL=admin.controller.d.ts.map

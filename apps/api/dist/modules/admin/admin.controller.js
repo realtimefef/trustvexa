@@ -137,6 +137,7 @@ export async function blockUser(req, res) {
     });
     res.status(200).json(result);
 }
+/** Permanently soft-delete a user account (audited, requires reason). */
 export async function deleteUser(req, res) {
     const actorId = requireUserId(req);
     const reqId = requestId(req);
