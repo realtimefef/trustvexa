@@ -701,6 +701,94 @@ function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDet
   );
 }
 
+// ─── Terms Accept Card (Verified → Confirmed) ────────────────────────────────
+// Both buyer and seller must accept terms at Verified status.
+// Fetches policy versions from GET /deals/:id/agreement, shows 3 required
+// checkboxes, and submits POST /deals/:id/terms/accept.
+
+function TermsAcceptCard({ dealId, role, deal, onAccepted }: {
+  dealId: string; role: 'buyer' | 'seller'; deal: DealDetail; onAccepted: () => void;
+}) {
+  const [cryptoRisk, setCryptoRisk] = React.useState(false);
+  const [wrongNetwork, setWrongNetwork] = React.useState(false);
+  const [noProhibited, setNoProhibited] = React.useState(false);
+  const [accepting, setAccepting] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const agreementQ = useQuery({
+    queryKey: ['deal-agreement', dealId],
+    queryFn: () => apiRequest<{
+      requiredPolicyVersions: { terms: string | null; disputePolicy: string | null };
+    }>(`/deals/${dealId}/agreement`),
+    staleTime: 300_000,
+    retry: false,
+  });
+
+  const termsVersion  = agreementQ.data?.requiredPolicyVersions?.terms       ?? '1';
+  const disputeVersion = agreementQ.data?.requiredPolicyVersions?.disputePolicy ?? '1';
+  const allChecked = cryptoRisk && wrongNetwork && noProhibited;
+
+  const accept = async () => {
+    setAccepting(true); setErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/terms/accept`, {
+        method: 'POST',
+        body: {
+          acceptedTermsVersion: termsVersion,
+          acceptedDisputePolicyVersion: disputeVersion,
+          acceptedCryptoRisk: true as const,
+          acceptedWrongNetworkWarning: true as const,
+          acceptedNoProhibitedItems: true as const,
+        },
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setDone(true);
+      onAccepted();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to accept terms.');
+    } finally { setAccepting(false); }
+  };
+
+  if (done) {
+    return (
+      <ActionCard title="✓ Terms accepted — waiting for other party" icon={CheckCircle2} variant="success">
+        <p className="text-sm text-muted-foreground">Your acceptance is recorded. Once the other party also accepts, the deal advances to payment.</p>
+      </ActionCard>
+    );
+  }
+
+  return (
+    <ActionCard title={`Step 2: Accept deal terms (${role === 'buyer' ? 'Buyer' : 'Seller'})`} icon={FileText}
+      description="Both parties must confirm terms before the buyer can fund the escrow.">
+      <div className="space-y-4">
+        <div className="rounded-lg bg-muted/30 border px-3 py-2 text-sm space-y-1">
+          <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span>{deal.coin} · {deal.network}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
+        </div>
+        <div className="space-y-2">
+          {[
+            { key: 'crypto',    val: cryptoRisk,    set: setCryptoRisk,    label: 'I accept that all cryptocurrency transactions are irreversible. Sending to the wrong address permanently loses funds.' },
+            { key: 'network',   val: wrongNetwork,  set: setWrongNetwork,  label: `I confirm I will only use the ${deal.network} network for all transfers — sending on a different network destroys the funds.` },
+            { key: 'prohibited', val: noProhibited, set: setNoProhibited,  label: "I confirm the item being traded does not violate TrustVexa's prohibited items policy." },
+          ].map(item => (
+            <label key={item.key} className="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={item.val}
+                onChange={e => item.set(e.target.checked)} />
+              <span className="text-sm">{item.label}</span>
+            </label>
+          ))}
+        </div>
+        {err && <p className="text-xs text-destructive">⚠️ {err}</p>}
+        <Button onClick={accept} disabled={accepting || !allChecked} className="w-full">
+          {accepting ? 'Submitting…' : '✓ I agree to all terms — proceed to payment'}
+        </Button>
+      </div>
+    </ActionCard>
+  );
+}
+
 // ─── SELLER VIEW ──────────────────────────────────────────────────────────────
 
 interface SellerViewProps {
@@ -715,20 +803,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [inviting, setInviting] = React.useState(false);
   const [inviteErr, setInviteErr] = React.useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = React.useState(false);
-  const [verCode, setVerCode] = React.useState<string | null>(null);
-  const [verCodeExpiry, setVerCodeExpiry] = React.useState<string | null>(null);
-  const [gettingCode, setGettingCode] = React.useState(false);
-  const [codeErr, setCodeErr] = React.useState<string | null>(null);
-  const [codeCopied, setCodeCopied] = React.useState(false);
+  const [sellerCodeInput, setSellerCodeInput] = React.useState('');
+  const [submittingCode, setSubmittingCode] = React.useState(false);
+  const [submitCodeErr, setSubmitCodeErr] = React.useState<string | null>(null);
+  const [submittingHandover, setSubmittingHandover] = React.useState(false);
+  const [handoverErr, setHandoverErr] = React.useState<string | null>(null);
+  const [handoverOk, setHandoverOk] = React.useState(false);
   const [payoutAddr, setPayoutAddr] = React.useState('');
   const [paySubmitting, setPaySubmitting] = React.useState(false);
   const [payMsg, setPayMsg] = React.useState<string | null>(null);
   const [payErr, setPayErr] = React.useState<string | null>(null);
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
-  const [sellerCodeInput, setSellerCodeInput] = React.useState('');
-  const [submittingCode, setSubmittingCode] = React.useState(false);
-  const [submitCodeErr, setSubmitCodeErr] = React.useState<string | null>(null);
   const [agreeing, setAgreeing] = React.useState(false);
   const [agreeErr, setAgreeErr] = React.useState<string | null>(null);
   const [agreedResult, setAgreedResult] = React.useState<{ sellerAgreed: boolean; buyerAgreed: boolean; locked: boolean } | null>(null);
@@ -749,12 +835,8 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   };
 
   const getVerCode = async () => {
-    setGettingCode(true); setCodeErr(null);
-    try {
-      const r = await apiRequest<{ code: string; expiresAt: string }>(`/deals/${dealId}/verification-code`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      setVerCode(r.code); setVerCodeExpiry(r.expiresAt);
-    } catch (err) { setCodeErr(err instanceof Error ? err.message : 'Failed to get code.'); }
-    finally { setGettingCode(false); }
+    // Not used in SellerView — only buyer generates verification code.
+    // Kept as a safety no-op to satisfy any stale references.
   };
 
   const submitBuyerCode = async () => {
@@ -781,6 +863,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [refunding, setRefunding] = React.useState(false);
   const [refundErr, setRefundErr] = React.useState<string | null>(null);
   const [refundOk, setRefundOk] = React.useState(false);
+
+  const submitHandover = async () => {
+    if (!window.confirm('Confirm you have delivered the item to the buyer as agreed? This submits your handover to the middleman for verification.')) return;
+    setSubmittingHandover(true); setHandoverErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/handover`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      setHandoverOk(true);
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) {
+      setHandoverErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to submit handover.');
+    } finally { setSubmittingHandover(false); }
+  };
 
   const handleFreeRefund = async () => {
     if (!window.confirm('Issue a free refund to the buyer? This returns the full escrow amount with no fees deducted.')) return;
@@ -882,32 +976,23 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           )}
         </ActionCard>
       ) : deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
-        <ActionCard title="Step 1: Get your verification code" icon={KeyRound} description="Get a one-time code and share it with the buyer to advance the deal.">
+        <ActionCard title="Step 1: Enter the buyer's verification code" icon={KeyRound}
+          description="The buyer will generate a one-time code and share it with you via the deal chat. Enter it here to advance the deal.">
           <div className="space-y-3">
-            {codeErr && <p className="text-xs text-destructive">{codeErr}</p>}
-            {verCode ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm break-all">{verCode}</code>
-                  <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard?.writeText(verCode); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 1500); }}>{codeCopied ? '✓' : <Copy className="h-3.5 w-3.5" />}</Button>
-                </div>
-                {verCodeExpiry && <p className="text-xs text-muted-foreground">Expires: {fmtDate(verCodeExpiry)}</p>}
-              </div>
-            ) : (
-              <Button onClick={getVerCode} disabled={gettingCode} className="w-full">{gettingCode ? 'Generating…' : 'Get verification code'}</Button>
-            )}
+            <p className="text-sm text-muted-foreground">Ask the buyer to generate their code, then copy it from the chat and paste it below.</p>
+            <div className="flex gap-2">
+              <Input value={sellerCodeInput} onChange={e => setSellerCodeInput(e.target.value)}
+                placeholder="Paste buyer's verification code" className="flex-1 font-mono" />
+              <Button onClick={submitBuyerCode} disabled={submittingCode || !sellerCodeInput.trim()}>
+                {submittingCode ? '…' : 'Verify'}
+              </Button>
+            </div>
+            {submitCodeErr && <p className="text-xs text-destructive">⚠️ {submitCodeErr}</p>}
           </div>
         </ActionCard>
       ) : deal.status === 'Verified' ? (
-        <ActionCard title="Verify the buyer's code" icon={KeyRound} description="Enter the code the buyer shared with you to confirm the identity exchange.">
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input value={sellerCodeInput} onChange={e => setSellerCodeInput(e.target.value)} placeholder="Enter buyer's verification code" className="flex-1 font-mono" />
-              <Button onClick={submitBuyerCode} disabled={submittingCode || !sellerCodeInput.trim()}>{submittingCode ? '…' : 'Verify'}</Button>
-            </div>
-            {submitCodeErr && <p className="text-xs text-destructive">{submitCodeErr}</p>}
-          </div>
-        </ActionCard>
+        <TermsAcceptCard dealId={dealId} role="seller" deal={deal}
+          onAccepted={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
       ) : deal.status === 'Confirmed' || deal.status === 'Amended' ? (
         <ActionCard title="Deal confirmed — waiting for buyer to fund" icon={Wallet} variant="success">
           <p className="text-sm text-muted-foreground mb-3">Once the buyer sends the funds to escrow, you'll be notified to proceed with delivery.</p>
@@ -923,11 +1008,23 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Deal is funded — deliver the item now" icon={Send} variant="warning">
-          <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Fill in your delivery details below, then deliver the item to the buyer as agreed.</p>
+        <ActionCard title="Deal is funded — deliver then submit handover" icon={Send} variant="warning">
+          <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Deliver the item as agreed, then click below to notify the middleman.</p>
+          {/* Submit handover */}
+          {!handoverOk ? (
+            <div className="mt-3 space-y-2">
+              {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
+              <Button onClick={submitHandover} disabled={submittingHandover} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                <Send className="h-4 w-4 mr-1.5" />
+                {submittingHandover ? 'Submitting…' : 'I have delivered — submit handover to middleman'}
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-emerald-600 mt-2">✓ Handover submitted. The middleman will now verify your delivery.</p>
+          )}
           {/* Free refund option */}
           <div className="mt-4 border-t pt-3">
-            <p className="text-xs text-muted-foreground mb-2">Changed your mind? You can issue a voluntary refund:</p>
+            <p className="text-xs text-muted-foreground mb-2">Changed your mind? You can issue a voluntary refund instead:</p>
             {refundErr && <p className="text-xs text-destructive mb-2">{refundErr}</p>}
             {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund request submitted. The buyer will receive the full amount.</p>}
             <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"

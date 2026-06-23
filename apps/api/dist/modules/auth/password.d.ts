@@ -8,7 +8,7 @@ export declare const ARGON2_OPTIONS: {
     readonly timeCost: 2;
     readonly parallelism: 1;
 };
-export declare const MIN_PASSWORD_LENGTH = 12;
+export declare const MIN_PASSWORD_LENGTH = 10;
 export declare const MAX_PASSWORD_LENGTH = 200;
 export declare function hashPassword(plain: string): Promise<string>;
 export declare function verifyPassword(hash: string, plain: string): Promise<boolean>;

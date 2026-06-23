@@ -273,6 +273,17 @@ export function dealRouter(): Router {
     asyncHandler(controller.approveDeal),
   );
 
+  // Seller submits handover after delivery — Funded → SellerHandover.
+  router.post(
+    '/:id/handover',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema },
+      roles: [...ACCOUNT_ROLES],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(controller.sellerHandover),
+  );
+
   // Middleman confirms the seller has completed the handover.
   // SellerHandover → MiddlemanVerified transition.
   router.post(

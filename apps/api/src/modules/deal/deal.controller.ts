@@ -98,6 +98,15 @@ export async function agreeToDeal(req: Request, res: Response): Promise<void> {
   res.status(200).json(result);
 }
 
+/** Seller submits handover — transitions Funded → SellerHandover. */
+export async function sellerHandover(req: Request, res: Response): Promise<void> {
+  const sellerId = requireUserId(req);
+  const dealId = req.params.id!;
+  const requestId = req.header('Idempotency-Key') ?? `${dealId}:handover:${sellerId}`;
+  const result = await service.sellerHandover(sellerId, dealId, requestId);
+  res.status(200).json(result);
+}
+
 /** Middleman confirms delivery to buyer — transitions MiddlemanVerified → Delivered. */
 export async function deliverToBuyer(req: Request, res: Response): Promise<void> {
   const middlemanId = requireUserId(req);

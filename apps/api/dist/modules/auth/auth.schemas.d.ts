@@ -155,11 +155,11 @@ export declare const acceptPolicySchema: z.ZodObject<{
     docType: z.ZodEnum<["terms", "privacy"]>;
     version: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    docType: "terms" | "privacy";
     version: string;
+    docType: "terms" | "privacy";
 }, {
-    docType: "terms" | "privacy";
     version: string;
+    docType: "terms" | "privacy";
 }>;
 export type AcceptPolicyInput = z.infer<typeof acceptPolicySchema>;
 //# sourceMappingURL=auth.schemas.d.ts.map

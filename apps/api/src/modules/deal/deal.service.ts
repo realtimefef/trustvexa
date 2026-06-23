@@ -843,7 +843,54 @@ export async function middlemanUpdateDeal(
 }
 
 /**
- * Middleman confirms that the seller has completed the handover.
+ * Seller confirms they have delivered the item to the buyer (or initiated
+ * the digital transfer). Transitions the deal Funded → SellerHandover.
+ * Only the deal's seller may call this.
+ */
+export async function sellerHandover(
+  sellerId: string,
+  dealId: string,
+  requestId: string,
+): Promise<{ dealId: string; status: string }> {
+  const client = await acquireClient();
+  try {
+    await client.query('BEGIN');
+    const dealRes = await client.query<{ seller_id: string | null; status: string }>(
+      `SELECT seller_id, status FROM deals WHERE id = $1 FOR UPDATE`,
+      [dealId],
+    );
+    const deal = dealRes.rows[0];
+    if (!deal) {
+      throw new AppError('deal_not_found', 'Deal was not found.', 404);
+    }
+    if (deal.seller_id !== sellerId) {
+      throw new AppError('forbidden', 'Only the seller can submit a handover.', 403);
+    }
+    if (deal.status !== 'Funded') {
+      throw new AppError(
+        'invalid_state',
+        `Handover can only be submitted from Funded state (currently ${deal.status}).`,
+        409,
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const result = await applyDealTransition({
+    dealId,
+    event: 'SellerHandoverSent',
+    actorId: sellerId,
+    requestId,
+  });
+  return { dealId, status: result.to };
+}
+
+
  * Transitions the deal from SellerHandover → MiddlemanVerified.
  * Only the deal's assigned middleman account may call this.
  */

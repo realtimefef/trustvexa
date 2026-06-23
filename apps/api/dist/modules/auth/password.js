@@ -19,7 +19,7 @@ export const ARGON2_OPTIONS = {
     timeCost: 2,
     parallelism: 1,
 };
-export const MIN_PASSWORD_LENGTH = 12;
+export const MIN_PASSWORD_LENGTH = 10;
 export const MAX_PASSWORD_LENGTH = 200;
 export async function hashPassword(plain) {
     return argon2.hash(plain, ARGON2_OPTIONS);
