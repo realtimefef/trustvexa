@@ -71,9 +71,10 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
-// Seller product/delivery details form is shown from Agreed through Funded
-// (the seller prepares details while the buyer funds, and during delivery).
-// The buyer's receiving details are filled inline in the funding card instead.
+// Seller product details form shows during data-entry (Agreed→Confirmed) and
+// the In Progress review (Funded) so the seller can do a final edit before
+// submitting the handover. The buyer's receiving form is inline in the
+// funding card. Forms disappear once the handover is submitted.
 const DETAIL_FORM_STATES = new Set(['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded']);
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -198,12 +199,13 @@ function getRequiredConfirmations(network: string): number {
 const STAGES = ['Created', 'Agreed', 'Funded', 'In Progress', 'Delivered', 'Complete'] as const;
 
 function statusToStage(status: string): number {
-  // Stages: 1 Created · 2 Agreed · 3 Funded · 4 In Progress · 5 Delivered · 6 Complete
+  // User model: 1 Created · 2 Agreed · 3 Funded (pay + fill all details) ·
+  // 4 In Progress (final review + submit handover) · 5 Delivered · 6 Complete
   if (['Released', 'PartiallySettled'].includes(status)) return 6;
   if (['Delivered', 'Approved', 'PayoutQueued', 'MilestoneReleased'].includes(status)) return 5;
-  if (['SellerHandover', 'MiddlemanVerified'].includes(status)) return 4;
-  if (['Funded'].includes(status)) return 3;
-  if (['Agreed', 'Verified', 'Confirmed', 'Amended'].includes(status)) return 2;
+  if (['Funded', 'SellerHandover', 'MiddlemanVerified'].includes(status)) return 4; // In Progress
+  if (['Confirmed', 'Amended'].includes(status)) return 3; // Funded — fund + enter details
+  if (['Agreed', 'Verified'].includes(status)) return 2; // Agreed
   if (['Created', 'Invited'].includes(status)) return 1;
   return 0;
 }
@@ -1003,7 +1005,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           || deal.status === 'Confirmed' || deal.status === 'Amended'
           || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
         <ActionCard title="Deal locked — save your payout address" icon={Wallet} variant="success">
-          <StepLabel step={2} total={6} label="Waiting for buyer to fund escrow" />
+          <StepLabel step={3} total={6} label="Funded — enter details &amp; receive payment" />
           <p className="text-sm text-muted-foreground mb-3">Both parties agreed. Save where you want to receive payment. The buyer will now fund the escrow.</p>
           <div className="space-y-2">
             <Label htmlFor="payoutAddr">Your {deal.coin} payout address ({deal.network})</Label>
@@ -1027,38 +1029,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Step 3 of 6 — Funded: Deliver the item" icon={Send} variant="warning">
-          <StepLabel step={3} total={6} label="Deliver, then submit handover" />
-          <p className="text-sm text-muted-foreground mb-3">Funds are locked in escrow. Deliver the item to the buyer, then submit your handover below.</p>
+        <ActionCard title="Step 4 of 6 — In Progress: Final review & submit handover" icon={Send} variant="warning">
+          <StepLabel step={4} total={6} label="Final review, then hand over to middleman" />
+          <p className="text-sm text-muted-foreground mb-3">Escrow is funded. Review the full deal below, deliver the item to the buyer, then submit your handover to the middleman.</p>
 
-          {/* Buyer's receiving details for the seller to deliver to */}
-          <div className="rounded-xl border bg-background/60 p-3 mb-3 space-y-1.5 text-sm">
-            <p className="text-xs font-semibold text-primary mb-2">📦 Deliver to — buyer&apos;s receiving details</p>
-            {partyDetails?.buyerDetails?.receivingAddress ? (
-              <>
-                <div className="flex justify-between gap-3">
-                  <span className="text-muted-foreground shrink-0">Receiving account</span>
-                  <span className="font-mono text-xs text-right break-all font-semibold">{partyDetails.buyerDetails.receivingAddress}</span>
-                </div>
-                {partyDetails.buyerDetails.contactEmail && (
-                  <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground shrink-0">Buyer email</span>
-                    <span className="text-xs">{partyDetails.buyerDetails.contactEmail}</span>
-                  </div>
-                )}
-                {partyDetails.buyerDetails.specialInstructions && (
-                  <div className="pt-1">
-                    <p className="text-xs text-muted-foreground mb-0.5">Instructions from buyer</p>
-                    <p className="text-xs whitespace-pre-wrap">{partyDetails.buyerDetails.specialInstructions}</p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-600">
-                ⚠️ Buyer has not saved their receiving details yet. Ask them via the deal chat.
-              </div>
-            )}
-          </div>
+          {/* Final review of all deal details */}
+          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
 
           {!handoverOk ? (
             <div className="space-y-3">
@@ -1512,11 +1488,11 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {deal.status === 'Funded' && (
-        <ActionCard title="Escrow funded — waiting for seller to deliver" icon={Clock} variant="success">
-          <StepLabel step={3} total={6} label="Seller is preparing delivery" />
-          <p className="text-sm text-muted-foreground mb-3">Your funds are safely locked in escrow and your receiving details are saved. The seller will now deliver and submit a handover to the middleman.</p>
+        <ActionCard title="Step 4 of 6 — In Progress: Final review" icon={Shield} variant="success">
+          <StepLabel step={4} total={6} label="Final review — seller is delivering" />
+          <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below. The seller will deliver and submit a handover to the middleman.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          <NextStep text="Seller delivers → submits handover → middleman verifies → you'll be asked to inspect and approve." />
+          <NextStep text="Seller submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
       )}
 
