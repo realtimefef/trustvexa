@@ -14,7 +14,7 @@ import { useDealRoom } from '@/hooks/useDealRoom';
 import {
   ArrowLeft, CheckCircle2, ChevronDown, ChevronUp,
   Copy, Check, FileText, MessageCircle, Shield,
-  Wallet, UserPlus, KeyRound, Send,
+  Wallet, UserPlus, Send,
   Download, AlertTriangle, Clock,
 } from 'lucide-react';
 
@@ -414,7 +414,7 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
   const [productName, setProductName] = React.useState(existing?.productName ?? '');
   const [productDescription, setProductDescription] = React.useState(existing?.productDescription ?? '');
   const [requirements, setRequirements] = React.useState(existing?.requirementsForBuyer ?? existing?.requirements ?? '');
-  const [deliveryMethod, setDeliveryMethod] = React.useState(existing?.deliveryMethod ?? 'Email');
+  const [deliveryMethod, setDeliveryMethod] = React.useState(existing?.deliveryMethod ?? 'Chat');
   const [deliveryInstructions, setDeliveryInstructions] = React.useState(existing?.deliveryInstructions ?? '');
   const [estimatedDeliveryTime, setEstimatedDeliveryTime] = React.useState(existing?.estimatedDeliveryTime ?? '');
   const [additionalNotes, setAdditionalNotes] = React.useState(existing?.additionalNotes ?? '');
@@ -443,10 +443,11 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
             <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)} placeholder="Name of what you're selling" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sd-method">Delivery method</Label>
+            <Label htmlFor="sd-method">How do you deliver?</Label>
             <select id="sd-method" value={deliveryMethod} onChange={e => setDeliveryMethod(e.target.value)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option>Email</option><option>Download Link</option><option>Account Transfer</option><option>Other</option>
+              <option value="Chat">Chat (via deal chat — default)</option>
+              <option value="Email">Email</option>
             </select>
           </div>
         </div>
@@ -492,7 +493,7 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
   dealId: string; existing: BuyerDetailsData | null; onSaved: () => void;
 }) {
   const qc = useQueryClient();
-  const [platform, setPlatform] = React.useState(existing?.receivingPlatform ?? 'Email');
+  const [platform, setPlatform] = React.useState(existing?.receivingPlatform ?? 'Chat');
   const [address, setAddress] = React.useState(existing?.receivingAddress ?? '');
   const [email, setEmail] = React.useState(existing?.contactEmail ?? '');
   const [backup, setBackup] = React.useState(existing?.backupContact ?? '');
@@ -519,10 +520,11 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="bd-platform">Receiving via</Label>
+            <Label htmlFor="bd-platform">How to receive?</Label>
             <select id="bd-platform" value={platform} onChange={e => setPlatform(e.target.value)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option>Email</option><option>Telegram</option><option>Discord</option><option>Wallet Address</option><option>Other</option>
+              <option value="Chat">Chat (via deal chat — default)</option>
+              <option value="Email">Email</option>
             </select>
           </div>
           <div className="space-y-1.5">
@@ -701,94 +703,6 @@ function EditDealCard({ dealId, deal, onSaved }: { dealId: string; deal: DealDet
   );
 }
 
-// ─── Terms Accept Card (Verified → Confirmed) ────────────────────────────────
-// Both buyer and seller must accept terms at Verified status.
-// Fetches policy versions from GET /deals/:id/agreement, shows 3 required
-// checkboxes, and submits POST /deals/:id/terms/accept.
-
-function TermsAcceptCard({ dealId, role, deal, onAccepted }: {
-  dealId: string; role: 'buyer' | 'seller'; deal: DealDetail; onAccepted: () => void;
-}) {
-  const [cryptoRisk, setCryptoRisk] = React.useState(false);
-  const [wrongNetwork, setWrongNetwork] = React.useState(false);
-  const [noProhibited, setNoProhibited] = React.useState(false);
-  const [accepting, setAccepting] = React.useState(false);
-  const [done, setDone] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
-
-  const agreementQ = useQuery({
-    queryKey: ['deal-agreement', dealId],
-    queryFn: () => apiRequest<{
-      requiredPolicyVersions: { terms: string | null; disputePolicy: string | null };
-    }>(`/deals/${dealId}/agreement`),
-    staleTime: 300_000,
-    retry: false,
-  });
-
-  const termsVersion  = agreementQ.data?.requiredPolicyVersions?.terms       ?? '1';
-  const disputeVersion = agreementQ.data?.requiredPolicyVersions?.disputePolicy ?? '1';
-  const allChecked = cryptoRisk && wrongNetwork && noProhibited;
-
-  const accept = async () => {
-    setAccepting(true); setErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/terms/accept`, {
-        method: 'POST',
-        body: {
-          acceptedTermsVersion: termsVersion,
-          acceptedDisputePolicyVersion: disputeVersion,
-          acceptedCryptoRisk: true as const,
-          acceptedWrongNetworkWarning: true as const,
-          acceptedNoProhibitedItems: true as const,
-        },
-        idempotencyKey: newIdempotencyKey(),
-      });
-      setDone(true);
-      onAccepted();
-    } catch (e) {
-      setErr(e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Failed to accept terms.');
-    } finally { setAccepting(false); }
-  };
-
-  if (done) {
-    return (
-      <ActionCard title="✓ Terms accepted — waiting for other party" icon={CheckCircle2} variant="success">
-        <p className="text-sm text-muted-foreground">Your acceptance is recorded. Once the other party also accepts, the deal advances to payment.</p>
-      </ActionCard>
-    );
-  }
-
-  return (
-    <ActionCard title={`Step 2: Accept deal terms (${role === 'buyer' ? 'Buyer' : 'Seller'})`} icon={FileText}
-      description="Both parties must confirm terms before the buyer can fund the escrow.">
-      <div className="space-y-4">
-        <div className="rounded-lg bg-muted/30 border px-3 py-2 text-sm space-y-1">
-          <div className="flex justify-between"><span className="text-muted-foreground">Coin / Network</span><span>{deal.coin} · {deal.network}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
-          <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
-        </div>
-        <div className="space-y-2">
-          {[
-            { key: 'crypto',    val: cryptoRisk,    set: setCryptoRisk,    label: 'I accept that all cryptocurrency transactions are irreversible. Sending to the wrong address permanently loses funds.' },
-            { key: 'network',   val: wrongNetwork,  set: setWrongNetwork,  label: `I confirm I will only use the ${deal.network} network for all transfers — sending on a different network destroys the funds.` },
-            { key: 'prohibited', val: noProhibited, set: setNoProhibited,  label: "I confirm the item being traded does not violate TrustVexa's prohibited items policy." },
-          ].map(item => (
-            <label key={item.key} className="flex items-start gap-2 cursor-pointer">
-              <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0" checked={item.val}
-                onChange={e => item.set(e.target.checked)} />
-              <span className="text-sm">{item.label}</span>
-            </label>
-          ))}
-        </div>
-        {err && <p className="text-xs text-destructive">⚠️ {err}</p>}
-        <Button onClick={accept} disabled={accepting || !allChecked} className="w-full">
-          {accepting ? 'Submitting…' : '✓ I agree to all terms — proceed to payment'}
-        </Button>
-      </div>
-    </ActionCard>
-  );
-}
-
 // ─── SELLER VIEW ──────────────────────────────────────────────────────────────
 
 interface SellerViewProps {
@@ -803,9 +717,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [inviting, setInviting] = React.useState(false);
   const [inviteErr, setInviteErr] = React.useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = React.useState(false);
-  const [sellerCodeInput, setSellerCodeInput] = React.useState('');
-  const [submittingCode, setSubmittingCode] = React.useState(false);
-  const [submitCodeErr, setSubmitCodeErr] = React.useState<string | null>(null);
   const [submittingHandover, setSubmittingHandover] = React.useState(false);
   const [handoverErr, setHandoverErr] = React.useState<string | null>(null);
   const [handoverOk, setHandoverOk] = React.useState(false);
@@ -832,16 +743,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     if (!inviteUrl) return;
     await navigator.clipboard.writeText(toPublicUrl(inviteUrl));
     setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2000);
-  };
-
-  const submitBuyerCode = async () => {
-    if (!sellerCodeInput.trim()) return;
-    setSubmittingCode(true); setSubmitCodeErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/verification-code/verify`, { method: 'POST', body: { code: sellerCodeInput.trim() }, idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setSubmitCodeErr(err instanceof Error ? err.message : 'Invalid code.'); }
-    finally { setSubmittingCode(false); }
   };
 
   const savePayout = async () => {
@@ -970,24 +871,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm text-muted-foreground">Buyer has joined. Waiting for both parties to agree to terms.</p>
           )}
         </ActionCard>
-      ) : deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
-        <ActionCard title="Step 1: Enter the buyer's verification code" icon={KeyRound}
-          description="The buyer will generate a one-time code and share it with you via the deal chat. Enter it here to advance the deal.">
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Ask the buyer to generate their code, then copy it from the chat and paste it below.</p>
-            <div className="flex gap-2">
-              <Input value={sellerCodeInput} onChange={e => setSellerCodeInput(e.target.value)}
-                placeholder="Paste buyer's verification code" className="flex-1 font-mono" />
-              <Button onClick={submitBuyerCode} disabled={submittingCode || !sellerCodeInput.trim()}>
-                {submittingCode ? '…' : 'Verify'}
-              </Button>
-            </div>
-            {submitCodeErr && <p className="text-xs text-destructive">⚠️ {submitCodeErr}</p>}
-          </div>
+      ) : deal.status === 'Agreed' || deal.status === 'Verified'
+          || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
+        <ActionCard title="✓ Deal locked — buyer is preparing to fund" icon={Wallet} variant="success">
+          <p className="text-sm text-muted-foreground">Both parties have agreed. The buyer will now fund the escrow. You'll be notified once funds arrive.</p>
+          <p className="text-xs text-muted-foreground mt-2">While you wait, fill in your product &amp; delivery details below so the middleman can verify your handover when it's time.</p>
         </ActionCard>
-      ) : deal.status === 'Verified' ? (
-        <TermsAcceptCard dealId={dealId} role="seller" deal={deal}
-          onAccepted={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
       ) : deal.status === 'Confirmed' || deal.status === 'Amended' ? (
         <ActionCard title="Deal confirmed — waiting for buyer to fund" icon={Wallet} variant="success">
           <p className="text-sm text-muted-foreground mb-3">Once the buyer sends the funds to escrow, you'll be notified to proceed with delivery.</p>
@@ -1168,7 +1057,7 @@ interface BuyerViewProps {
 }
 
 function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
-  const escrowQuery = useEscrowAddress(dealId, ['Confirmed', 'Amended', 'Funded'].includes(deal.status));
+  const escrowQuery = useEscrowAddress(dealId, ['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded'].includes(deal.status));
   const escrow = escrowQuery.data;
   const [txHash, setTxHash] = React.useState('');
   const [paySubmitting, setPaySubmitting] = React.useState(false);
@@ -1183,11 +1072,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [approveErr, setApproveErr] = React.useState<string | null>(null);
   const [disputing, setDisputing] = React.useState(false);
   const [disputeErr, setDisputeErr] = React.useState<string | null>(null);
-  const [verCode, setVerCode] = React.useState<string | null>(null);
-  const [verCodeExpiry, setVerCodeExpiry] = React.useState<string | null>(null);
-  const [gettingCode, setGettingCode] = React.useState(false);
-  const [codeErr, setCodeErr] = React.useState<string | null>(null);
-  const [codeCopied, setCodeCopied] = React.useState(false);
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
@@ -1205,15 +1089,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
     } catch (err) { setAgreeErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to agree.'); }
     finally { setAgreeing(false); }
-  };
-
-  const getVerCode = async () => {
-    setGettingCode(true); setCodeErr(null);
-    try {
-      const r = await apiRequest<{ code: string; expiresAt: string }>(`/deals/${dealId}/verification-code`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      setVerCode(r.code); setVerCodeExpiry(r.expiresAt);
-    } catch (err) { setCodeErr(err instanceof Error ? err.message : 'Failed to get code.'); }
-    finally { setGettingCode(false); }
   };
 
   const submitTxHash = async () => {
@@ -1287,14 +1162,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <ActionCard title={dealLockedAt ? '✓ Both parties agreed — deal locked!' : '✓ Your agreement recorded — waiting for seller'} icon={CheckCircle2} variant="success">
             {dealLockedAt ? (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Both parties agreed. The deal is locked and advancing to verification.</p>
-                <div className="rounded-lg bg-muted/40 border px-3 py-2 space-y-1">
-                  <p className="text-xs font-semibold">What happens next:</p>
-                  <p className="text-xs text-muted-foreground">1. The seller will share a one-time verification code with you.</p>
-                  <p className="text-xs text-muted-foreground">2. You share your code back with the seller.</p>
-                  <p className="text-xs text-muted-foreground">3. You will then be asked to send funds to the escrow address.</p>
-                </div>
-                <p className="text-xs text-muted-foreground">If the page doesn&apos;t update in a few seconds, refresh once.</p>
+                <p className="text-sm text-muted-foreground">Both parties agreed. The deal is now locked. You can fund the escrow below to start the deal.</p>
+                <p className="text-xs text-muted-foreground">If the funding UI doesn&apos;t appear yet, refresh once.</p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -1352,47 +1221,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         )
       )}
 
-      {/* Show "Get verification code" at Agreed — buyer generates code, shares with seller via chat */}
-      {(deal.status === 'Agreed' || ((deal.status === 'Created' || deal.status === 'Invited') && dealLockedAt)) && (
-        <ActionCard title="Step 1: Get your verification code" icon={KeyRound}
-          description="Generate a one-time code and share it with the seller via the deal chat.">
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Generate the code below, copy it, and send it to the seller in the deal chat.
-              Once the seller enters it, the deal will advance to the next step.
-            </p>
-            {codeErr && <p className="text-xs text-destructive">{codeErr}</p>}
-            {verCode ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md border bg-muted px-3 py-2 font-mono text-sm break-all">{verCode}</code>
-                  <Button size="sm" variant="outline" onClick={() => {
-                    void navigator.clipboard?.writeText(verCode);
-                    setCodeCopied(true); setTimeout(() => setCodeCopied(false), 1500);
-                  }}>{codeCopied ? '✓ Copied' : <><Copy className="h-3.5 w-3.5" /> Copy</>}</Button>
-                </div>
-                {verCodeExpiry && <p className="text-xs text-muted-foreground">Expires: {fmtDate(verCodeExpiry)}</p>}
-                <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2">
-                  <p className="text-xs font-semibold text-primary mb-1">Next step:</p>
-                  <p className="text-xs text-muted-foreground">Share this code with the seller via the deal chat. They will enter it to advance the deal.</p>
-                </div>
-              </div>
-            ) : (
-              <Button onClick={getVerCode} disabled={gettingCode} className="w-full">
-                {gettingCode ? 'Generating…' : 'Generate my verification code'}
-              </Button>
-            )}
-          </div>
-        </ActionCard>
-      )}
-
-      {/* Verified → both parties accept terms; once both accept → Confirmed */}
-      {deal.status === 'Verified' && (
-        <TermsAcceptCard dealId={dealId} role="buyer" deal={deal}
-          onAccepted={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
-      )}
-
-      {(deal.status === 'Confirmed' || deal.status === 'Amended') && (
+      {/* Show escrow funding at Agreed/Verified/Confirmed/Amended — buyer can fund immediately after both agree */}
+      {(deal.status === 'Agreed' || deal.status === 'Verified' || deal.status === 'Confirmed' || deal.status === 'Amended') && (
         <ActionCard title="Fund the escrow — send exactly this amount" icon={Wallet}
           description={`Send the exact ${deal.coin} amount below. Wrong amount or wrong network = permanent loss.`}>
           {/* Exact amount box — prominent */}

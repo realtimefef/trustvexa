@@ -300,6 +300,28 @@ export async function agreeToDeal(userId, dealId) {
                 }
             }
             await client.query('COMMIT');
+            // Repair path: also advance through Agreed/Verified to Confirmed
+            let repairStatus = repairedStatus;
+            if (repairStatus === 'Agreed' || repairStatus === 'Verified') {
+                if (repairStatus === 'Agreed') {
+                    try {
+                        await applyDealTransition({
+                            dealId, event: 'CodeVerified', actorId: userId,
+                            requestId: `repair-code:${dealId}:${Date.now()}`,
+                        });
+                        repairStatus = 'Verified';
+                    }
+                    catch { /* already past Verified */ }
+                }
+                try {
+                    await applyDealTransition({
+                        dealId, event: 'TermsAccepted', actorId: userId,
+                        requestId: `repair-terms:${dealId}:${Date.now()}`,
+                    });
+                    repairStatus = 'Confirmed';
+                }
+                catch { /* already Confirmed */ }
+            }
             return {
                 dealId,
                 buyerAgreed: deal.buyer_agreed_at !== null,
@@ -308,7 +330,7 @@ export async function agreeToDeal(userId, dealId) {
                 lockedAt: typeof deal.locked_at === 'string'
                     ? deal.locked_at
                     : new Date(deal.locked_at).toISOString(),
-                status: repairedStatus,
+                status: repairStatus,
             };
         }
         const isBuyer = deal.buyer_id === userId;
@@ -355,6 +377,27 @@ export async function agreeToDeal(userId, dealId) {
             }
         }
         await client.query('COMMIT');
+        // AUTO-ADVANCE: Once both parties lock, jump directly to Confirmed so
+        // buyers can fund the escrow immediately — no verification code exchange
+        // or manual terms acceptance step is needed.
+        if (finalStatus === 'Agreed') {
+            try {
+                await applyDealTransition({
+                    dealId, event: 'CodeVerified', actorId: userId,
+                    requestId: `auto-code:${dealId}:${Date.now()}`,
+                });
+                finalStatus = 'Verified';
+            }
+            catch { /* already Verified or Confirmed, continue */ }
+            try {
+                await applyDealTransition({
+                    dealId, event: 'TermsAccepted', actorId: userId,
+                    requestId: `auto-terms:${dealId}:${Date.now()}`,
+                });
+                finalStatus = 'Confirmed';
+            }
+            catch { /* already Confirmed, continue */ }
+        }
         return {
             dealId,
             buyerAgreed: buyerAgreedAt !== null,
