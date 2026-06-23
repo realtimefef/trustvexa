@@ -71,11 +71,10 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
-// Seller product details form shows during data-entry (Agreed→Confirmed) and
-// the In Progress review (Funded) so the seller can do a final edit before
-// submitting the handover. The buyer's receiving form is inline in the
-// funding card. Forms disappear once the handover is submitted.
-const DETAIL_FORM_STATES = new Set(['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded']);
+// Seller product details form shows at the "Funded" stepper stage = statuses
+// Agreed→Confirmed (data entry). At "In Progress" (status Funded) it's review
+// only; the form only reappears there as a fallback if it was never filled.
+const DETAIL_FORM_STATES = new Set(['Agreed', 'Verified', 'Confirmed', 'Amended']);
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
@@ -1039,9 +1038,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           {!handoverOk ? (
             <div className="space-y-3">
               {!sellerDetailsSaved && (
-                <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Please fill in and save <strong>Your product &amp; delivery details</strong> below before submitting the handover.
-                </div>
+                <>
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Complete <strong>Your product &amp; delivery details</strong> below before submitting the handover.
+                  </div>
+                  <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
+                </>
               )}
               <NoRollbackBanner text="Only click below after you have delivered. This moves the deal to middleman verification and cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
@@ -1266,6 +1268,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
   const [confirmingFunding, setConfirmingFunding] = React.useState(false);
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
+  const [submittedToMm, setSubmittedToMm] = React.useState(false);
 
   const confirmFunding = async () => {
     if (!window.confirm('Confirm you have sent the payment to the escrow address? This advances the deal to the delivery stage.')) return;
@@ -1489,9 +1492,19 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {deal.status === 'Funded' && (
         <ActionCard title="Step 4 of 6 — In Progress: Final review" icon={Shield} variant="success">
-          <StepLabel step={4} total={6} label="Final review — seller is delivering" />
-          <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below. The seller will deliver and submit a handover to the middleman.</p>
+          <StepLabel step={4} total={6} label="Final review — submit to middleman" />
+          <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below and submit your details to the middleman.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+          {!submittedToMm ? (
+            <Button onClick={() => setSubmittedToMm(true)} className="w-full mt-3">
+              <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
+            </Button>
+          ) : (
+            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
+              <p className="text-sm font-semibold text-emerald-600">✓ Submitted to the middleman</p>
+              <p className="text-xs text-muted-foreground mt-1">The middleman has your details. The seller is delivering and will submit a handover for verification.</p>
+            </div>
+          )}
           <NextStep text="Seller submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
       )}
@@ -1510,17 +1523,17 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <StepLabel step={5} total={6} label="Your inspection window" />
 
           {/* Congratulations banner */}
-          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 mb-3 text-center space-y-1">
-            <p className="font-semibold text-primary">Your delivery details have been received!</p>
-            <p className="text-sm text-muted-foreground">The middleman has verified the delivery. Please inspect the item carefully.</p>
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mb-3 text-center space-y-1">
+            <p className="font-semibold text-emerald-600">🎉 Congratulations! Your delivery has been received.</p>
+            <p className="text-sm text-muted-foreground">You will receive all the information shortly. You can contact the middleman anytime via the deal chat, or wait for their reply by chat / email.</p>
           </div>
 
           {/* Next steps guidance */}
           <div className="rounded-lg bg-muted/30 border px-3 py-3 mb-3 space-y-1.5 text-sm">
             <p className="text-xs font-semibold mb-2">What happens next:</p>
-            <p className="text-xs text-muted-foreground">1. If everything is as agreed → click <strong>Approve</strong> to release payment to the seller.</p>
-            <p className="text-xs text-muted-foreground">2. The middleman will contact you via <strong>chat or email</strong> with any additional delivery details.</p>
-            <p className="text-xs text-muted-foreground">3. If there is an issue → open a dispute and a middleman will review your case.</p>
+            <p className="text-xs text-muted-foreground">1. The middleman will send your delivery details via <strong>chat or email</strong>.</p>
+            <p className="text-xs text-muted-foreground">2. If everything is as agreed → click <strong>Approve</strong> to release payment to the seller.</p>
+            <p className="text-xs text-muted-foreground">3. If there is a problem → open a dispute and the middleman will review your case.</p>
           </div>
 
           <NoRollbackBanner text="Once you click 'Approve', the seller receives payment INSTANTLY. This cannot be reversed. Only approve if you are fully satisfied." />
