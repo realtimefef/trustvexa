@@ -406,6 +406,7 @@ function ChatLink() {
 }
 
 // ─── Seller Details Form ──────────────────────────────────────────────────────
+// Only visible to the seller and middleman. Saved to deal_seller_details table.
 
 function SellerDetailsForm({ dealId, existing, onSaved }: {
   dealId: string; existing: SellerDetailsData | null; onSaved: () => void;
@@ -413,20 +414,28 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
   const qc = useQueryClient();
   const [productName, setProductName] = React.useState(existing?.productName ?? '');
   const [productDescription, setProductDescription] = React.useState(existing?.productDescription ?? '');
-  const [requirements, setRequirements] = React.useState(existing?.requirementsForBuyer ?? existing?.requirements ?? '');
   const [deliveryMethod, setDeliveryMethod] = React.useState(existing?.deliveryMethod ?? 'Chat');
   const [deliveryInstructions, setDeliveryInstructions] = React.useState(existing?.deliveryInstructions ?? '');
-  const [estimatedDeliveryTime, setEstimatedDeliveryTime] = React.useState(existing?.estimatedDeliveryTime ?? '');
-  const [additionalNotes, setAdditionalNotes] = React.useState(existing?.additionalNotes ?? '');
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
+
+  // Re-populate when saved data loads from the server (async query)
+  React.useEffect(() => {
+    if (existing) {
+      setProductName(existing.productName ?? '');
+      setProductDescription(existing.productDescription ?? '');
+      setDeliveryMethod(existing.deliveryMethod ?? 'Chat');
+      setDeliveryInstructions(existing.deliveryInstructions ?? '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existing?.productName, existing?.deliveryMethod]);
 
   const handleSave = async () => {
     setSaving(true); setError(null); setSuccess(false);
     try {
       await apiRequest(`/deals/${dealId}/seller-details`, { method: 'POST', idempotencyKey: newIdempotencyKey(),
-        body: { productName, productDescription, requirementsForBuyer: requirements, deliveryMethod, deliveryInstructions, estimatedDeliveryTime, additionalNotes } });
+        body: { productName, productDescription, deliveryMethod, deliveryInstructions, requirements: null, estimatedDeliveryTime: null, additionalNotes: null } });
       setSuccess(true);
       void qc.invalidateQueries({ queryKey: ['party-details', dealId] });
       onSaved();
@@ -434,13 +443,16 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
     finally { setSaving(false); }
   };
 
+  const isSaved = !!(existing?.productName || existing?.productDescription || existing?.deliveryInstructions);
+
   return (
-    <ActionCard title="Your product & delivery details" description="This info is only visible to the middleman — not to the buyer." icon={Send}>
+    <ActionCard title="Your product & delivery details" description="Only visible to the middleman — not to the buyer." icon={Send}>
+      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Details saved. Edit below to update.</p>}
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="sd-name">Product name</Label>
-            <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)} placeholder="Name of what you're selling" />
+            <Label htmlFor="sd-name">Product / service name</Label>
+            <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)} placeholder="What you're selling" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="sd-method">How do you deliver?</Label>
@@ -455,39 +467,25 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
           <Label htmlFor="sd-desc">Product description</Label>
           <textarea id="sd-desc" rows={2} value={productDescription} onChange={e => setProductDescription(e.target.value)}
             className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Describe exactly what the buyer receives" />
+            placeholder="Exactly what the buyer will receive" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sd-reqs">Requirements from buyer</Label>
-          <textarea id="sd-reqs" rows={2} value={requirements} onChange={e => setRequirements(e.target.value)}
-            className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="What does the buyer need to provide?" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="sd-instructions">Delivery instructions</Label>
+          <Label htmlFor="sd-instructions">Delivery instructions <span className="text-muted-foreground text-xs">(for middleman)</span></Label>
           <textarea id="sd-instructions" rows={2} value={deliveryInstructions} onChange={e => setDeliveryInstructions(e.target.value)}
             className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Exactly how will delivery happen?" />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="sd-time">Estimated delivery time</Label>
-            <Input id="sd-time" value={estimatedDeliveryTime} onChange={e => setEstimatedDeliveryTime(e.target.value)} placeholder="e.g. Within 24 hours" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="sd-notes">Additional notes</Label>
-            <Input id="sd-notes" value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} placeholder="Any caveats or notes" />
-          </div>
+            placeholder={deliveryMethod === 'Email' ? 'e.g. I will email to the address the buyer provides' : 'e.g. I will send via the deal chat'} />
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
-        {success && <p className="text-xs text-emerald-600">✓ Details saved successfully.</p>}
-        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save my details'}</Button>
+        {success && <p className="text-xs text-emerald-600">✓ Details saved.</p>}
+        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}</Button>
+        {success && <p className="text-xs text-muted-foreground text-center">Next: wait for the buyer to fund the escrow. You'll be notified to deliver once funded.</p>}
       </div>
     </ActionCard>
   );
 }
 
 // ─── Buyer Details Form ───────────────────────────────────────────────────────
+// Only visible to the buyer and middleman. Saved to deal_buyer_details table.
 
 function BuyerDetailsForm({ dealId, existing, onSaved }: {
   dealId: string; existing: BuyerDetailsData | null; onSaved: () => void;
@@ -496,18 +494,27 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
   const [platform, setPlatform] = React.useState(existing?.receivingPlatform ?? 'Chat');
   const [address, setAddress] = React.useState(existing?.receivingAddress ?? '');
   const [email, setEmail] = React.useState(existing?.contactEmail ?? '');
-  const [backup, setBackup] = React.useState(existing?.backupContact ?? '');
   const [instructions, setInstructions] = React.useState(existing?.specialInstructions ?? '');
-  const [notes, setNotes] = React.useState(existing?.suggestions ?? existing?.notes ?? '');
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
+
+  // Re-populate when saved data loads from the server (async query)
+  React.useEffect(() => {
+    if (existing) {
+      setPlatform(existing.receivingPlatform ?? 'Chat');
+      setAddress(existing.receivingAddress ?? '');
+      setEmail(existing.contactEmail ?? '');
+      setInstructions(existing.specialInstructions ?? '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existing?.receivingPlatform, existing?.receivingAddress]);
 
   const handleSave = async () => {
     setSaving(true); setError(null); setSuccess(false);
     try {
       await apiRequest(`/deals/${dealId}/buyer-details`, { method: 'POST', idempotencyKey: newIdempotencyKey(),
-        body: { receivingPlatform: platform, receivingAddress: address, contactEmail: email, backupContact: backup, specialInstructions: instructions, suggestions: notes } });
+        body: { receivingPlatform: platform, receivingAddress: address, contactEmail: email, specialInstructions: instructions, backupContact: null, suggestions: null } });
       setSuccess(true);
       void qc.invalidateQueries({ queryKey: ['party-details', dealId] });
       onSaved();
@@ -515,8 +522,11 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
     finally { setSaving(false); }
   };
 
+  const isSaved = !!(existing?.receivingAddress || existing?.contactEmail || existing?.specialInstructions);
+
   return (
-    <ActionCard title="Your receiving details" description="Tell the seller where to deliver. Only the middleman can see this — not the seller." icon={Wallet}>
+    <ActionCard title="Your receiving details" description="Tell the middleman where to deliver. The seller cannot see this." icon={Wallet}>
+      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Details saved. Edit below to update.</p>}
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -529,34 +539,24 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bd-address">Your {platform} address</Label>
-            <Input id="bd-address" value={address} onChange={e => setAddress(e.target.value)} placeholder={`Your ${platform} to receive at`} />
-          </div>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="bd-email">Contact email</Label>
-            <Input id="bd-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bd-backup">Backup contact</Label>
-            <Input id="bd-backup" value={backup} onChange={e => setBackup(e.target.value)} placeholder="Alternative contact method" />
+            <Input id="bd-address" value={address} onChange={e => setAddress(e.target.value)}
+              placeholder={platform === 'Email' ? 'your@email.com' : 'Your chat username / ID'} />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="bd-instructions">Special instructions</Label>
+          <Label htmlFor="bd-email">Email for delivery confirmation <span className="text-muted-foreground text-xs">(optional)</span></Label>
+          <Input id="bd-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="bd-instructions">Delivery instructions <span className="text-muted-foreground text-xs">(for middleman)</span></Label>
           <textarea id="bd-instructions" rows={2} value={instructions} onChange={e => setInstructions(e.target.value)}
             className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Any special delivery instructions" />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bd-notes">Notes / suggestions for seller</Label>
-          <textarea id="bd-notes" rows={2} value={notes} onChange={e => setNotes(e.target.value)}
-            className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Any notes or suggestions" />
+            placeholder="Any specific instructions the middleman should follow" />
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
-        {success && <p className="text-xs text-emerald-600">✓ Details saved successfully.</p>}
-        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save my details'}</Button>
+        {success && <p className="text-xs text-emerald-600">✓ Details saved.</p>}
+        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}</Button>
+        {success && <p className="text-xs text-muted-foreground text-center">Next: fund the escrow above to start the deal.</p>}
       </div>
     </ActionCard>
   );
