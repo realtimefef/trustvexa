@@ -25,7 +25,7 @@ const registerSchema = z.object({
     .max(32, 'Username must be at most 32 characters')
     .regex(/^[a-zA-Z0-9_-]+$/, 'Only letters, numbers, underscores, and hyphens'),
   email: z.string().email('Enter a valid email address'),
-  password: z.string().min(12, 'Password must be at least 12 characters'),
+  password: z.string().min(10, 'Password must be at least 10 characters'),
   isAdult: z.literal(true, { errorMap: () => ({ message: 'You must confirm you are 18 or older' }) }),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: 'You must accept the Terms of Service' }) }),
   acceptPrivacy: z.literal(true, { errorMap: () => ({ message: 'You must accept the Privacy Policy' }) }),
@@ -36,7 +36,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
   if (pw.length === 0) return { score: 0, label: '', color: '' };
   let score = 0;
-  if (pw.length >= 12) score++;
+  if (pw.length >= 10) score++;
   if (pw.length >= 16) score++;
   if (/[A-Z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
@@ -168,7 +168,7 @@ export default function RegisterPage() {
 
               <ul className="space-y-1 text-xs">
                 {[
-                  { label: 'At least 12 characters', met: passwordValue.length >= 12 },
+                  { label: 'At least 10 characters', met: passwordValue.length >= 10 },
                   { label: 'One uppercase letter', met: /[A-Z]/.test(passwordValue) },
                   { label: 'One number', met: /[0-9]/.test(passwordValue) },
                   { label: 'One special character', met: /[^A-Za-z0-9]/.test(passwordValue) },

@@ -103,7 +103,7 @@
       "accountLocked": "Account temporarily locked due to too many attempts. Try again later.",
       "emailUnavailable": "That email cannot be used to register.",
       "usernameTaken": "That username is already taken.",
-      "weakPassword": "Password is too weak. Use at least 12 characters.",
+      "weakPassword": "Password is too weak. Use at least 10 characters.",
       "captchaRequired": "Please complete the CAPTCHA.",
       "generic": "Something went wrong. Please try again."
     }
