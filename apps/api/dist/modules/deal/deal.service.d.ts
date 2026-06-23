@@ -109,6 +109,16 @@ export interface MiddlemanUpdateDealResult {
  */
 export declare function middlemanUpdateDeal(middlemanId: string, dealId: string, input: MiddlemanUpdateDealInput): Promise<MiddlemanUpdateDealResult>;
 /**
+ * Manually advance a deal from Confirmed → Funded. Used when the buyer has
+ * sent payment and wants to proceed without waiting for the automatic
+ * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock
+ * the flow). Either the buyer or the assigned middleman may trigger it.
+ */
+export declare function confirmFunding(userId: string, dealId: string, requestId: string): Promise<{
+    dealId: string;
+    status: string;
+}>;
+/**
  * Seller confirms they have delivered the item to the buyer (or initiated
  * the digital transfer). Transitions the deal Funded → SellerHandover.
  * Only the deal's seller may call this.

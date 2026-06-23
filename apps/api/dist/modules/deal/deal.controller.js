@@ -75,6 +75,14 @@ export async function agreeToDeal(req, res) {
     const result = await service.agreeToDeal(userId, dealId);
     res.status(200).json(result);
 }
+/** Buyer/middleman manually confirms funding — transitions Confirmed → Funded. */
+export async function confirmFunding(req, res) {
+    const userId = requireUserId(req);
+    const dealId = req.params.id;
+    const requestId = req.header('Idempotency-Key') ?? `${dealId}:confirm-funding:${userId}`;
+    const result = await service.confirmFunding(userId, dealId, requestId);
+    res.status(200).json(result);
+}
 /** Seller submits handover — transitions Funded → SellerHandover. */
 export async function sellerHandover(req, res) {
     const sellerId = requireUserId(req);

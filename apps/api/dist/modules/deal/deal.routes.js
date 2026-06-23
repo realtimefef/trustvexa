@@ -135,6 +135,12 @@ export function dealRouter() {
         roles: [...ACCOUNT_ROLES],
         enforceIdempotency: true,
     }), asyncHandler(controller.approveDeal));
+    // Buyer/middleman manually confirms funding — Confirmed → Funded.
+    router.post('/:id/confirm-funding', ...apiChain({
+        schemas: { params: dealIdParamSchema },
+        roles: [...ACCOUNT_ROLES],
+        enforceIdempotency: true,
+    }), asyncHandler(controller.confirmFunding));
     // Seller submits handover after delivery — Funded → SellerHandover.
     router.post('/:id/handover', ...apiChain({
         schemas: { params: dealIdParamSchema },

@@ -29,7 +29,6 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StateBadge } from '@/components/ui/state-badge';
 import { PaymentInstructions } from '@/components/payment-instructions';
-import { ConfirmationCounter } from '@/components/confirmation-counter';
 import { WalletInput } from '@/components/wallet-input';
 import { apiRequest, getAccessToken, newIdempotencyKey, ApiError } from '@/lib/api/client';
 import type { DealDetail as BaseDealDetail } from '@/lib/api/types';
@@ -161,14 +160,6 @@ function toPublicUrl(url: string): string {
   catch { return url; }
 }
 
-function getRequiredConfirmations(network: string): number {
-  const n = network.toUpperCase();
-  if (n.includes('ETH')) return 12;
-  if (n.includes('BNB')) return 15;
-  if (n.includes('TRON') || n.includes('TRX')) return 20;
-  if (n.includes('SOLANA') || n.includes('SOL')) return 1;
-  return 12;
-}
 
 // ─── Deal Status Stepper ──────────────────────────────────────────────────────
 
@@ -1168,6 +1159,19 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [disputing, setDisputing] = React.useState(false);
   const [disputeErr, setDisputeErr] = React.useState<string | null>(null);
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
+  const [confirmingFunding, setConfirmingFunding] = React.useState(false);
+  const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
+
+  const confirmFunding = async () => {
+    if (!window.confirm('Confirm you have sent the payment to the escrow address? This advances the deal to the delivery stage.')) return;
+    setConfirmingFunding(true); setConfirmFundingErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/confirm-funding`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) {
+      setConfirmFundingErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to confirm funding.');
+    } finally { setConfirmingFunding(false); }
+  };
 
   const isPostLock = POST_LOCK_STATES.has(deal.status);
   // Persistent agree state — survives page refresh via the API-returned fields
@@ -1340,22 +1344,25 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <WalletInput address={escrow.address} coin={escrow.coin} network={escrow.network} explorerUrl={escrow.explorerAddressUrl || undefined} {...(deal.amountCoin ? { amountText: `${deal.amountCoin} ${deal.coin}` } : {})} />
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 font-medium">⚠️ {escrow.networkWarning}</div>
               <PaymentInstructions coin={escrow.coin} network={escrow.network} />
-              <ConfirmationCounter dealId={dealId} requiredConfirmations={getRequiredConfirmations(escrow.network)} />
               <div className="space-y-1.5">
-                <Label htmlFor="txhash">Already sent? Paste your transaction hash</Label>
+                <Label htmlFor="txhash">Paste your transaction hash <span className="text-muted-foreground text-xs">(optional, for your records)</span></Label>
                 <div className="flex gap-2">
                   <Input id="txhash" value={txHash} onChange={e => setTxHash(e.target.value)} placeholder="0x… or TX ID" className="flex-1 font-mono text-xs" />
-                  <Button onClick={submitTxHash} disabled={paySubmitting || !txHash.trim()}>{paySubmitting ? '…' : 'Submit'}</Button>
+                  <Button variant="outline" onClick={submitTxHash} disabled={paySubmitting || !txHash.trim()}>{paySubmitting ? '…' : 'Save'}</Button>
                 </div>
-                {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
-                {payMsg && (
-                  <DealProgressCTA
-                    step="Transaction submitted"
-                    nextLabel="Next: your payment is being confirmed on-chain. Once the deposit-watcher detects the transaction, the deal will advance to 'Funded' automatically."
-                    note="This usually takes a few minutes depending on the network."
-                  />
-                )}
+                {payMsg && <p className="text-xs text-emerald-600">✓ {payMsg}</p>}
                 {payErr && <p className="text-xs text-destructive">{payErr}</p>}
+              </div>
+
+              {/* Manual progression — buyer confirms they have paid and advances the deal */}
+              <div className="border-t pt-4 space-y-2">
+                <p className="text-sm font-medium">Done paying? Confirm to continue</p>
+                <p className="text-xs text-muted-foreground">After sending the exact amount, click below to advance the deal to the delivery stage. The seller will then deliver and submit a handover.</p>
+                {confirmFundingErr && <p className="text-xs text-destructive">⚠️ {confirmFundingErr}</p>}
+                <Button onClick={confirmFunding} disabled={confirmingFunding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                  {confirmingFunding ? 'Confirming…' : "✓ I've paid — continue to next step"}
+                </Button>
               </div>
             </div>
           ) : <Skeleton className="h-32 w-full rounded-xl" />}

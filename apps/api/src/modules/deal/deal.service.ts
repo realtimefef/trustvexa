@@ -884,6 +884,61 @@ export async function middlemanUpdateDeal(
 }
 
 /**
+ * Manually advance a deal from Confirmed → Funded. Used when the buyer has
+ * sent payment and wants to proceed without waiting for the automatic
+ * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock
+ * the flow). Either the buyer or the assigned middleman may trigger it.
+ */
+export async function confirmFunding(
+  userId: string,
+  dealId: string,
+  requestId: string,
+): Promise<{ dealId: string; status: string }> {
+  const client = await acquireClient();
+  try {
+    await client.query('BEGIN');
+    const dealRes = await client.query<{
+      buyer_id: string | null;
+      middleman_id: string | null;
+      status: string;
+    }>(`SELECT buyer_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+    const deal = dealRes.rows[0];
+    if (!deal) {
+      throw new AppError('deal_not_found', 'Deal was not found.', 404);
+    }
+    if (deal.buyer_id !== userId && deal.middleman_id !== userId) {
+      throw new AppError('forbidden', 'Only the buyer or middleman can confirm funding.', 403);
+    }
+    if (deal.status === 'Funded') {
+      // Idempotent — already funded.
+      await client.query('COMMIT');
+      return { dealId, status: 'Funded' };
+    }
+    if (deal.status !== 'Confirmed' && deal.status !== 'Amended') {
+      throw new AppError(
+        'invalid_state',
+        `Funding can only be confirmed from Confirmed state (currently ${deal.status}).`,
+        409,
+      );
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const result = await applyDealTransition({
+    dealId,
+    event: 'FundsHeld',
+    actorId: userId,
+    requestId,
+  });
+  return { dealId, status: result.to };
+}
+
+/**
  * Seller confirms they have delivered the item to the buyer (or initiated
  * the digital transfer). Transitions the deal Funded → SellerHandover.
  * Only the deal's seller may call this.
