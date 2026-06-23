@@ -12,7 +12,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDealRoom } from '@/hooks/useDealRoom';
 import {
-  ArrowLeft, CheckCircle2, ChevronDown, ChevronUp,
+  ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, ChevronUp,
   Copy, Check, FileText, MessageCircle, Shield,
   Wallet, UserPlus, Send,
   Download, AlertTriangle, Clock,
@@ -450,9 +450,9 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
       {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Saved. Edit below to update.</p>}
       <div className="space-y-3">
         <div className="space-y-1.5">
-          <Label htmlFor="sd-name">Product / service name</Label>
+          <Label htmlFor="sd-name">Selling account details</Label>
           <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)}
-            placeholder="What you are selling" />
+            placeholder="What you are selling / account to be transferred" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sd-email">Your email <span className="text-muted-foreground text-xs">(for payment confirmation)</span></Label>
@@ -712,6 +712,24 @@ function NextStep({ text }: { text: string }) {
     <div className="mt-3 flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/20 px-3 py-2 text-xs">
       <span className="font-semibold text-primary shrink-0">Next →</span>
       <span className="text-muted-foreground">{text}</span>
+    </div>
+  );
+}
+
+// ─── Deal Progress CTA ─────────────────────────────────────────────────────
+// Shown after a step completes — gives user a clear "what to do next" action.
+
+function DealProgressCTA({ step, nextLabel, note }: {
+  step: string; nextLabel: string; note?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 flex items-center justify-between gap-3">
+      <div>
+        <p className="text-sm font-semibold text-primary">✓ {step}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{nextLabel}</p>
+        {note && <p className="text-xs text-muted-foreground/70 mt-0.5 italic">{note}</p>}
+      </div>
+      <ArrowRight className="h-4 w-4 text-primary shrink-0" />
     </div>
   );
 }
@@ -1019,6 +1037,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
                   {payMsg && <p className="text-xs text-emerald-600">✓ {payMsg}</p>}
                   {payErr && <p className="text-xs text-destructive">{payErr}</p>}
                 </div>
+                {payMsg && (
+                  <DealProgressCTA step="Payout wallet saved" nextLabel="Next: the buyer will fund the escrow. You'll be notified when funds arrive." />
+                )}
                 <p className="text-xs text-muted-foreground">Next step: you will be asked to share a verification code with the buyer.</p>
               </div>
             ) : (
@@ -1055,6 +1076,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
             </div>
             {agreeErr && <p className="text-xs text-destructive mb-2">⚠️ {agreeErr}</p>}
+            {/* T&C acknowledgment — seller must confirm before locking */}
+            <div className="rounded-lg border bg-muted/20 px-3 py-3 mb-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">By clicking agree you confirm:</p>
+              {[
+                `The deal amount is ${cents(deal.dealAmountCents)} (${deal.coin} · ${deal.network}).`,
+                'Crypto transactions are irreversible — once funded, funds cannot be recalled.',
+                'The item being sold does not violate TrustVexa prohibited items policy.',
+                'You agree to the TrustVexa terms of service and escrow conditions.',
+              ].map((text, i) => (
+                <p key={i} className="text-xs text-muted-foreground flex gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>{text}</span>
+                </p>
+              ))}
+            </div>
             <Button onClick={handleAgree} disabled={agreeing} className="w-full">
               {agreeing ? 'Recording agreement…' : 'I agree — lock the deal'}
             </Button>
@@ -1222,7 +1258,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
             {dealLockedAt ? (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">Both parties agreed. The deal is now locked. You can fund the escrow below to start the deal.</p>
-                <p className="text-xs text-muted-foreground">If the funding UI doesn&apos;t appear yet, refresh once.</p>
+                <DealProgressCTA step="Both parties agreed — deal locked!" nextLabel="Next: send the exact amount to the escrow address shown below. Scroll down to fund." />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -1258,11 +1294,12 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <div className="flex justify-between"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
             </div>
             {/* Confirmations */}
-            <div className="space-y-2 mb-3">
+            <div className="rounded-lg border bg-muted/20 px-3 py-3 mb-3 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Check all boxes to confirm:</p>
               {[
-                { key: 'coinNet', label: `I confirm ${deal.coin} on ${deal.network} is correct.` },
-                { key: 'amount', label: `I confirm the amount ${cents(deal.buyerTotalCents)} is correct.` },
-                { key: 'risk', label: 'I understand crypto transactions are irreversible.' },
+                { key: 'coinNet', label: `I confirm ${deal.coin} on ${deal.network} is the agreed coin and network.` },
+                { key: 'amount', label: `I confirm the deal amount is ${cents(deal.dealAmountCents)} and I will send the exact amount shown.` },
+                { key: 'risk', label: 'I understand all crypto transactions are irreversible — sending to the wrong address is a permanent loss.' },
               ].map(item => (
                 <label key={item.key} className="flex items-start gap-2 cursor-pointer">
                   <input type="checkbox" className="mt-0.5 h-4 w-4 shrink-0"
@@ -1311,6 +1348,13 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                   <Button onClick={submitTxHash} disabled={paySubmitting || !txHash.trim()}>{paySubmitting ? '…' : 'Submit'}</Button>
                 </div>
                 {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
+                {payMsg && (
+                  <DealProgressCTA
+                    step="Transaction submitted"
+                    nextLabel="Next: your payment is being confirmed on-chain. Once the deposit-watcher detects the transaction, the deal will advance to 'Funded' automatically."
+                    note="This usually takes a few minutes depending on the network."
+                  />
+                )}
                 {payErr && <p className="text-xs text-destructive">{payErr}</p>}
               </div>
             </div>

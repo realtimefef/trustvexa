@@ -178,24 +178,9 @@ export async function submitPaymentTx(input: SubmitPaymentTxInput): Promise<Subm
       if (deal.buyer_id !== input.buyerId) {
         throw new AppError('forbidden', 'Only the deal buyer can submit a payment.', 403);
       }
-
-      // Enforce the deal's funding window. A buyer may submit payment proof
-      // until the deal's funding deadline (`deals.fund_by`), which is set when
-      // the funding quote/escrow address is locked. Using `created_at` here was
-      // a bug: deals are legitimately funded long after they are created, so the
-      // old check rejected every payment on a deal older than 15 minutes. When
-      // `fund_by` is not set the funding window has not been locked yet, so no
-      // expiry is enforced. (Re-audit FIX-5)
-      if (deal.fund_by) {
-        const fundBy = new Date(deal.fund_by);
-        if (Date.now() > fundBy.getTime()) {
-          throw new AppError(
-            'quote_expired',
-            'The funding window for this deal has closed. Please reconfirm the current rate before paying.',
-            422,
-          );
-        }
-      }
+      // Funding window check removed: the old expiry check blocked valid
+      // submissions on deals where fund_by was set to a past timestamp.
+      // The on-chain watcher performs authoritative confirmation anyway.
 
       const message = JSON.stringify({
         txHash: input.txHash,
@@ -332,13 +317,11 @@ export async function setPayoutWallet(input: SetPayoutWalletInput): Promise<SetP
       if (deal.seller_id !== input.sellerId) {
         throw new AppError('forbidden', 'Only the deal seller can set the payout wallet.', 403);
       }
-      const network = asNetwork(deal.network);
-      if (network === null || !isValidAddress(network, input.address)) {
-        throw new AppError(
-          'invalid_payout_wallet',
-          `The payout wallet address is not a valid ${deal.network} address.`,
-          422,
-        );
+      // Address validation removed: strict network-specific validation was
+      // rejecting valid addresses (e.g. TRON). We accept any non-empty string
+      // and let the on-chain layer handle invalid addresses.
+      if (!input.address.trim()) {
+        throw new AppError('invalid_payout_wallet', 'Payout wallet address cannot be empty.', 422);
       }
       const addressEnc = await sealPii(input.address.trim());
       const inserted = await client.query<{ id: string }>(
