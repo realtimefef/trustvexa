@@ -1163,7 +1163,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         )
       )}
 
-      {/* Seller details form — only during the funding window (Confirmed/Funded) */}
+      {/* Seller product & delivery details — only at the Funded step */}
       {DETAIL_FORM_STATES.has(deal.status) && (
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
@@ -1255,6 +1255,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
     } finally { setConfirmingFunding(false); }
   };
 
+  // Buyer must save receiving details before confirming funding.
+  const buyerDetailsSaved = !!(partyDetails?.buyerDetails?.receivingAddress);
   // Persistent agree state — survives page refresh via the API-returned fields
   const buyerAlreadyAgreed = !!(deal.buyerAgreedAt) || !!(agreedResult?.buyerAgreed);
   const dealLockedAt = !!(deal.lockedAt) || !!(agreedResult?.locked);
@@ -1436,12 +1438,22 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                 {payErr && <p className="text-xs text-destructive">{payErr}</p>}
               </div>
 
+              {/* Receiving details — buyer fills this before confirming payment */}
+              <div className="border-t pt-4">
+                <BuyerDetailsForm dealId={dealId} existing={partyDetails?.buyerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
+              </div>
+
               {/* Manual progression — buyer confirms they have paid and advances the deal */}
               <div className="border-t pt-4 space-y-2">
                 <p className="text-sm font-medium">Done paying? Confirm to continue</p>
-                <p className="text-xs text-muted-foreground">After sending the exact amount, click below to advance the deal to the delivery stage. You&apos;ll then enter your receiving details for the middleman.</p>
+                <p className="text-xs text-muted-foreground">After sending the exact amount, click below to advance the deal to the delivery stage. The seller will then deliver and submit a handover.</p>
+                {!buyerDetailsSaved && (
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Please fill in and save <strong>Your receiving details</strong> above before continuing — the middleman needs to know where to deliver.
+                  </div>
+                )}
                 {confirmFundingErr && <p className="text-xs text-destructive">⚠️ {confirmFundingErr}</p>}
-                <Button onClick={confirmFunding} disabled={confirmingFunding} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button onClick={confirmFunding} disabled={confirmingFunding || !buyerDetailsSaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                   <CheckCircle2 className="h-4 w-4 mr-1.5" />
                   {confirmingFunding ? 'Confirming…' : "✓ I've paid — continue to next step"}
                 </Button>
@@ -1453,9 +1465,9 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {deal.status === 'Funded' && (
-        <ActionCard title="Escrow funded — enter your receiving details" icon={Clock} variant="success">
+        <ActionCard title="Escrow funded — waiting for seller to deliver" icon={Clock} variant="success">
           <StepLabel step={3} total={6} label="Seller is preparing delivery" />
-          <p className="text-sm text-muted-foreground">Your funds are safely locked in escrow. <strong>Fill in your receiving details below</strong> so the middleman knows where the seller should deliver.</p>
+          <p className="text-sm text-muted-foreground">Your funds are safely locked in escrow and your receiving details are saved. The seller will now deliver and submit a handover to the middleman.</p>
           <NextStep text="Seller delivers → submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
       )}
@@ -1524,10 +1536,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         </ActionCard>
       )}
 
-      {/* Buyer details form — only during the funding window (Confirmed/Funded) */}
-      {DETAIL_FORM_STATES.has(deal.status) && (
-        <BuyerDetailsForm dealId={dealId} existing={partyDetails?.buyerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
-      )}
+      {/* Buyer receiving details are filled inline in the funding card (above),
+          so no separate form block is rendered here. */}
 
       {/* Middleman status */}
       {deal.middlemanId ? (
