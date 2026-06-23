@@ -161,7 +161,7 @@ export default function NewDealPage() {
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const created = await apiRequest<{ id?: string; deal_id?: string }>('/deals', {
+      const created = await apiRequest<{ dealId?: string; id?: string; deal_id?: string }>('/deals', {
         method: 'POST',
         idempotencyKey: newIdempotencyKey(),
         body: {
@@ -180,8 +180,21 @@ export default function NewDealPage() {
           creatorRole: connectionId ? creatorRole : undefined,
         },
       });
-      const id = created.id ?? created.deal_id;
-      router.push(id ? `/deals/${id}` : '/dashboard');
+      // API returns { dealId } (camelCase). Older fallbacks kept for safety.
+      const id = created.dealId ?? created.id ?? created.deal_id;
+      if (!id) {
+        router.push('/dashboard');
+        return;
+      }
+      // When the deal was created from a connection it already has a buyer →
+      // go straight to the deal detail ("assigned deal"). When it was created
+      // standalone (no buyer/chat yet) → land on the deal detail with the
+      // invite flow opened so the seller can invite their counterparty.
+      if (connectionId) {
+        router.push(`/deals/${id}`);
+      } else {
+        router.push(`/deals/${id}?invite=1`);
+      }
     } catch (err) {
       setFormError(
         err instanceof ApiError ? err.message : 'Unable to create the deal. Please try again.',
