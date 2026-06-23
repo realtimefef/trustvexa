@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold text-primary">3.</span> Choose a new password of at
-                    least 12 characters.
+                    least 10 characters.
                   </li>
                   <li className="flex gap-2">
                     <span className="font-bold text-primary">4.</span> All active sessions are

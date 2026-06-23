@@ -20,7 +20,7 @@ const schema = z
   .object({
     password: z
       .string()
-      .min(12, 'Password must be at least 12 characters long')
+      .min(10, 'Password must be at least 10 characters long')
       .max(128, 'Password cannot exceed 128 characters'),
     confirmPassword: z.string(),
   })
@@ -91,7 +91,7 @@ function ResetPasswordContent() {
           <CardDescription>
             {success
               ? 'Your password has been successfully reset. You can now log in.'
-              : 'Enter your new password below. It must be at least 12 characters.'}
+              : 'Enter your new password below. It must be at least 10 characters.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -171,7 +171,7 @@ function ResetPasswordContent() {
 
               <div className="mt-2 flex flex-col gap-1.5">
                 {[
-                  { icon: ShieldCheck, text: 'Must be at least 12 characters long' },
+                  { icon: ShieldCheck, text: 'Must be at least 10 characters long' },
                   { icon: Lock, text: 'Changes password instantly and signs out other devices' },
                 ].map((p) => (
                   <div

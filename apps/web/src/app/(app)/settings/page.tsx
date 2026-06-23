@@ -341,7 +341,7 @@ export default function SettingsPage() {
     e.preventDefault();
     setPasswordStatus(null);
     if (newPassword.length < 12) {
-      setPasswordStatus({ type: 'error', message: 'New password must be at least 12 characters.' });
+      setPasswordStatus({ type: 'error', message: 'New password must be at least 10 characters.' });
       return;
     }
     setIsUpdatingPassword(true);
@@ -1092,7 +1092,7 @@ export default function SettingsPage() {
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5 text-primary" /> Change password
           </CardTitle>
-          <CardDescription>Use at least 12 characters.</CardDescription>
+          <CardDescription>Use at least 10 characters.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleChangePassword}>
