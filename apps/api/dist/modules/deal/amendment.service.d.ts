@@ -7,7 +7,7 @@ export declare function requestAmendment(args: {
 }): Promise<{
     amendmentId: string;
     status: "pending";
-    changeType: "terms" | "coin" | "network" | "amount" | "product" | "fee_payer" | "inspection_window" | "other";
+    changeType: "coin" | "network" | "terms" | "amount" | "product" | "fee_payer" | "inspection_window" | "other";
     requiresMiddleman: boolean;
     requesterRole: "buyer" | "seller";
 }>;
