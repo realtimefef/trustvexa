@@ -61,6 +61,7 @@ export async function createDeal(args) {
     // participant takes the opposite role.
     let dealSellerId = sellerId;
     let dealBuyerId = null;
+    let connectionMiddlemanId = null;
     if (input.connectionId) {
         const conn = await getConnectionById(input.connectionId);
         if (!conn) {
@@ -85,6 +86,8 @@ export async function createDeal(args) {
             dealSellerId = sellerId;
             dealBuyerId = other;
         }
+        // Inherit the connection's middleman so the deal shows it immediately.
+        connectionMiddlemanId = conn.middleman_id ?? null;
     }
     // Requirements 9.2, 9.3: screen the item text. Prohibited categories are
     // blocked outright; risky keywords route the new deal to middleman review.
@@ -146,6 +149,10 @@ export async function createDeal(args) {
         // Link the originating connection to this deal so both parties see it.
         if (input.connectionId) {
             await client.query(`UPDATE connections SET deal_id = $2, updated_at = now() WHERE id = $1`, [input.connectionId, deal.id]);
+        }
+        // Inherit the connection's middleman onto the deal so it shows immediately.
+        if (connectionMiddlemanId) {
+            await client.query(`UPDATE deals SET middleman_id = $2, updated_at = now() WHERE id = $1`, [deal.id, connectionMiddlemanId]);
         }
         // Provision the per-deal escrow deposit address from the operator's
         // configured receive wallets (operator-receive-wallets.ts). Only mainnet

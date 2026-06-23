@@ -119,6 +119,7 @@ export async function createDeal(args: CreateDealArgs): Promise<CreatedDealResul
   // participant takes the opposite role.
   let dealSellerId = sellerId;
   let dealBuyerId: string | null = null;
+  let connectionMiddlemanId: string | null = null;
   if (input.connectionId) {
     const conn = await getConnectionById(input.connectionId);
     if (!conn) {
@@ -146,6 +147,8 @@ export async function createDeal(args: CreateDealArgs): Promise<CreatedDealResul
       dealSellerId = sellerId;
       dealBuyerId = other;
     }
+    // Inherit the connection's middleman so the deal shows it immediately.
+    connectionMiddlemanId = conn.middleman_id ?? null;
   }
 
   // Requirements 9.2, 9.3: screen the item text. Prohibited categories are
@@ -231,6 +234,14 @@ export async function createDeal(args: CreateDealArgs): Promise<CreatedDealResul
       await client.query(
         `UPDATE connections SET deal_id = $2, updated_at = now() WHERE id = $1`,
         [input.connectionId, deal.id],
+      );
+    }
+
+    // Inherit the connection's middleman onto the deal so it shows immediately.
+    if (connectionMiddlemanId) {
+      await client.query(
+        `UPDATE deals SET middleman_id = $2, updated_at = now() WHERE id = $1`,
+        [deal.id, connectionMiddlemanId],
       );
     }
 
