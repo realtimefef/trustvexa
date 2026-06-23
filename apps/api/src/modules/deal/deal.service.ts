@@ -965,15 +965,16 @@ export async function confirmFunding(
     await client.query('BEGIN');
     const dealRes = await client.query<{
       buyer_id: string | null;
+      seller_id: string | null;
       middleman_id: string | null;
       status: string;
-    }>(`SELECT buyer_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+    }>(`SELECT buyer_id, seller_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
     const deal = dealRes.rows[0];
     if (!deal) {
       throw new AppError('deal_not_found', 'Deal was not found.', 404);
     }
-    if (deal.buyer_id !== userId && deal.middleman_id !== userId) {
-      throw new AppError('forbidden', 'Only the buyer or middleman can confirm funding.', 403);
+    if (deal.buyer_id !== userId && deal.seller_id !== userId && deal.middleman_id !== userId) {
+      throw new AppError('forbidden', 'Only a party to the deal can confirm funding.', 403);
     }
     if (deal.status === 'Funded') {
       // Idempotent — already funded.

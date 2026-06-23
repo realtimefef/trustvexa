@@ -71,6 +71,11 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
+// Party detail forms (product/receiving) are only editable while the deal is
+// in the funding window — Confirmed (preparing/funding) and Funded (delivering).
+// After the seller submits the handover the details are locked.
+const DETAIL_FORM_STATES = new Set(['Confirmed', 'Amended', 'Funded']);
+
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 interface EscrowAddressView {
@@ -193,9 +198,11 @@ function getRequiredConfirmations(network: string): number {
 const STAGES = ['Created', 'Agreed', 'Funded', 'In Progress', 'Delivered', 'Complete'] as const;
 
 function statusToStage(status: string): number {
-  if (['Released', 'PartiallySettled'].includes(status)) return 5;
-  if (['Delivered', 'Approved', 'PayoutQueued', 'MilestoneReleased'].includes(status)) return 4;
-  if (['Funded', 'SellerHandover', 'MiddlemanVerified'].includes(status)) return 3;
+  // Stages: 1 Created · 2 Agreed · 3 Funded · 4 In Progress · 5 Delivered · 6 Complete
+  if (['Released', 'PartiallySettled'].includes(status)) return 6;
+  if (['Delivered', 'Approved', 'PayoutQueued', 'MilestoneReleased'].includes(status)) return 5;
+  if (['SellerHandover', 'MiddlemanVerified'].includes(status)) return 4;
+  if (['Funded'].includes(status)) return 3;
   if (['Agreed', 'Verified', 'Confirmed', 'Amended'].includes(status)) return 2;
   if (['Created', 'Invited'].includes(status)) return 1;
   return 0;
@@ -818,6 +825,19 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [refunding, setRefunding] = React.useState(false);
   const [refundErr, setRefundErr] = React.useState<string | null>(null);
   const [refundOk, setRefundOk] = React.useState(false);
+  // Seller can also confirm funding (fallback) if the buyer has paid.
+  const [sellerConfirmingFunding, setSellerConfirmingFunding] = React.useState(false);
+  const [sellerFundingErr, setSellerFundingErr] = React.useState<string | null>(null);
+
+  const sellerConfirmFunding = async () => {
+    if (!window.confirm('Confirm the buyer has funded the escrow? This advances the deal to the delivery stage.')) return;
+    setSellerConfirmingFunding(true); setSellerFundingErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/confirm-funding`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) { setSellerFundingErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to confirm funding.'); }
+    finally { setSellerConfirmingFunding(false); }
+  };
 
   const submitHandover = async () => {
     if (!window.confirm('Confirm you have delivered the item to the buyer as agreed? This submits your handover to the middleman for verification.')) return;
@@ -940,7 +960,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         </ActionCard>
       ) : deal.status === 'Confirmed' || deal.status === 'Amended' ? (
         <ActionCard title="Deal confirmed — save your payout address" icon={Wallet} variant="success">
-          <StepLabel step={3} total={6} label="Waiting for buyer to fund escrow" />
+          <StepLabel step={2} total={6} label="Waiting for buyer to fund escrow" />
           <p className="text-sm text-muted-foreground mb-3">Save where you want to receive payment. The buyer is about to fund the escrow.</p>
           <div className="space-y-2">
             <Label htmlFor="payoutAddr">Your {deal.coin} payout address ({deal.network})</Label>
@@ -954,10 +974,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {payErr && <p className="text-xs text-destructive">{payErr}</p>}
           </div>
           <NextStep text="Once the buyer funds escrow → you'll be asked to deliver the item and submit a handover to the middleman." />
+          {/* Fallback: seller can advance to Funded if the buyer has already paid */}
+          <div className="mt-3 border-t pt-3 space-y-2">
+            <p className="text-xs text-muted-foreground">Buyer already paid but the deal hasn&apos;t advanced? You can mark it funded:</p>
+            {sellerFundingErr && <p className="text-xs text-destructive">⚠️ {sellerFundingErr}</p>}
+            <Button size="sm" variant="outline" onClick={sellerConfirmFunding} disabled={sellerConfirmingFunding}>
+              {sellerConfirmingFunding ? 'Confirming…' : '✓ Buyer has funded — continue to delivery'}
+            </Button>
+          </div>
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Step 4 of 6 — In Progress: Deliver the item" icon={Send} variant="warning">
-          <StepLabel step={4} total={6} label="Deliver, then submit handover" />
+        <ActionCard title="Step 3 of 6 — Funded: Deliver the item" icon={Send} variant="warning">
+          <StepLabel step={3} total={6} label="Deliver, then submit handover" />
           <p className="text-sm text-muted-foreground mb-3">Funds are locked in escrow. Deliver the item to the buyer, then submit your handover below.</p>
 
           {/* Buyer's receiving details for the seller to deliver to */}
@@ -1024,21 +1052,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             </Button>
           </div>
         </ActionCard>
-      ) : deal.status === 'SellerHandover' ? (
+      ) : deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' ? (
         <ActionCard title="Handover submitted — middleman is verifying" icon={Shield} variant="success">
-          <StepLabel step={5} total={6} label="Middleman verification in progress" />
+          <StepLabel step={4} total={6} label="In Progress — middleman verification" />
           <p className="text-sm text-muted-foreground">The middleman is reviewing your handover and confirming delivery to the buyer.</p>
           <NextStep text="Once verified → buyer enters their inspection window → approves delivery → payout is sent to you." />
         </ActionCard>
-      ) : deal.status === 'MiddlemanVerified' || deal.status === 'Delivered' ? (
-        <ActionCard title="Delivery confirmed — waiting for buyer approval" icon={CheckCircle2} variant="success">
+      ) : deal.status === 'Delivered' ? (
+        <ActionCard title="Delivered — waiting for buyer approval" icon={CheckCircle2} variant="success">
           <StepLabel step={5} total={6} label="Buyer is inspecting the delivery" />
-          <p className="text-sm text-muted-foreground">Middleman verified your delivery. The buyer is in their inspection window.</p>
+          <p className="text-sm text-muted-foreground">Delivery confirmed to the buyer. They are in their inspection window.</p>
           <NextStep text="Once the buyer approves → your payout is released to your wallet immediately." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
         <ActionCard title="Payment processing…" icon={Clock} variant="success">
-          <StepLabel step={6} total={6} label="Payout in progress" />
+          <StepLabel step={5} total={6} label="Payout in progress" />
           <p className="text-sm text-muted-foreground">Buyer approved the delivery. Your payout is being sent to your saved wallet address.</p>
         </ActionCard>
       ) : deal.status === 'Released' ? (
@@ -1134,8 +1162,8 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         )
       )}
 
-      {/* Seller details form (post-lock) */}
-      {isPostLock && !TERMINAL_STATES.has(deal.status) && (
+      {/* Seller details form — only during the funding window (Confirmed/Funded) */}
+      {DETAIL_FORM_STATES.has(deal.status) && (
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
@@ -1226,7 +1254,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
     } finally { setConfirmingFunding(false); }
   };
 
-  const isPostLock = POST_LOCK_STATES.has(deal.status);
   // Buyer must save receiving details before they can confirm funding.
   const buyerDetailsSaved = !!(partyDetails?.buyerDetails?.receivingAddress);
   // Persistent agree state — survives page refresh via the API-returned fields
@@ -1433,7 +1460,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {deal.status === 'Funded' && (
         <ActionCard title="Escrow funded — waiting for seller to deliver" icon={Clock} variant="success">
-          <StepLabel step={4} total={6} label="Seller is preparing delivery" />
+          <StepLabel step={3} total={6} label="Seller is preparing delivery" />
           <p className="text-sm text-muted-foreground">Your funds are safely locked in escrow. The seller will deliver the item and notify the middleman.</p>
           <NextStep text="Seller delivers → submits handover → middleman verifies → you'll be asked to inspect and approve." />
         </ActionCard>
@@ -1441,7 +1468,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {(deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified') && (
         <ActionCard title="Middleman is verifying the delivery" icon={Shield} variant="success">
-          <StepLabel step={5} total={6} label="Middleman verification in progress" />
+          <StepLabel step={4} total={6} label="In Progress — middleman verification" />
           <p className="text-sm text-muted-foreground">The middleman is reviewing the seller's handover. You'll be notified once confirmed.</p>
           <NextStep text="Once verified → you'll enter the inspection window and can approve or open a dispute." />
         </ActionCard>
@@ -1449,7 +1476,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
 
       {deal.status === 'Delivered' && (
         <ActionCard title="🎉 Delivery confirmed — inspect & approve" icon={CheckCircle2} variant="warning">
-          <StepLabel step={6} total={6} label="Your inspection window" />
+          <StepLabel step={5} total={6} label="Your inspection window" />
 
           {/* Congratulations banner */}
           <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 mb-3 text-center space-y-1">
@@ -1503,8 +1530,8 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         </ActionCard>
       )}
 
-      {/* Buyer details form (post-lock) */}
-      {isPostLock && !TERMINAL_STATES.has(deal.status) && (
+      {/* Buyer details form — only during the funding window (Confirmed/Funded) */}
+      {DETAIL_FORM_STATES.has(deal.status) && (
         <BuyerDetailsForm dealId={dealId} existing={partyDetails?.buyerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
