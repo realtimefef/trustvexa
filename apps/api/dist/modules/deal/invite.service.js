@@ -194,21 +194,10 @@ export async function acceptInvite(args) {
             riskWarning: safety.warning,
         });
         await client.query('COMMIT');
-        // Fire PartiesAgreed transition outside the transaction (state machine uses its own tx)
-        let finalStatus = deal.status;
-        try {
-            const transition = await applyDealTransition({
-                dealId: deal.id,
-                event: 'PartiesAgreed',
-                actorId: args.userId,
-                requestId: invite.id,
-            });
-            finalStatus = transition.to;
-        }
-        catch {
-            // Transition already applied or not applicable; return current status
-        }
-        return { dealId: deal.id, status: finalStatus };
+        // The buyer has joined. The deal stays in 'Invited' (or 'Created') status.
+        // Both parties must still explicitly click "I agree" to lock the deal.
+        // Invite acceptance = "buyer is here", NOT "both parties agreed".
+        return { dealId: deal.id, status: deal.status };
     }
     catch (err) {
         await rollbackQuietly(client);

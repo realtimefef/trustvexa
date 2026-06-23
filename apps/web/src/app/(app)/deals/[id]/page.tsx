@@ -406,36 +406,36 @@ function ChatLink() {
 }
 
 // ─── Seller Details Form ──────────────────────────────────────────────────────
-// Only visible to the seller and middleman. Saved to deal_seller_details table.
+// Seller fills: product name · email for payment confirmation · middleman instructions
+// Only visible to the seller and middleman (NOT the buyer).
 
 function SellerDetailsForm({ dealId, existing, onSaved }: {
   dealId: string; existing: SellerDetailsData | null; onSaved: () => void;
 }) {
   const qc = useQueryClient();
   const [productName, setProductName] = React.useState(existing?.productName ?? '');
-  const [productDescription, setProductDescription] = React.useState(existing?.productDescription ?? '');
-  const [deliveryMethod, setDeliveryMethod] = React.useState(existing?.deliveryMethod ?? 'Chat');
-  const [deliveryInstructions, setDeliveryInstructions] = React.useState(existing?.deliveryInstructions ?? '');
+  const [email, setEmail] = React.useState(existing?.additionalNotes ?? '');
+  const [mmInstructions, setMmInstructions] = React.useState(existing?.deliveryInstructions ?? '');
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
 
-  // Re-populate when saved data loads from the server (async query)
+  // Re-populate when saved data loads from the server (async query resolves after mount)
   React.useEffect(() => {
     if (existing) {
       setProductName(existing.productName ?? '');
-      setProductDescription(existing.productDescription ?? '');
-      setDeliveryMethod(existing.deliveryMethod ?? 'Chat');
-      setDeliveryInstructions(existing.deliveryInstructions ?? '');
+      setEmail(existing.additionalNotes ?? '');
+      setMmInstructions(existing.deliveryInstructions ?? '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing?.productName, existing?.deliveryMethod]);
+  }, [existing?.productName, existing?.additionalNotes]);
 
   const handleSave = async () => {
     setSaving(true); setError(null); setSuccess(false);
     try {
       await apiRequest(`/deals/${dealId}/seller-details`, { method: 'POST', idempotencyKey: newIdempotencyKey(),
-        body: { productName, productDescription, deliveryMethod, deliveryInstructions, requirements: null, estimatedDeliveryTime: null, additionalNotes: null } });
+        body: { productName, additionalNotes: email, deliveryInstructions: mmInstructions,
+          deliveryMethod: 'Email', productDescription: null, requirements: null, estimatedDeliveryTime: null } });
       setSuccess(true);
       void qc.invalidateQueries({ queryKey: ['party-details', dealId] });
       onSaved();
@@ -443,78 +443,69 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
     finally { setSaving(false); }
   };
 
-  const isSaved = !!(existing?.productName || existing?.productDescription || existing?.deliveryInstructions);
+  const isSaved = !!(existing?.productName || existing?.additionalNotes || existing?.deliveryInstructions);
 
   return (
     <ActionCard title="Your product & delivery details" description="Only visible to the middleman — not to the buyer." icon={Send}>
-      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Details saved. Edit below to update.</p>}
-      <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="sd-name">Product / service name</Label>
-            <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)} placeholder="What you're selling" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="sd-method">How do you deliver?</Label>
-            <select id="sd-method" value={deliveryMethod} onChange={e => setDeliveryMethod(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option value="Chat">Chat (via deal chat — default)</option>
-              <option value="Email">Email</option>
-            </select>
-          </div>
+      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Saved. Edit below to update.</p>}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="sd-name">Product / service name</Label>
+          <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)}
+            placeholder="What you are selling" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sd-desc">Product description</Label>
-          <textarea id="sd-desc" rows={2} value={productDescription} onChange={e => setProductDescription(e.target.value)}
-            className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Exactly what the buyer will receive" />
+          <Label htmlFor="sd-email">Your email <span className="text-muted-foreground text-xs">(for payment confirmation)</span></Label>
+          <Input id="sd-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="Payment confirmation will be sent here" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sd-instructions">Delivery instructions <span className="text-muted-foreground text-xs">(for middleman)</span></Label>
-          <textarea id="sd-instructions" rows={2} value={deliveryInstructions} onChange={e => setDeliveryInstructions(e.target.value)}
+          <Label htmlFor="sd-mm">Instructions for middleman</Label>
+          <textarea id="sd-mm" rows={3} value={mmInstructions} onChange={e => setMmInstructions(e.target.value)}
             className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder={deliveryMethod === 'Email' ? 'e.g. I will email to the address the buyer provides' : 'e.g. I will send via the deal chat'} />
+            placeholder="e.g. Verify buyer's account before confirming, delivery method details, any special conditions…" />
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
         {success && <p className="text-xs text-emerald-600">✓ Details saved.</p>}
-        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}</Button>
-        {success && <p className="text-xs text-muted-foreground text-center">Next: wait for the buyer to fund the escrow. You'll be notified to deliver once funded.</p>}
+        <Button onClick={handleSave} disabled={saving} className="w-full">
+          {saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}
+        </Button>
       </div>
     </ActionCard>
   );
 }
 
 // ─── Buyer Details Form ───────────────────────────────────────────────────────
-// Only visible to the buyer and middleman. Saved to deal_buyer_details table.
+// Buyer fills: receiving account · email for confirmation · middleman instructions
+// Only visible to the buyer and middleman (NOT the seller).
 
 function BuyerDetailsForm({ dealId, existing, onSaved }: {
   dealId: string; existing: BuyerDetailsData | null; onSaved: () => void;
 }) {
   const qc = useQueryClient();
-  const [platform, setPlatform] = React.useState(existing?.receivingPlatform ?? 'Chat');
-  const [address, setAddress] = React.useState(existing?.receivingAddress ?? '');
+  const [account, setAccount] = React.useState(existing?.receivingAddress ?? '');
   const [email, setEmail] = React.useState(existing?.contactEmail ?? '');
-  const [instructions, setInstructions] = React.useState(existing?.specialInstructions ?? '');
+  const [mmInstructions, setMmInstructions] = React.useState(existing?.specialInstructions ?? '');
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
 
-  // Re-populate when saved data loads from the server (async query)
+  // Re-populate when saved data loads from the server (async query resolves after mount)
   React.useEffect(() => {
     if (existing) {
-      setPlatform(existing.receivingPlatform ?? 'Chat');
-      setAddress(existing.receivingAddress ?? '');
+      setAccount(existing.receivingAddress ?? '');
       setEmail(existing.contactEmail ?? '');
-      setInstructions(existing.specialInstructions ?? '');
+      setMmInstructions(existing.specialInstructions ?? '');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existing?.receivingPlatform, existing?.receivingAddress]);
+  }, [existing?.receivingAddress, existing?.contactEmail]);
 
   const handleSave = async () => {
     setSaving(true); setError(null); setSuccess(false);
     try {
       await apiRequest(`/deals/${dealId}/buyer-details`, { method: 'POST', idempotencyKey: newIdempotencyKey(),
-        body: { receivingPlatform: platform, receivingAddress: address, contactEmail: email, specialInstructions: instructions, backupContact: null, suggestions: null } });
+        body: { receivingAddress: account, contactEmail: email, specialInstructions: mmInstructions,
+          receivingPlatform: 'Email', backupContact: null, suggestions: null } });
       setSuccess(true);
       void qc.invalidateQueries({ queryKey: ['party-details', dealId] });
       onSaved();
@@ -526,37 +517,30 @@ function BuyerDetailsForm({ dealId, existing, onSaved }: {
 
   return (
     <ActionCard title="Your receiving details" description="Tell the middleman where to deliver. The seller cannot see this." icon={Wallet}>
-      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Details saved. Edit below to update.</p>}
-      <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="bd-platform">How to receive?</Label>
-            <select id="bd-platform" value={platform} onChange={e => setPlatform(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-              <option value="Chat">Chat (via deal chat — default)</option>
-              <option value="Email">Email</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="bd-address">Your {platform} address</Label>
-            <Input id="bd-address" value={address} onChange={e => setAddress(e.target.value)}
-              placeholder={platform === 'Email' ? 'your@email.com' : 'Your chat username / ID'} />
-          </div>
+      {isSaved && <p className="text-xs text-emerald-600 mb-3 font-medium">✓ Saved. Edit below to update.</p>}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="bd-account">Receiving account / address</Label>
+          <Input id="bd-account" value={account} onChange={e => setAccount(e.target.value)}
+            placeholder="Email, wallet, username or account where product will be delivered" />
+          <p className="text-xs text-muted-foreground">Where the seller should send the product or service</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="bd-email">Email for delivery confirmation <span className="text-muted-foreground text-xs">(optional)</span></Label>
-          <Input id="bd-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" />
+          <Label htmlFor="bd-email">Your email <span className="text-muted-foreground text-xs">(for delivery confirmation)</span></Label>
+          <Input id="bd-email" type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="Delivery confirmation will be sent here" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="bd-instructions">Delivery instructions <span className="text-muted-foreground text-xs">(for middleman)</span></Label>
-          <textarea id="bd-instructions" rows={2} value={instructions} onChange={e => setInstructions(e.target.value)}
+          <Label htmlFor="bd-mm">Instructions for middleman</Label>
+          <textarea id="bd-mm" rows={3} value={mmInstructions} onChange={e => setMmInstructions(e.target.value)}
             className="w-full resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Any specific instructions the middleman should follow" />
+            placeholder="e.g. Verify that the account is active and matches what was agreed before approving delivery…" />
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
         {success && <p className="text-xs text-emerald-600">✓ Details saved.</p>}
-        <Button onClick={handleSave} disabled={saving} className="w-full">{saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}</Button>
-        {success && <p className="text-xs text-muted-foreground text-center">Next: fund the escrow above to start the deal.</p>}
+        <Button onClick={handleSave} disabled={saving} className="w-full">
+          {saving ? 'Saving…' : isSaved ? 'Update details' : 'Save my details'}
+        </Button>
       </div>
     </ActionCard>
   );
@@ -923,29 +907,63 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <NextStep text="Once the buyer funds escrow → you'll be asked to deliver the item and submit a handover to the middleman." />
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Escrow funded — deliver the item now" icon={Send} variant="warning">
-          <StepLabel step={4} total={6} label="Seller delivers and submits handover" />
-          <p className="text-sm text-muted-foreground">The buyer has paid into escrow. Deliver the item exactly as agreed in the deal terms.</p>
+        <ActionCard title="Step 4 of 6 — In Progress: Deliver the item" icon={Send} variant="warning">
+          <StepLabel step={4} total={6} label="Deliver, then submit handover" />
+          <p className="text-sm text-muted-foreground mb-3">Funds are locked in escrow. Deliver the item to the buyer, then submit your handover below.</p>
+
+          {/* Buyer's receiving details for the seller to deliver to */}
+          <div className="rounded-xl border bg-background/60 p-3 mb-3 space-y-1.5 text-sm">
+            <p className="text-xs font-semibold text-primary mb-2">📦 Deliver to — buyer&apos;s receiving details</p>
+            {partyDetails?.buyerDetails?.receivingAddress ? (
+              <>
+                <div className="flex justify-between gap-3">
+                  <span className="text-muted-foreground shrink-0">Receiving account</span>
+                  <span className="font-mono text-xs text-right break-all font-semibold">{partyDetails.buyerDetails.receivingAddress}</span>
+                </div>
+                {partyDetails.buyerDetails.contactEmail && (
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground shrink-0">Buyer email</span>
+                    <span className="text-xs">{partyDetails.buyerDetails.contactEmail}</span>
+                  </div>
+                )}
+                {partyDetails.buyerDetails.specialInstructions && (
+                  <div className="pt-1">
+                    <p className="text-xs text-muted-foreground mb-0.5">Instructions from buyer</p>
+                    <p className="text-xs whitespace-pre-wrap">{partyDetails.buyerDetails.specialInstructions}</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-600">
+                ⚠️ Buyer has not saved their receiving details yet. Ask them via the deal chat.
+              </div>
+            )}
+          </div>
+
           {!handoverOk ? (
-            <div className="mt-3 space-y-3">
-              <NoRollbackBanner text="Once you click 'Submit handover', the deal moves to middleman verification. Make sure you have actually delivered before proceeding." />
+            <div className="space-y-3">
+              <NoRollbackBanner text="Only click below after you have delivered. This moves the deal to middleman verification and cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '✓ I have delivered — submit handover to middleman'}
+                {submittingHandover ? 'Submitting…' : '✓ Delivered — submit handover to middleman'}
               </Button>
-              <NextStep text="Middleman verifies delivery → buyer inspects → you receive payment." />
+              <NextStep text="Middleman verifies → buyer inspects → payout released to your wallet." />
             </div>
           ) : (
             <>
-              <p className="text-xs text-emerald-600 mt-2">✓ Handover submitted. The middleman is now verifying your delivery.</p>
-              <NextStep text="Middleman will confirm delivery → buyer approves → payout released to your wallet." />
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
+                <p className="text-sm font-semibold text-emerald-600">✓ Handover submitted!</p>
+                <p className="text-xs text-muted-foreground mt-1">The middleman is now verifying your delivery.</p>
+              </div>
+              <NextStep text="Middleman confirms → buyer approves → payout sent to your saved wallet." />
             </>
           )}
+
           <div className="mt-4 border-t pt-3">
-            <p className="text-xs text-muted-foreground mb-2">Changed your mind? Issue a voluntary refund to the buyer:</p>
+            <p className="text-xs text-muted-foreground mb-2">Changed your mind? Issue a full voluntary refund:</p>
             {refundErr && <p className="text-xs text-destructive mb-2">{refundErr}</p>}
-            {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund submitted. Buyer receives the full amount.</p>}
+            {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund submitted.</p>}
             <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"
               disabled={refunding || refundOk} onClick={handleFreeRefund}>
               {refunding ? 'Processing…' : '↩ Issue free refund to buyer'}
@@ -1318,9 +1336,23 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {deal.status === 'Delivered' && (
-        <ActionCard title="Delivery confirmed — inspect & approve" icon={CheckCircle2} variant="warning">
+        <ActionCard title="🎉 Delivery confirmed — inspect & approve" icon={CheckCircle2} variant="warning">
           <StepLabel step={6} total={6} label="Your inspection window" />
-          <p className="text-sm text-muted-foreground mb-3">The middleman confirmed delivery. Inspect carefully — verify you received exactly what was agreed.</p>
+
+          {/* Congratulations banner */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 mb-3 text-center space-y-1">
+            <p className="font-semibold text-primary">Your delivery details have been received!</p>
+            <p className="text-sm text-muted-foreground">The middleman has verified the delivery. Please inspect the item carefully.</p>
+          </div>
+
+          {/* Next steps guidance */}
+          <div className="rounded-lg bg-muted/30 border px-3 py-3 mb-3 space-y-1.5 text-sm">
+            <p className="text-xs font-semibold mb-2">What happens next:</p>
+            <p className="text-xs text-muted-foreground">1. If everything is as agreed → click <strong>Approve</strong> to release payment to the seller.</p>
+            <p className="text-xs text-muted-foreground">2. The middleman will contact you via <strong>chat or email</strong> with any additional delivery details.</p>
+            <p className="text-xs text-muted-foreground">3. If there is an issue → open a dispute and a middleman will review your case.</p>
+          </div>
+
           <NoRollbackBanner text="Once you click 'Approve', the seller receives payment INSTANTLY. This cannot be reversed. Only approve if you are fully satisfied." />
           <div className="mt-3 space-y-2">
             {approveErr && <p className="text-xs text-destructive">{approveErr}</p>}
@@ -1331,7 +1363,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
             <Button onClick={openDispute} disabled={disputing} variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10">
               {disputing ? '…' : '⚠️ Item not as described — open dispute'}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">Open a dispute if the item is not as described. A middleman will review your case.</p>
+            <p className="text-xs text-muted-foreground text-center">For questions: use the deal chat to contact your middleman directly.</p>
           </div>
         </ActionCard>
       )}
@@ -1344,9 +1376,12 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {deal.status === 'Released' && (
-        <ActionCard title="✓ Deal complete" icon={CheckCircle2} variant="success">
+        <ActionCard title="✓ Deal complete — payment released!" icon={CheckCircle2} variant="success">
           <StepLabel step={6} total={6} label="Complete" />
-          <p className="text-sm text-muted-foreground">The deal is fully settled. Thank you for using TrustVexa.</p>
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
+            <p className="font-semibold text-emerald-600">🎉 Deal successfully completed!</p>
+            <p className="text-sm text-muted-foreground mt-1">Payment has been processed. Check your email and chat for confirmation details from TrustVexa.</p>
+          </div>
         </ActionCard>
       )}
 
