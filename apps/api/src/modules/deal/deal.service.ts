@@ -960,6 +960,7 @@ export async function confirmFunding(
   dealId: string,
   requestId: string,
 ): Promise<{ dealId: string; status: string }> {
+  let status: string;
   const client = await acquireClient();
   try {
     await client.query('BEGIN');
@@ -977,17 +978,21 @@ export async function confirmFunding(
       throw new AppError('forbidden', 'Only a party to the deal can confirm funding.', 403);
     }
     if (deal.status === 'Funded') {
-      // Idempotent — already funded.
       await client.query('COMMIT');
       return { dealId, status: 'Funded' };
     }
-    if (deal.status !== 'Confirmed' && deal.status !== 'Amended') {
+    // Accept any locked-but-not-yet-funded state. The agree step is meant to
+    // auto-advance Agreed → Verified → Confirmed, but if any of those silent
+    // transitions did not complete the deal can be left at Agreed/Verified.
+    // We chain the remaining events here so funding always works post-agree.
+    if (!['Agreed', 'Verified', 'Confirmed', 'Amended'].includes(deal.status)) {
       throw new AppError(
         'invalid_state',
-        `Funding can only be confirmed from Confirmed state (currently ${deal.status}).`,
+        `Funding can only be confirmed after both parties have agreed (currently ${deal.status}).`,
         409,
       );
     }
+    status = deal.status;
     await client.query('COMMIT');
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch { /* ignore */ }
@@ -996,13 +1001,24 @@ export async function confirmFunding(
     client.release();
   }
 
-  const result = await applyDealTransition({
-    dealId,
-    event: 'FundsHeld',
-    actorId: userId,
-    requestId,
-  });
-  return { dealId, status: result.to };
+  // Chain whatever transitions are needed to reach Funded.
+  const chain: Array<{ from: string[]; event: DealEvent }> = [
+    { from: ['Agreed'], event: 'CodeVerified' },        // Agreed → Verified
+    { from: ['Verified'], event: 'TermsAccepted' },     // Verified → Confirmed
+    { from: ['Confirmed', 'Amended'], event: 'FundsHeld' }, // Confirmed → Funded
+  ];
+  let current = status;
+  for (const step of chain) {
+    if (!step.from.includes(current)) continue;
+    const r = await applyDealTransition({
+      dealId,
+      event: step.event,
+      actorId: userId,
+      requestId: `${requestId}:${step.event}`,
+    });
+    current = r.to;
+  }
+  return { dealId, status: current };
 }
 
 /**

@@ -71,10 +71,10 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
-// Seller product/delivery details form is shown from Confirmed through Funded
-// (the seller prepares details while waiting for funding, and during delivery).
+// Seller product/delivery details form is shown from Agreed through Funded
+// (the seller prepares details while the buyer funds, and during delivery).
 // The buyer's receiving details are filled inline in the funding card instead.
-const DETAIL_FORM_STATES = new Set(['Confirmed', 'Amended', 'Funded']);
+const DETAIL_FORM_STATES = new Set(['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded']);
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
@@ -1000,15 +1000,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           )}
         </ActionCard>
       ) : deal.status === 'Agreed' || deal.status === 'Verified'
+          || deal.status === 'Confirmed' || deal.status === 'Amended'
           || ((deal.status === 'Created' || deal.status === 'Invited') && bothAgreed) ? (
-        <ActionCard title="✓ Deal locked — buyer is preparing to fund" icon={Wallet} variant="success">
-          <p className="text-sm text-muted-foreground">Both parties have agreed. The buyer will now fund the escrow. You'll be notified once funds arrive.</p>
-          <p className="text-xs text-muted-foreground mt-2">While you wait, fill in your product &amp; delivery details below so the middleman can verify your handover when it's time.</p>
-        </ActionCard>
-      ) : deal.status === 'Confirmed' || deal.status === 'Amended' ? (
-        <ActionCard title="Deal confirmed — save your payout address" icon={Wallet} variant="success">
+        <ActionCard title="Deal locked — save your payout address" icon={Wallet} variant="success">
           <StepLabel step={2} total={6} label="Waiting for buyer to fund escrow" />
-          <p className="text-sm text-muted-foreground mb-3">Save where you want to receive payment. The buyer is about to fund the escrow.</p>
+          <p className="text-sm text-muted-foreground mb-3">Both parties agreed. Save where you want to receive payment. The buyer will now fund the escrow.</p>
           <div className="space-y-2">
             <Label htmlFor="payoutAddr">Your {deal.coin} payout address ({deal.network})</Label>
             <p className="text-xs text-muted-foreground">Double-check the address — payouts are irreversible.</p>
