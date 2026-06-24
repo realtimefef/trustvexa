@@ -62,6 +62,7 @@ export async function createDeal(args) {
     let dealSellerId = sellerId;
     let dealBuyerId = null;
     let connectionMiddlemanId = null;
+    let connectionCreatorId = null;
     if (input.connectionId) {
         const conn = await getConnectionById(input.connectionId);
         if (!conn) {
@@ -88,6 +89,7 @@ export async function createDeal(args) {
         }
         // Inherit the connection's middleman so the deal shows it immediately.
         connectionMiddlemanId = conn.middleman_id ?? null;
+        connectionCreatorId = conn.creator_id;
     }
     // Requirements 9.2, 9.3: screen the item text. Prohibited categories are
     // blocked outright; risky keywords route the new deal to middleman review.
@@ -146,9 +148,16 @@ export async function createDeal(args) {
         await ensureChat(chatTx, deal.id, 'buyer_seller');
         await ensureChat(chatTx, deal.id, 'buyer_mm');
         await ensureChat(chatTx, deal.id, 'seller_mm');
-        // Link the originating connection to this deal so both parties see it.
+        // Link the originating connection to this deal so both parties see it, and
+        // sync the connection's creator_role to the ACTUAL deal roles so the chat
+        // label can never disagree with the deal (the deal is the source of truth).
         if (input.connectionId) {
-            await client.query(`UPDATE connections SET deal_id = $2, updated_at = now() WHERE id = $1`, [input.connectionId, deal.id]);
+            const creatorIsBuyer = connectionCreatorId !== null && connectionCreatorId === dealBuyerId;
+            await client.query(`UPDATE connections
+            SET deal_id = $2,
+                creator_role = $3,
+                updated_at = now()
+          WHERE id = $1`, [input.connectionId, deal.id, creatorIsBuyer ? 'buyer' : 'seller']);
         }
         // Inherit the connection's middleman onto the deal so it shows immediately.
         if (connectionMiddlemanId) {
