@@ -1,26 +1,29 @@
 /**
  * Minimal, dependency-free PDF writer (task 7.8 support).
  *
- * Produces a single- or multi-line, single-page A4 PDF from plain text using
- * the built-in Helvetica font. Escrow documents (deal agreement, dispute
- * decision, receipts) are short, text-only records, so a full PDF engine is
- * unnecessary and would add supply-chain surface. The output is a byte-exact,
- * deterministic PDF (no timestamps embedded) so the same input always yields
- * the same bytes, which lets a content hash fingerprint each document.
+ * Produces a branded, single-page A4 PDF from a title + plain text lines using
+ * the built-in Helvetica / Helvetica-Bold fonts. Escrow documents (deal
+ * agreement, receipt, dispute decision) are short records, so a full PDF engine
+ * is unnecessary and would add supply-chain surface. The output is
+ * deterministic (no embedded timestamps) so the same input yields the same
+ * bytes, which lets a content hash fingerprint each document.
  *
- * The generator is pure: it returns a `Buffer` and never touches I/O. The
- * service layer is responsible for persisting the bytes to object storage and
- * recording the `deal_documents` row.
+ * Layout: a coloured brand header band, the document title, then the body lines
+ * formatted as "Label: value" rows (label greyed, value emphasised) with blank
+ * lines becoming spacing and ALL-CAPS / trailing-colon lines becoming section
+ * headings, finished with a footer rule + fine print.
+ *
+ * The generator is pure: it returns a `Buffer` and never touches I/O.
  */
 export interface PdfDocument {
     readonly title: string;
-    /** Body lines, rendered top-to-bottom. Long lines are not auto-wrapped. */
+    /** Small line under the brand name in the header band. */
+    readonly subtitle?: string;
+    /** Body lines, rendered top-to-bottom. "Label: value" lines are formatted. */
     readonly lines: readonly string[];
+    /** Fine print rendered above the bottom margin. */
+    readonly footer?: string;
 }
-/**
- * Render a {@link PdfDocument} to PDF bytes. The content stream draws the title
- * then each body line; the cross-reference table offsets are computed exactly
- * so the file is valid per the PDF 1.4 specification.
- */
+/** Render a {@link PdfDocument} to branded PDF bytes (valid per PDF 1.4). */
 export declare function renderPdf(doc: PdfDocument): Buffer;
 //# sourceMappingURL=pdf.d.ts.map

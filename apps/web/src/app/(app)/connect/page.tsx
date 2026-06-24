@@ -474,18 +474,27 @@ export default function ConnectPage() {
       const res = await apiRequest<{ connections: ConnectionView[] }>('/connections');
       return Array.isArray(res) ? res : (res.connections ?? []);
     },
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 
   const active = useQuery({
     queryKey: ['connection', activeId], enabled: activeId !== null && status === 'authenticated',
     queryFn: async () => apiRequest<ConnectionView>(`/connections/${activeId}`),
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: true,
   });
 
   const messages = useQuery({
     queryKey: ['connection-messages', activeId],
     enabled: activeId !== null && status === 'authenticated',
-    refetchInterval: 15_000,
+    // Live updates arrive via socket; this polling is the reliable fallback when
+    // the socket is down. refetchIntervalInBackground keeps the *other* party's
+    // window (which is not focused) updating too — without it a backgrounded
+    // tab silently stops polling and only updates on manual refresh.
+    refetchInterval: 4_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const res = await apiRequest<{ messages: ConnectionMessage[] }>(`/connections/${activeId}/messages`);
       return res.messages ?? [];
@@ -501,11 +510,15 @@ export default function ConnectPage() {
   const connDealQ = useQuery({
     queryKey: ['conn-deal', connDealId],
     enabled: !!connDealId && status === 'authenticated',
+    refetchInterval: 8_000,
+    refetchIntervalInBackground: true,
     queryFn: () => apiRequest<ConnDeal>(`/dashboard/deals/${connDealId}`),
   });
   const connPartyQ = useQuery({
     queryKey: ['conn-party', connDealId],
     enabled: !!connDealId && status === 'authenticated',
+    refetchInterval: 8_000,
+    refetchIntervalInBackground: true,
     queryFn: async () => {
       try { return await apiRequest<ConnParty>(`/deals/${connDealId}/party-details`); }
       catch { return { sellerDetails: null, buyerDetails: null }; }
@@ -851,26 +864,29 @@ export default function ConnectPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {a.buyerId && (
-                        <div className="flex items-center gap-1">
+                        <div className={`flex items-center gap-1 rounded-md px-1 ${user?.id === a.buyerId ? 'ring-2 ring-blue-500/60 bg-blue-500/10' : ''}`}>
                           <span className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">Buyer</span>
                           <span className="text-sm font-semibold">{a.buyerUsername ?? a.buyerId.slice(0, 8)}</span>
+                          {user?.id === a.buyerId && <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400">(You)</span>}
                         </div>
                       )}
                       {a.sellerId && (
                         <>
                           {a.buyerId && <span className="text-muted-foreground text-xs">↔</span>}
-                          <div className="flex items-center gap-1">
+                          <div className={`flex items-center gap-1 rounded-md px-1 ${user?.id === a.sellerId ? 'ring-2 ring-emerald-500/60 bg-emerald-500/10' : ''}`}>
                             <span className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">Seller</span>
                             <span className="text-sm font-semibold">{a.sellerUsername ?? a.sellerId.slice(0, 8)}</span>
+                            {user?.id === a.sellerId && <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">(You)</span>}
                           </div>
                         </>
                       )}
                       {a.middlemanId && (
                         <>
                           <span className="text-muted-foreground text-xs">·</span>
-                          <div className="flex items-center gap-1">
+                          <div className={`flex items-center gap-1 rounded-md px-1 ${user?.id === a.middlemanId ? 'ring-2 ring-amber-500/60 bg-amber-500/10' : ''}`}>
                             <span className="text-[9px] font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">⚖️ MM</span>
                             <span className="text-sm font-semibold">{a.middlemanUsername ?? 'Middleman'}</span>
+                            {user?.id === a.middlemanId && <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400">(You)</span>}
                           </div>
                         </>
                       )}
@@ -960,23 +976,37 @@ export default function ConnectPage() {
                 />
               </div>
 
-              {/* ── Deal section (buyer↔seller connections only) ── */}
-              {showDealSection && (
+              {/* ── Deal section ──
+                  • When this connection has a linked deal, every channel shows a
+                    "View deal →" bar so buyer, seller AND middleman can jump to
+                    the associated deal from the chat.
+                  • Only a buyer↔seller connection with no deal yet (and only the
+                    buyer/seller, never the middleman) shows "Create escrow deal".
+                  • Support chats (user↔middleman) show nothing here. */}
+              {(a.dealId || showDealSection) && (
                 <div className="shrink-0 border-t border-border/40 bg-background/60 px-4 py-2.5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
                     {a.dealId ? (
                       <span className="text-xs text-muted-foreground">
-                        Deal <span className="font-mono font-semibold text-foreground">{a.dealId.slice(0, 8)}</span> created
+                        Deal <span className="font-mono font-semibold text-foreground">{a.dealId.slice(0, 8)}</span>
+                        {CHANNEL_META[activeChannel] ? <span className="ml-1 text-[10px]">· {CHANNEL_META[activeChannel].label}</span> : null}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Ready to create a deal?</span>
                     )}
                   </div>
-                  <Link href={a.dealId ? `/deals/${a.dealId}` : `/deals/new?connection=${a.id}&role=${myRole === 'joiner' ? 'seller' : 'buyer'}`}
-                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
-                    {a.dealId ? 'View deal →' : 'Create escrow deal →'}
-                  </Link>
+                  {a.dealId ? (
+                    <Link href={`/deals/${a.dealId}`}
+                      className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                      View deal →
+                    </Link>
+                  ) : showDealSection ? (
+                    <Link href={`/deals/new?connection=${a.id}&role=${myRole === 'joiner' ? 'seller' : 'buyer'}`}
+                      className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+                      Create escrow deal →
+                    </Link>
+                  ) : null}
                 </div>
               )}
             </>

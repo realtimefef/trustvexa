@@ -137,8 +137,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{user?.username ?? 'Account'}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {typeof user?.email === 'string' ? user.email : ''}
+              <p className="truncate text-[11px] text-muted-foreground font-mono">
+                {user?.id ? `ID: ${user.id.replace(/-/g, '').slice(0, 8).toUpperCase()}` : ''}
               </p>
             </div>
           </div>
@@ -177,10 +177,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
             <div className="border-t p-3">
+              <div className="flex items-center gap-3 rounded-xl px-2 py-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-white">
+                  {initials}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{user?.username ?? 'Account'}</p>
+                  <p className="truncate text-[11px] text-muted-foreground font-mono">
+                    {user?.id ? `ID: ${user.id.replace(/-/g, '').slice(0, 8).toUpperCase()}` : ''}
+                  </p>
+                </div>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="mt-2 w-full"
                 onClick={() => {
                   void logout();
                 }}
