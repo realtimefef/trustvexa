@@ -257,6 +257,9 @@ export default function AdminUsersPage() {
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
+                      {user.accountStatus === 'deleted' ? (
+                        <span className="text-xs text-muted-foreground italic">deleted · permanent</span>
+                      ) : (
                       <div className="flex justify-end gap-1">
                         {user.accountStatus === 'active' ? (
                           <Button
@@ -293,18 +296,17 @@ export default function AdminUsersPage() {
                         >
                           <TrendingDown className="h-3.5 w-3.5" />
                         </Button>
-                        {user.accountStatus !== 'deleted' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-destructive hover:bg-destructive/10"
-                            title="Delete account"
-                            onClick={() => openDialog(user, 'delete')}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-destructive hover:bg-destructive/10"
+                          title="Delete account"
+                          onClick={() => openDialog(user, 'delete')}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

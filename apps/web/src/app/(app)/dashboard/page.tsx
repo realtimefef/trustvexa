@@ -227,8 +227,12 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (status === 'anonymous') {
       router.replace('/login?next=/dashboard');
+    } else if (status === 'authenticated' && user?.role === 'middleman') {
+      // Operators have their own console — they are not buyers/sellers and
+      // don't use the client dashboard (no create-deal / join-code flow).
+      router.replace('/admin');
     }
-  }, [status, router]);
+  }, [status, user, router]);
 
   if (status !== 'authenticated') {
     return (

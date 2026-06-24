@@ -70,7 +70,7 @@ const DEFAULT_FORM: FormState = {
 
 export default function NewDealPage() {
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
 
   const [step, setStep] = React.useState<1 | 2>(1);
   const [connectionId, setConnectionId] = React.useState<string | null>(null);
@@ -96,7 +96,8 @@ export default function NewDealPage() {
 
   React.useEffect(() => {
     if (status === 'anonymous') router.replace('/login?next=/deals/new');
-  }, [status, router]);
+    else if (status === 'authenticated' && user?.role === 'middleman') router.replace('/admin');
+  }, [status, user, router]);
 
   React.useEffect(() => {
     let cancelled = false;

@@ -64,6 +64,9 @@ export async function unblockUser(input) {
         const user = await lockUser(tx, input.targetUserId);
         if (user === null)
             throw new AppError('user_not_found', 'User was not found.', 404);
+        if (user.account_status === 'deleted') {
+            throw new AppError('account_deleted', 'A deleted account is permanent and cannot be restored.', 409);
+        }
         if (user.account_status !== 'active') {
             await setAccountStatus(tx, input.targetUserId, 'active');
         }
@@ -150,9 +153,15 @@ export async function deleteUser(input) {
             await tx.query(`INSERT INTO account_deletions (user_id, requested_by, reason, deletion_type, deleted_at)
          VALUES ($1, $2, $3, 'admin_enforced', now())`, [input.targetUserId, input.actorId, input.reason]);
             await setAccountStatus(tx, input.targetUserId, 'deleted');
-            // Cascade: cut off all access and close the user's live conversations.
-            // Financial / deal / audit rows are intentionally retained (escrow &
-            // payment audit minimum); full PII purge runs via the retention pipeline.
+            // Scrub personal data — a deleted account leaves nothing personal behind.
+            // (Deal / ledger / audit rows are retained as legally required, but they
+            // reference only the opaque user id, never PII.)
+            await tx.query(`UPDATE users
+            SET email_enc = NULL, recovery_email_enc = NULL, email_hash = NULL,
+                username = 'deleted_' || left(replace(id::text, '-', ''), 10),
+                updated_at = now()
+          WHERE id = $1`, [input.targetUserId]);
+            // Cut off all access and close the user's live conversations.
             await tx.query(`UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [input.targetUserId]);
             await tx.query(`UPDATE auth_tokens SET revoked_at = now() WHERE user_id = $1 AND token_type = 'refresh' AND revoked_at IS NULL`, [input.targetUserId]);
             await tx.query(`UPDATE connections SET status = 'closed', updated_at = now() WHERE (creator_id = $1 OR joiner_id = $1) AND status = 'open'`, [input.targetUserId]);
