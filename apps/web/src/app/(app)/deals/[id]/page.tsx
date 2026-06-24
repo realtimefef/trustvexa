@@ -14,7 +14,7 @@ import { useDealRoom } from '@/hooks/useDealRoom';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, ChevronUp,
   Copy, Check, FileText, MessageCircle, Shield,
-  Wallet, UserPlus, Send,
+  Wallet, UserPlus, Send, X,
   Download, AlertTriangle, Clock,
 } from 'lucide-react';
 
@@ -1634,6 +1634,25 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
   const [verifyingParty, setVerifyingParty] = React.useState<'seller' | 'buyer' | null>(null);
   const [completing, setCompleting] = React.useState(false);
   const [completeErr, setCompleteErr] = React.useState<string | null>(null);
+  // Extended middleman powers
+  const [mmBusy, setMmBusy] = React.useState<string | null>(null);
+  const [mmActionErr, setMmActionErr] = React.useState<string | null>(null);
+  const [mmActionOk, setMmActionOk] = React.useState<string | null>(null);
+
+  const mmOverride = async (key: string, statusOverride: 'Cancelled' | 'Disputed', confirmMsg: string) => {
+    if (!window.confirm(confirmMsg)) return;
+    setMmBusy(key); setMmActionErr(null); setMmActionOk(null);
+    try {
+      await apiRequest(`/deals/${dealId}/middleman-update`, {
+        method: 'PATCH',
+        body: { statusOverride, note: `Middleman set status to ${statusOverride}.` },
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setMmActionOk(`Deal marked ${statusOverride}.`);
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) { setMmActionErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Action failed.'); }
+    finally { setMmBusy(null); }
+  };
 
   const markComplete = async () => {
     if (!window.confirm('Mark this deal complete and release the payout to the seller? This cannot be undone.')) return;
@@ -1750,6 +1769,37 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
       {deal.status === 'PayoutQueued' && (
         <ActionCard title="Release payout" icon={Wallet} variant="warning">
           <MilestoneReleasePanel dealId={dealId} />
+        </ActionCard>
+      )}
+
+      {/* Middleman powers — available on any active (non-terminal) deal */}
+      {!TERMINAL_STATES.has(deal.status) && (
+        <ActionCard title="⚖️ Middleman controls" icon={Shield} description="Full control over this deal. Use with care — these actions are audited.">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {(deal.status === 'Funded' || deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' || deal.status === 'Delivered' || deal.status === 'Approved') && (
+              <Button size="sm" disabled={!!mmBusy || completing} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />{completing ? 'Completing…' : 'Mark complete & release'}
+              </Button>
+            )}
+            {deal.status !== 'Disputed' && (
+              <Button size="sm" variant="outline" className="border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                disabled={!!mmBusy} onClick={() => mmOverride('dispute', 'Disputed', 'Mark this deal as Disputed?')}>
+                <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />{mmBusy === 'dispute' ? '…' : 'Open dispute'}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"
+              disabled={!!mmBusy} onClick={() => mmOverride('cancel', 'Cancelled', 'Cancel this deal? This is irreversible.')}>
+              <X className="h-3.5 w-3.5 mr-1.5" />{mmBusy === 'cancel' ? '…' : 'Cancel deal'}
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/admin"><Shield className="h-3.5 w-3.5 mr-1.5" /> Full admin console</Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/messages"><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open all chats</Link>
+            </Button>
+          </div>
+          {mmActionErr && <p className="text-xs text-destructive mt-2">⚠️ {mmActionErr}</p>}
+          {mmActionOk && <p className="text-xs text-emerald-600 mt-2">✓ {mmActionOk}</p>}
         </ActionCard>
       )}
 
