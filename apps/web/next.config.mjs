@@ -55,6 +55,26 @@ const nextConfig = {
         source: '/api/v1/:path*',
         destination: `${apiBase}/api/v1/:path*`,
       },
+      // Proxy Socket.IO traffic to the API service.
+      //
+      // WHY THIS IS REQUIRED:
+      // In proxy mode (NEXT_PUBLIC_API_BASE_URL empty) the browser opens the
+      // realtime connection against the SAME origin as the web app
+      // (trustvexa-web.onrender.com/socket.io). Without this rewrite those
+      // requests hit the Next.js server, which has no /socket.io handler, so
+      // every Socket.IO request 404s and the realtime connection never
+      // establishes — breaking ALL live updates (deals, chat, presence,
+      // notifications) site-wide until a manual refresh.
+      //
+      // The web client uses the HTTP long-polling transport in proxy mode
+      // (see socket-context.tsx), and polling is plain HTTP GET/POST that
+      // proxies cleanly through this rewrite. WebSocket upgrades are NOT
+      // proxied by Next rewrites, which is why the client deliberately sticks
+      // to polling here.
+      {
+        source: '/socket.io/:path*',
+        destination: `${apiBase}/socket.io/:path*`,
+      },
     ];
   },
   async headers() {
