@@ -962,7 +962,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <span className="text-xs text-muted-foreground">{deal.coin} · {deal.network}</span>
             <span className="text-xs font-semibold">{cents(deal.dealAmountCents)}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{counterparty} · {mmName}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            <span className="font-mono text-foreground">Deal ID: {dealId.slice(0, 8).toUpperCase()}</span> · {counterparty} · {mmName}
+          </p>
         </div>
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
@@ -1017,15 +1019,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
             {payErr && <p className="text-xs text-destructive">{payErr}</p>}
           </div>
-          <NextStep text="Once the buyer funds escrow → you'll be asked to deliver the item and submit a handover to the middleman." />
-          {/* Fallback: seller can advance to Funded if the buyer has already paid */}
-          <div className="mt-3 border-t pt-3 space-y-2">
-            <p className="text-xs text-muted-foreground">Buyer already paid but the deal hasn&apos;t advanced? You can mark it funded:</p>
-            {sellerFundingErr && <p className="text-xs text-destructive">⚠️ {sellerFundingErr}</p>}
-            <Button size="sm" variant="outline" onClick={sellerConfirmFunding} disabled={sellerConfirmingFunding}>
-              {sellerConfirmingFunding ? 'Confirming…' : '✓ Buyer has paid — mark as Funded'}
-            </Button>
-          </div>
+          <NextStep text="Save your payout address and product details below, then continue to In Progress." />
         </ActionCard>
       ) : deal.status === 'Funded' ? (
         <ActionCard title="Step 4 of 6 — In Progress: Final review & submit handover" icon={Send} variant="warning">
@@ -1193,6 +1187,20 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
+      {/* Continue to In Progress — shown after the detail forms, advances Confirmed→Funded (In Progress) */}
+      {DETAIL_FORM_STATES.has(deal.status) && (
+        <ActionCard title="Continue to In Progress" icon={Send} variant="success">
+          <p className="text-sm text-muted-foreground mb-2">Once you&apos;ve saved your payout address and product &amp; delivery details above, continue to the In Progress stage to do a final review and hand over to the middleman.</p>
+          {!sellerDetailsSaved && (
+            <p className="text-xs text-amber-600 mb-2">⚠️ Save your product &amp; delivery details above first.</p>
+          )}
+          {sellerFundingErr && <p className="text-xs text-destructive mb-2">⚠️ {sellerFundingErr}</p>}
+          <Button onClick={sellerConfirmFunding} disabled={sellerConfirmingFunding || !sellerDetailsSaved} className="w-full">
+            {sellerConfirmingFunding ? 'Continuing…' : 'Continue to In Progress →'}
+          </Button>
+        </ActionCard>
+      )}
+
       {/* Middleman status */}
       {deal.middlemanId ? (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 flex items-center gap-3">
@@ -1357,7 +1365,9 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
             <span className="text-xs text-muted-foreground">{deal.coin} · {deal.network}</span>
             <span className="text-xs font-semibold">{cents(deal.dealAmountCents)}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">Seller: {deal.sellerId ? deal.sellerId.slice(0,8) : 'TBD'} · {mmName}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            <span className="font-mono text-foreground">Deal ID: {dealId.slice(0, 8).toUpperCase()}</span> · Seller: {deal.sellerId ? deal.sellerId.slice(0,8) : 'TBD'} · {mmName}
+          </p>
         </div>
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
@@ -1691,6 +1701,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
             <span className="text-xs font-semibold">{cents(deal.dealAmountCents)}</span>
           </div>
           <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
+            <span className="font-mono text-foreground">Deal ID: {dealId.slice(0,8).toUpperCase()}</span>
             <span>Buyer: {deal.buyerId ? deal.buyerId.slice(0,8) : '—'}</span>
             <span>Seller: {deal.sellerId ? deal.sellerId.slice(0,8) : '—'}</span>
           </div>
