@@ -49,6 +49,14 @@ export interface GatewayDeps {
   /** Per-event rate limit window persistence (Redis-backed in production). */
   rateState: (socketId: string, event: string) => Promise<WindowState | null>;
   saveRateState: (socketId: string, event: string, state: WindowState) => Promise<void>;
+  /**
+   * Browser origins allowed to open a cross-origin Socket.IO connection.
+   * The web app connects directly to the API origin (NEXT_PUBLIC_SOCKET_URL),
+   * so the API must allow that origin here. When empty, all origins are
+   * allowed — the connection is still gated by the JWT handshake, and sockets
+   * use bearer-token auth (no cookies), so origin reflection is safe.
+   */
+  corsOrigins?: string[];
   now?: () => number;
 }
 
@@ -68,9 +76,18 @@ function extractToken(socket: Socket): string | null {
 /** Build and configure the Socket.IO server with auth, adapter, and handlers. */
 export function createGateway(httpServer: HttpServer, deps: GatewayDeps): Server {
   const now = deps.now ?? (() => Date.now());
+  const allowedOrigins = deps.corsOrigins ?? [];
   const io = new Server(httpServer, {
     transports: ['websocket', 'polling'],
-    cors: { origin: false },
+    // Allow the configured web origins to connect cross-origin. Sockets use
+    // bearer-token auth in the handshake (not cookies), so we don't need
+    // credentialed CORS; when no origins are configured we reflect any origin
+    // (the JWT handshake is still the real gate).
+    cors: {
+      origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+      methods: ['GET', 'POST'],
+      credentials: false,
+    },
   });
   io.adapter(createAdapter(deps.pubClient, deps.subClient));
 

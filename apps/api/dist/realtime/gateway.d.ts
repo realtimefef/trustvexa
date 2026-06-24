@@ -24,6 +24,14 @@ export interface GatewayDeps {
     /** Per-event rate limit window persistence (Redis-backed in production). */
     rateState: (socketId: string, event: string) => Promise<WindowState | null>;
     saveRateState: (socketId: string, event: string, state: WindowState) => Promise<void>;
+    /**
+     * Browser origins allowed to open a cross-origin Socket.IO connection.
+     * The web app connects directly to the API origin (NEXT_PUBLIC_SOCKET_URL),
+     * so the API must allow that origin here. When empty, all origins are
+     * allowed — the connection is still gated by the JWT handshake, and sockets
+     * use bearer-token auth (no cookies), so origin reflection is safe.
+     */
+    corsOrigins?: string[];
     now?: () => number;
 }
 /** Build and configure the Socket.IO server with auth, adapter, and handlers. */

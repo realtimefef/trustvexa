@@ -521,6 +521,19 @@ export async function agreeToDeal(userId: string, dealId: string): Promise<Agree
 
     await client.query('COMMIT');
 
+    // Notify BOTH parties' open deal pages to refetch so the agreement / lock
+    // state updates live. The lock→Agreed path also publishes via
+    // applyDealTransition below, but a one-sided agree (waiting for the other
+    // party) transitions nothing — without this, the counterparty would keep
+    // showing "waiting to accept" until a manual refresh.
+    try {
+      const redis = getRedis();
+      await redis.publish(
+        'realtime:deal:events',
+        JSON.stringify({ dealId, event: 'deal:update', payload: { dealId, locked: !!lockedAt } }),
+      );
+    } catch { /* realtime is best-effort; the page still works via refetch/poll */ }
+
     // AUTO-ADVANCE: Once both parties lock, jump directly to Confirmed so
     // buyers can fund the escrow immediately — no verification code exchange
     // or manual terms acceptance step is needed.

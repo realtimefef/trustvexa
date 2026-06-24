@@ -84,19 +84,32 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
 
     const token = getAccessToken();
-    // In proxy mode (NEXT_PUBLIC_API_BASE_URL is empty), Socket.IO must
-    // connect to the same origin with path /socket.io (default). In direct
-    // mode it connects to the API origin directly.
-    const apiBase = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/, '');
-    const origin = apiBase || window.location.origin;
-    const isProxyMode = !apiBase;
+    // Socket connection target. We connect the realtime socket DIRECTLY to the
+    // API origin (NEXT_PUBLIC_SOCKET_URL), independent of the REST proxy. This
+    // is the reliable production setup: real WebSockets to the API, instead of
+    // trying to tunnel Socket.IO through the Next.js rewrite (which cannot
+    // upgrade WebSockets and is flaky over long-polling).
+    //
+    //   NEXT_PUBLIC_SOCKET_URL = https://<your-api-host>   (preferred)
+    //   NEXT_PUBLIC_API_BASE_URL = https://<your-api-host> (fallback if set)
+    //
+    // If neither is set we fall back to a same-origin polling connection
+    // (works only when the API is reachable at /socket.io on this origin).
+    const socketBase = (
+      process.env.NEXT_PUBLIC_SOCKET_URL ??
+      process.env.NEXT_PUBLIC_API_BASE_URL ??
+      ''
+    ).replace(/\/$/, '');
+    const directMode = !!socketBase;
+    const origin = directMode ? socketBase : window.location.origin;
 
     const newSocket = io(origin, {
       auth: { token },
-      // In proxy mode Next.js can't easily proxy WebSocket upgrades, so we
-      // fall back to HTTP long-polling which works through the rewrite rule.
-      transports: isProxyMode ? ['polling'] : ['websocket', 'polling'],
+      // Direct mode → prefer native WebSocket (with polling fallback). Same-
+      // origin proxy mode → polling only, since Next rewrites can't upgrade WS.
+      transports: directMode ? ['websocket', 'polling'] : ['polling'],
       path: '/socket.io',
+      withCredentials: false,
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -106,6 +119,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
     newSocket.on('connect', () => {
       setIsConnected(true);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      // Surface handshake/transport failures in the console to aid debugging
+      // (e.g. CORS rejection, 404 on /socket.io, bad token).
+      if (typeof console !== 'undefined') {
+        console.warn('[socket] connect_error:', err?.message ?? err);
+      }
+      setIsConnected(false);
     });
 
     newSocket.on('disconnect', () => {

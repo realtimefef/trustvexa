@@ -26,9 +26,18 @@ function extractToken(socket) {
 /** Build and configure the Socket.IO server with auth, adapter, and handlers. */
 export function createGateway(httpServer, deps) {
     const now = deps.now ?? (() => Date.now());
+    const allowedOrigins = deps.corsOrigins ?? [];
     const io = new Server(httpServer, {
         transports: ['websocket', 'polling'],
-        cors: { origin: false },
+        // Allow the configured web origins to connect cross-origin. Sockets use
+        // bearer-token auth in the handshake (not cookies), so we don't need
+        // credentialed CORS; when no origins are configured we reflect any origin
+        // (the JWT handshake is still the real gate).
+        cors: {
+            origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+            methods: ['GET', 'POST'],
+            credentials: false,
+        },
     });
     io.adapter(createAdapter(deps.pubClient, deps.subClient));
     // Handshake authentication middleware (runs on connect AND reconnect).

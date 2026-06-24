@@ -28,6 +28,7 @@ export function main() {
         const io = createGateway(server, {
             pubClient,
             subClient,
+            corsOrigins: config.corsOrigins,
             verifyToken: (token) => {
                 try {
                     const cfg = getAuthConfig();
