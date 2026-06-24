@@ -176,14 +176,38 @@ interface ChatPanelProps {
 }
 
 interface ConnDeal { id: string; status: string; coin: string; network: string; dealAmountCents?: string | null; itemDescription?: string | null }
+interface ConnSellerSide {
+  productName?: string | null; productDescription?: string | null; requirements?: string | null;
+  deliveryMethod?: string | null; deliveryInstructions?: string | null; estimatedDeliveryTime?: string | null;
+  additionalNotes?: string | null; verifiedByMiddleman?: boolean;
+}
+interface ConnBuyerSide {
+  receivingPlatform?: string | null; receivingAddress?: string | null; contactEmail?: string | null;
+  backupContact?: string | null; specialInstructions?: string | null; suggestions?: string | null;
+  confirmedByBuyer?: boolean;
+}
 interface ConnParty {
-  sellerDetails: { productName?: string | null; deliveryMethod?: string | null; productDescription?: string | null } | null;
-  buyerDetails: { receivingPlatform?: string | null; receivingAddress?: string | null; contactEmail?: string | null } | null;
+  sellerDetails: ConnSellerSide | null;
+  buyerDetails: ConnBuyerSide | null;
 }
 
-/** Channel-aware deal context shown above the chat: buyer↔mm shows the buyer's
- * submitted side, seller↔mm shows the seller's side, buyer↔seller shows a
- * neutral deal summary. */
+function DealRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2 text-[11px]">
+      <span className="text-muted-foreground shrink-0 w-24">{label}</span>
+      <span className="break-words">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Channel-aware deal context shown at the top of the chat. The two sides are
+ * kept STRICTLY separate so the operator never mixes them up:
+ *   • buyer↔middleman  → ONLY the buyer's submitted side (receiving details)
+ *   • seller↔middleman → ONLY the seller's submitted side (product/delivery)
+ *   • buyer↔seller     → neutral deal summary only (no private side details)
+ */
 function DealContextBar({ channel, deal, party }: { channel: Channel; deal: ConnDeal | undefined; party: ConnParty | undefined }) {
   if (!deal) return null;
   const money = (c?: string | null) => (c ? `$${(Number(c) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—');
@@ -192,23 +216,56 @@ function DealContextBar({ channel, deal, party }: { channel: Channel; deal: Conn
   if (channel === 'buyer_mm') {
     const b = party?.buyerDetails;
     side = (
-      <p className="text-[11px] text-blue-700 dark:text-blue-400">
-        <strong>Buyer side:</strong>{' '}
-        {b ? `Receiving via ${b.receivingPlatform ?? '—'} · ${b.receivingAddress ?? 'no address'}${b.contactEmail ? ` · ${b.contactEmail}` : ''}` : 'Buyer has not filled in their receiving details yet.'}
-      </p>
+      <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 space-y-1">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">
+          🛒 Buyer side {b?.confirmedByBuyer ? '· ✓ confirmed' : ''}
+        </p>
+        {b ? (
+          <div className="space-y-0.5">
+            <DealRow label="Receiving on" value={b.receivingPlatform} />
+            <DealRow label="Address" value={b.receivingAddress} />
+            <DealRow label="Contact" value={b.contactEmail} />
+            <DealRow label="Backup" value={b.backupContact} />
+            <DealRow label="Instructions" value={b.specialInstructions} />
+            <DealRow label="Suggestions" value={b.suggestions} />
+            {!b.receivingPlatform && !b.receivingAddress && !b.contactEmail && (
+              <p className="text-[11px] text-muted-foreground">Buyer has not filled in their receiving details yet.</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">Buyer has not filled in their receiving details yet.</p>
+        )}
+      </div>
     );
   } else if (channel === 'seller_mm') {
     const s = party?.sellerDetails;
     side = (
-      <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-        <strong>Seller side:</strong>{' '}
-        {s ? `${s.productName ?? 'Item'} · delivery via ${s.deliveryMethod ?? '—'}${s.productDescription ? ` · ${s.productDescription}` : ''}` : 'Seller has not filled in their product/delivery details yet.'}
-      </p>
+      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 space-y-1">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+          📦 Seller side {s?.verifiedByMiddleman ? '· ✓ verified' : ''}
+        </p>
+        {s ? (
+          <div className="space-y-0.5">
+            <DealRow label="Product" value={s.productName} />
+            <DealRow label="Description" value={s.productDescription} />
+            <DealRow label="Requirements" value={s.requirements} />
+            <DealRow label="Delivery via" value={s.deliveryMethod} />
+            <DealRow label="Instructions" value={s.deliveryInstructions} />
+            <DealRow label="ETA" value={s.estimatedDeliveryTime} />
+            <DealRow label="Notes" value={s.additionalNotes} />
+            {!s.productName && !s.deliveryMethod && !s.productDescription && (
+              <p className="text-[11px] text-muted-foreground">Seller has not filled in their product/delivery details yet.</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">Seller has not filled in their product/delivery details yet.</p>
+        )}
+      </div>
     );
   }
 
   return (
-    <div className="border-b bg-muted/20 px-4 py-2 space-y-1">
+    <div className="border-b bg-muted/10 px-4 py-2 space-y-2">
       <div className="flex items-center gap-2 flex-wrap text-xs">
         <span className="font-mono text-muted-foreground">Deal {deal.id.slice(0, 8)}</span>
         {deal.itemDescription && <span className="truncate max-w-[160px]">&quot;{deal.itemDescription}&quot;</span>}
@@ -432,6 +489,26 @@ export default function ConnectPage() {
     },
   });
 
+  // The deal tied to this connection — surfaced in the chat so each side (and
+  // the operator) sees the relevant side's submitted details next to its
+  // channel. Declared here (before any early return) to respect the Rules of
+  // Hooks. The party endpoint is role-scoped server-side: the assigned
+  // middleman gets both sides; each party only ever gets their own.
+  const connDealId = active.data?.dealId ?? null;
+  const connDealQ = useQuery({
+    queryKey: ['conn-deal', connDealId],
+    enabled: !!connDealId && status === 'authenticated',
+    queryFn: () => apiRequest<ConnDeal>(`/dashboard/deals/${connDealId}`),
+  });
+  const connPartyQ = useQuery({
+    queryKey: ['conn-party', connDealId],
+    enabled: !!connDealId && status === 'authenticated',
+    queryFn: async () => {
+      try { return await apiRequest<ConnParty>(`/deals/${connDealId}/party-details`); }
+      catch { return { sellerDetails: null, buyerDetails: null }; }
+    },
+  });
+
   // ── Socket ────────────────────────────────────────────────────────────────────
   const { socket } = useSocket();
   React.useEffect(() => {
@@ -565,23 +642,6 @@ export default function ConnectPage() {
   const connList: ConnectionView[] = Array.isArray(connections.data) ? connections.data : [];
   const a = active.data;
   const msgList: ConnectionMessage[] = Array.isArray(messages.data) ? messages.data : [];
-
-  // The deal tied to this connection — surfaced in the chat so the operator
-  // sees the relevant side's submitted details next to each channel.
-  const connDealId = a?.dealId ?? null;
-  const connDealQ = useQuery({
-    queryKey: ['conn-deal', connDealId],
-    enabled: !!connDealId,
-    queryFn: () => apiRequest<ConnDeal>(`/dashboard/deals/${connDealId}`),
-  });
-  const connPartyQ = useQuery({
-    queryKey: ['conn-party', connDealId],
-    enabled: !!connDealId,
-    queryFn: async () => {
-      try { return await apiRequest<ConnParty>(`/deals/${connDealId}/party-details`); }
-      catch { return { sellerDetails: null, buyerDetails: null }; }
-    },
-  });
 
   const myRole = !a || !user ? null
     : a.middlemanId === user.id ? 'middleman'

@@ -101,7 +101,7 @@ function useChatMessages(chatId: string | null, en: boolean) {
 
 // ── Deal Chat Viewer ──────────────────────────────────────────────────────────
 
-function DealChatViewer({ dealId, allChats }: { dealId: string; allChats: AdminChat[] }) {
+export function DealChatViewer({ dealId, allChats }: { dealId: string; allChats: AdminChat[] }) {
   const dealChats = allChats.filter(c => c.dealId === dealId);
   const [selChatId, setSelChatId] = React.useState<string | null>(dealChats[0]?.id ?? null);
   React.useEffect(() => { if (dealChats.length && !selChatId) setSelChatId(dealChats[0]?.id ?? null); }, [dealChats, selChatId]);
@@ -149,7 +149,7 @@ function DealChatViewer({ dealId, allChats }: { dealId: string; allChats: AdminC
 
 // ── Deal Actions Panel ────────────────────────────────────────────────────────
 
-function DealActionsPanel({ dealId, status, qc }: { dealId: string; status: string; qc: ReturnType<typeof useQueryClient> }) {
+export function DealActionsPanel({ dealId, status, qc }: { dealId: string; status: string; qc: ReturnType<typeof useQueryClient> }) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
   const [ok, setOk] = React.useState<string | null>(null);
@@ -259,7 +259,7 @@ const SEV_COLOR: Record<string, string> = {
   low: 'text-muted-foreground', medium: 'text-amber-600', high: 'text-orange-600', critical: 'text-destructive',
 };
 
-function RiskNotesPanel({ dealId }: { dealId: string }) {
+export function RiskNotesPanel({ dealId }: { dealId: string }) {
   const qc = useQueryClient();
   const riskQ = useQuery({
     queryKey: ['admin-risk', dealId],
