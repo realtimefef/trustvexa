@@ -13,6 +13,9 @@ export function healthRouter() {
     const router = Router();
     const controller = new HealthController();
     router.get('/ping', ...apiChain(), controller.ping);
+    // Operator dashboard readiness view — per-dependency PostgreSQL + Redis
+    // status (same probe as the root /healthz). Operator-only.
+    router.get('/full', ...apiChain({ roles: ['middleman'] }), controller.healthz);
     return router;
 }
 //# sourceMappingURL=health.routes.js.map

@@ -355,6 +355,81 @@ function BreakGlassCard() {
   );
 }
 
+// ── Withdrawal allowlist (custody) ───────────────────────────────────────────
+
+interface AllowlistEntry { id: string; coin: string | null; network: string | null; address: string | null; label: string | null; isActive: boolean; activeFrom: string | null }
+
+function AllowlistCard() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ['admin-allowlist'], queryFn: () => apiRequest<{ entries: AllowlistEntry[]; nowIso: string }>('/admin/withdrawal-allowlist') });
+  const [coin, setCoin] = React.useState('USDT');
+  const [network, setNetwork] = React.useState('TRON');
+  const [address, setAddress] = React.useState('');
+  const [label, setLabel] = React.useState('');
+  const [delayHours, setDelayHours] = React.useState('24');
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const entries = q.data?.entries ?? [];
+  const now = q.data?.nowIso ? new Date(q.data.nowIso).getTime() : Date.now();
+
+  const add = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await apiRequest('/admin/withdrawal-allowlist', { method: 'POST', body: { coin: coin.trim(), network: network.trim(), address: address.trim(), label: label.trim() || null, delayHours: Number(delayHours) || 0 }, idempotencyKey: newIdempotencyKey() });
+      setAddress(''); setLabel('');
+      void qc.invalidateQueries({ queryKey: ['admin-allowlist'] });
+    } catch (e) { setErr(e instanceof ApiError ? e.message : 'Failed to add address.'); }
+    finally { setBusy(false); }
+  };
+  const toggle = async (id: string, isActive: boolean) => {
+    try {
+      await apiRequest(`/admin/withdrawal-allowlist/${id}`, { method: 'PATCH', body: { isActive }, idempotencyKey: newIdempotencyKey() });
+      void qc.invalidateQueries({ queryKey: ['admin-allowlist'] });
+    } catch (e) { setErr(e instanceof ApiError ? e.message : 'Failed to update.'); }
+  };
+
+  return (
+    <Card className="rounded-2xl shadow-soft">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base"><KeyRound className="h-4 w-4 text-emerald-500" /> Withdrawal allowlist</CardTitle>
+        <CardDescription>Operator payout addresses. New entries activate after a time-delay; payouts can only go to an active, elapsed entry.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {err && <p className="text-xs text-destructive">{err}</p>}
+        <div className="grid gap-2 sm:grid-cols-4">
+          <Input value={coin} onChange={(e) => setCoin(e.target.value)} placeholder="Coin" className="h-8 text-xs" />
+          <Input value={network} onChange={(e) => setNetwork(e.target.value)} placeholder="Network" className="h-8 text-xs" />
+          <Input value={delayHours} onChange={(e) => setDelayHours(e.target.value)} placeholder="Delay (h)" type="number" min="0" max="168" className="h-8 text-xs" />
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (optional)" className="h-8 text-xs" />
+        </div>
+        <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Payout address" className="h-8 text-xs font-mono" />
+        <Button size="sm" disabled={busy || !address.trim() || !coin.trim() || !network.trim()} onClick={() => void add()}>
+          {busy ? 'Adding…' : 'Add address (time-delayed)'}
+        </Button>
+        <div className="space-y-1.5 pt-1 max-h-48 overflow-y-auto">
+          {q.isLoading ? <Skeleton className="h-10 w-full" /> : entries.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No allowlisted addresses.</p>
+          ) : entries.map((e) => {
+            const pending = e.activeFrom ? new Date(e.activeFrom).getTime() > now : false;
+            return (
+              <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border px-3 py-1.5">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium">{e.coin}/{e.network} {e.label ? `· ${e.label}` : ''}</p>
+                  <p className="text-[11px] font-mono text-muted-foreground truncate">{e.address}</p>
+                  <p className="text-[10px] text-muted-foreground">{!e.isActive ? 'Revoked' : pending ? `Active from ${fmt(e.activeFrom)}` : 'Active'}</p>
+                </div>
+                <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => void toggle(e.id, !e.isActive)}>
+                  {e.isActive ? 'Revoke' : 'Enable'}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminControlsPage() {
   const router = useRouter();
   const { status } = useAuth();
@@ -371,6 +446,7 @@ export default function AdminControlsPage() {
         <AppealsCard />
         <AmlAlertsCard />
         <PiiLookupCard />
+        <AllowlistCard />
         <BreakGlassCard />
       </div>
     </div>

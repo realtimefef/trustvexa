@@ -60,24 +60,13 @@ import { ApiError, apiRequest, newIdempotencyKey } from '@/lib/api/client';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-interface HealthStatus {
-  status: string;
-  api: boolean;
-  db: boolean;
-  redis: boolean;
-  worker?: boolean;
-  uptime?: number;
-}
+interface HealthDep { name: string; status: string }
+interface HealthzRaw { status: string; dependencies: HealthDep[] }
+interface HealthStatus { status: string; api: boolean | null; db: boolean | null; redis: boolean | null; worker: boolean | null }
 
-interface AnalyticsSummary {
-  activeDeals: number;
-  fundedDeals: number;
-  disputedDeals: number;
-  completedDealsToday: number;
-  newUsersToday: number;
-  activeUsers: number;
-  pendingPayouts: number;
-  totalEscrowUsd: string;
+interface AnalyticsRaw {
+  analytics: Record<string, number | string | null> | null;
+  fraudAnalytics: Record<string, number | string | null> | null;
 }
 
 interface PauseEntry {
@@ -274,13 +263,18 @@ export default function AdminOperationsPage() {
 
   const healthQuery = useQuery({
     queryKey: ['system-health'],
-    queryFn: () => apiRequest<HealthStatus>('/health/full'),
+    queryFn: () => apiRequest<HealthzRaw>('/health/full'),
     refetchInterval: 30_000,
+    select: (raw): HealthStatus => {
+      const dep = (re: RegExp) => raw.dependencies?.find((d) => re.test(d.name));
+      const up = (re: RegExp): boolean | null => { const d = dep(re); return d ? d.status === 'up' : null; };
+      return { status: raw.status, api: true, db: up(/db|postgres|database/i), redis: up(/redis/i), worker: up(/worker/i) };
+    },
   });
 
   const analyticsQuery = useQuery({
     queryKey: ['admin-analytics'],
-    queryFn: () => apiRequest<AnalyticsSummary>('/admin/analytics'),
+    queryFn: () => apiRequest<AnalyticsRaw>('/admin/analytics'),
     refetchInterval: 60_000,
   });
 
@@ -296,7 +290,7 @@ export default function AdminOperationsPage() {
 
   const auditQuery = useQuery({
     queryKey: ['admin-audit-log'],
-    queryFn: () => apiRequest<{ entries: AuditLogEntry[] }>('/admin/audit-log?limit=30'),
+    queryFn: () => apiRequest<{ auditLog: AuditLogEntry[] }>('/admin/audit-log'),
   });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
@@ -340,10 +334,12 @@ export default function AdminOperationsPage() {
   });
 
   const health = healthQuery.data;
-  const analytics = analyticsQuery.data;
+  const analytics = analyticsQuery.data?.analytics ?? null;
+  const fraud = analyticsQuery.data?.fraudAnalytics ?? null;
   const pauses = pausesQuery.data?.pauses ?? [];
   const flags = flagsQuery.data?.flags ?? [];
-  const auditEntries = auditQuery.data?.entries ?? [];
+  const auditEntries = auditQuery.data?.auditLog ?? [];
+  const num = (v: number | string | null | undefined): number | string => (v === null || v === undefined ? '—' : v);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
@@ -428,14 +424,14 @@ export default function AdminOperationsPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: 'Active deals', value: analytics?.activeDeals ?? 0, color: 'text-blue-500' },
-                { label: 'Funded deals', value: analytics?.fundedDeals ?? 0, color: 'text-violet-500' },
-                { label: 'Open disputes', value: analytics?.disputedDeals ?? 0, color: 'text-red-500' },
-                { label: 'Completed today', value: analytics?.completedDealsToday ?? 0, color: 'text-emerald-500' },
-                { label: 'New users today', value: analytics?.newUsersToday ?? 0, color: 'text-blue-400' },
-                { label: 'Active users', value: analytics?.activeUsers ?? 0, color: 'text-primary' },
-                { label: 'Pending payouts', value: analytics?.pendingPayouts ?? 0, color: 'text-amber-500' },
-                { label: 'Total in escrow', value: analytics?.totalEscrowUsd ?? '—', color: 'text-emerald-600' },
+                { label: 'Total deals', value: num(analytics?.total_deals), color: 'text-primary' },
+                { label: 'Active deals', value: num(analytics?.active_deals), color: 'text-blue-500' },
+                { label: 'Completed deals', value: num(analytics?.completed_deals), color: 'text-emerald-500' },
+                { label: 'Open disputes', value: num(analytics?.disputed_deals), color: 'text-red-500' },
+                { label: 'Payment issues', value: num(analytics?.payment_issue_count), color: 'text-amber-500' },
+                { label: 'Blocked users', value: num(fraud?.blocked_user_count), color: 'text-destructive' },
+                { label: 'Repeat disputes', value: num(fraud?.repeated_dispute_count), color: 'text-orange-500' },
+                { label: 'High-risk wallets', value: num(fraud?.high_risk_wallet_count), color: 'text-violet-500' },
               ].map((stat) => (
                 <div key={stat.label} className="rounded-xl border bg-muted/20 p-3">
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
@@ -443,6 +439,9 @@ export default function AdminOperationsPage() {
                 </div>
               ))}
             </div>
+          )}
+          {!analyticsQuery.isLoading && !analytics && (
+            <p className="text-xs text-muted-foreground mt-2">No analytics snapshot yet — the daily snapshot job populates these figures.</p>
           )}
         </CardContent>
       </Card>

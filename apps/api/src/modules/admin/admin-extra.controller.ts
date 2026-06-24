@@ -102,3 +102,26 @@ export async function listPiiAccessLogs(req: Request, res: Response): Promise<vo
   requireUserId(req);
   res.status(200).json(await svc.listPiiAccessLogs(optionalString((req.query as { userId?: string }).userId)));
 }
+
+// ── Withdrawal allowlist ─────────────────────────────────────────────────────
+
+export async function listWithdrawalAllowlist(req: Request, res: Response): Promise<void> {
+  requireUserId(req);
+  res.status(200).json(await svc.listWithdrawalAllowlist());
+}
+
+export async function addWithdrawalAllowlist(req: Request, res: Response): Promise<void> {
+  const actorId = requireUserId(req);
+  const body = req.body as { coin: string; network: string; address: string; label?: string | null; delayHours?: number };
+  res.status(201).json(await svc.addWithdrawalAllowlist({
+    actorId, coin: body.coin, network: body.network, address: body.address,
+    label: body.label ?? null, delayHours: body.delayHours ?? 24, requestId: requestId(req),
+  }));
+}
+
+export async function setWithdrawalAllowlistActive(req: Request, res: Response): Promise<void> {
+  const actorId = requireUserId(req);
+  const id = requireParam(req, 'id');
+  const body = req.body as { isActive: boolean };
+  res.status(200).json(await svc.setWithdrawalAllowlistActive({ actorId, id, isActive: body.isActive, requestId: requestId(req) }));
+}

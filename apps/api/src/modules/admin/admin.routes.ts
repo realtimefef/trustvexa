@@ -61,6 +61,13 @@ const piiLookupBodySchema = z.object({
   fields: z.array(z.enum(['email', 'signup_details', 'recovery_email'])).min(1),
   reason: z.string().trim().min(1).max(2000),
 });
+const allowlistBodySchema = z.object({
+  coin: z.string().trim().min(1).max(20),
+  network: z.string().trim().min(1).max(40),
+  address: z.string().trim().min(4).max(200),
+  label: z.string().trim().max(200).optional().nullable(),
+  delayHours: z.number().int().min(0).max(168).optional(),
+});
 const holdIdParamSchema = z.object({ holdId: z.string().uuid() });
 const pauseIdParamSchema = z.object({ pauseId: z.string().uuid() });
 const flagKeyParamSchema = z.object({ key: z.string().trim().min(1).max(100) });
@@ -379,6 +386,27 @@ export function adminRouter(): Router {
       enforceIdempotency: true,
     }),
     asyncHandler(extra.lookupUserPii),
+  );
+
+  // Withdrawal allowlist (custody) — operator payout addresses with time-delay.
+  router.get('/withdrawal-allowlist', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listWithdrawalAllowlist));
+  router.post(
+    '/withdrawal-allowlist',
+    ...apiChain({
+      schemas: { body: allowlistBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.addWithdrawalAllowlist),
+  );
+  router.patch(
+    '/withdrawal-allowlist/:id',
+    ...apiChain({
+      schemas: { params: z.object({ id: z.string().uuid() }), body: z.object({ isActive: z.boolean() }) },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.setWithdrawalAllowlistActive),
   );
 
   return router;

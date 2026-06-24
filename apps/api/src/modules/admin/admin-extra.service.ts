@@ -354,3 +354,76 @@ export async function listPiiAccessLogs(targetUserId?: string): Promise<{ logs: 
     })),
   };
 }
+
+// ── Withdrawal allowlist (custody: operator payout addresses, time-delayed) ───
+
+export interface AllowlistEntryView {
+  id: string; coin: string | null; network: string | null; address: string | null;
+  label: string | null; isActive: boolean; activeFrom: string | null; createdAt: string | null;
+}
+
+interface AllowlistRow {
+  id: string; coin: string | null; network: string | null; address: string | null;
+  label: string | null; is_active: boolean; active_from: Date | string | null; created_at: Date | string;
+}
+
+export async function listWithdrawalAllowlist(): Promise<{ entries: AllowlistEntryView[]; nowIso: string }> {
+  const { rows } = await query<AllowlistRow>(
+    `SELECT id, coin, network, address, label, is_active, active_from, created_at
+       FROM withdrawal_allowlist ORDER BY created_at DESC LIMIT 200`,
+  );
+  return {
+    nowIso: new Date().toISOString(),
+    entries: rows.map((r) => ({
+      id: r.id, coin: r.coin, network: r.network, address: r.address, label: r.label,
+      isActive: r.is_active, activeFrom: toIso(r.active_from), createdAt: toIso(r.created_at),
+    })),
+  };
+}
+
+/**
+ * Add a payout/withdrawal address to the allowlist with a time-delay before it
+ * becomes usable (custody control). The payout preflight only allows sending to
+ * an active allowlist entry whose active_from has elapsed.
+ */
+export async function addWithdrawalAllowlist(input: {
+  actorId: string; coin: string; network: string; address: string; label: string | null; delayHours: number; requestId: string;
+}): Promise<{ id: string; activeFrom: string }> {
+  const delayHours = Math.max(0, Math.min(168, input.delayHours)); // clamp 0–7 days
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const ins = await client.query<{ id: string; active_from: Date | string }>(
+      `INSERT INTO withdrawal_allowlist (coin, network, address, label, added_by, added_at, active_from, is_active, created_at)
+       VALUES ($1, $2, $3, $4, $5, now(), now() + ($6 || ' hours')::interval, true, now())
+       RETURNING id, active_from`,
+      [input.coin, input.network, input.address.trim(), input.label, input.actorId, String(delayHours)],
+    );
+    await appendAdminAction(client, {
+      actorId: input.actorId, action: 'allowlist_address_added', targetType: 'wallet',
+      targetId: ins.rows[0]!.id, reason: `Allowlist ${input.coin}/${input.network} ${input.address}`,
+      requestId: input.requestId, metadata: { coin: input.coin, network: input.network, delayHours },
+    });
+    await client.query('COMMIT');
+    return { id: ins.rows[0]!.id, activeFrom: toIso(ins.rows[0]!.active_from) ?? '' };
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+}
+
+export async function setWithdrawalAllowlistActive(input: {
+  actorId: string; id: string; isActive: boolean; requestId: string;
+}): Promise<{ updated: boolean }> {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const found = await client.query(`SELECT 1 FROM withdrawal_allowlist WHERE id = $1 FOR UPDATE`, [input.id]);
+    if (found.rows.length === 0) throw notFound('Allowlist entry not found.');
+    await client.query(`UPDATE withdrawal_allowlist SET is_active = $2 WHERE id = $1`, [input.id, input.isActive]);
+    await appendAdminAction(client, {
+      actorId: input.actorId, action: input.isActive ? 'allowlist_address_enabled' : 'allowlist_address_revoked',
+      targetType: 'wallet', targetId: input.id, reason: input.isActive ? 'Allowlist enabled' : 'Allowlist revoked',
+      requestId: input.requestId, metadata: {},
+    });
+    await client.query('COMMIT');
+    return { updated: true };
+  } catch (e) { await client.query('ROLLBACK'); throw e; } finally { client.release(); }
+}
