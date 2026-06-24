@@ -380,13 +380,13 @@ function QueueRow({ item, allChats }: { item: QueueItem; allChats: AdminChat[] }
 // ── Quick nav ─────────────────────────────────────────────────────────────────
 
 const NAV_CARDS = [
-  { href: '/admin/users', icon: Users, label: 'Users', desc: 'Search, block, label accounts' },
-  { href: '/admin/disputes', icon: Gavel, label: 'Disputes', desc: 'All open cases' },
-  { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor & delete chats' },
+  { href: '/admin/users', icon: Users, label: 'Users', desc: 'Search, block, label, delete accounts' },
+  { href: '/connect', icon: MessageSquare, label: 'Deal chats', desc: 'Message buyers & sellers' },
+  { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor, categorize & delete chats' },
   { href: '/admin/reviews', icon: FileText, label: 'Reviews', desc: 'Moderate public + deal reviews' },
-  { href: '/admin/support', icon: TicketIcon, label: 'Support & Feedback', desc: 'User tickets & help requests' },
-  { href: '/admin/operations', icon: BarChart3, label: 'Operations', desc: 'Analytics & circuit breakers' },
-  { href: '/treasury', icon: DollarSign, label: 'Treasury', desc: 'On-chain reconciliation' },
+  { href: '/admin/support', icon: TicketIcon, label: 'Support & Cases', desc: 'User tickets & help requests' },
+  { href: '/admin/operations', icon: BarChart3, label: 'Operations', desc: 'Analytics, pauses, flags, holds, audit' },
+  { href: '/treasury', icon: DollarSign, label: 'Treasury', desc: 'Payouts & on-chain reconciliation' },
 ];
 
 // ── Disputes table ────────────────────────────────────────────────────────────
@@ -463,8 +463,8 @@ export default function AdminConsolePage() {
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Middleman Console</h1>
-        <p className="text-sm text-muted-foreground">Full control over all deals, chats, users, and platform operations.</p>
+        <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Operator Console</h1>
+        <p className="text-sm text-muted-foreground">Admin = Middleman — one neutral operator account with full control over all deals, chats, users, money, and platform operations.</p>
       </div>
 
       {/* Stats */}

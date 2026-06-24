@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Activity,
+  Handshake,
   Landmark,
   LayoutGrid,
   type LucideIcon,
   Menu,
-  MessageCircle,
   ShieldCheck,
   TicketCheck,
   Users,
@@ -26,12 +26,12 @@ type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean 
 
 const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin', label: 'Work queue', icon: LayoutGrid, exact: true },
-  { href: '/admin/support', label: 'Support & Cases', icon: TicketCheck },
-  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/operations', label: 'Operations', icon: Activity },
+  { href: '/admin/users', label: 'Users', icon: Users },
+  { href: '/admin/support', label: 'Support & Cases', icon: TicketCheck },
+  { href: '/admin/reviews', label: 'Reviews', icon: ShieldCheck },
   { href: '/treasury', label: 'Treasury', icon: Landmark },
-  { href: '/messages', label: 'All messages', icon: MessageCircle },
-  { href: '/reviews', label: 'Reviews', icon: ShieldCheck },
+  { href: '/connect', label: 'Chats', icon: Handshake },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

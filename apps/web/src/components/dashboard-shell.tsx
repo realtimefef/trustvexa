@@ -89,19 +89,19 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 </li>
               );
             })}
-            {/* Middleman-only nav item */}
+            {/* Operator console (admin == middleman) — single entry */}
             {group.section === 'Main' && isMiddleman && (() => {
-              const href = '/middleman';
+              const href = '/admin';
               const active = pathname.startsWith(href);
               return (
-                <li key="middleman-dash">
+                <li key="operator-console">
                   <Link href={href} onClick={handleNavigate}
                     className={cn(
                       'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                       active ? 'bg-brand-gradient text-white shadow-glow' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                     )}>
                     <Shield className={cn('h-[18px] w-[18px]', !active && 'text-muted-foreground group-hover:text-foreground')} aria-hidden="true" />
-                    <span className="flex-1">Middleman</span>
+                    <span className="flex-1">Admin / Middleman</span>
                   </Link>
                 </li>
               );
