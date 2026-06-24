@@ -1082,6 +1082,13 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           {!deal.buyerId ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">Generate a secure invite link and share it with the buyer.</p>
+              <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 flex items-start gap-2">
+                <MessageCircle className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700 dark:text-blue-400">
+                  Once the buyer accepts, a chat tied to this deal is created automatically — you&apos;ll
+                  be able to message them (and the middleman, once added) right from the deal.
+                </p>
+              </div>
               {inviteErr && <p className="text-xs text-destructive">{inviteErr}</p>}
               {inviteUrl ? (
                 <div className="space-y-2">

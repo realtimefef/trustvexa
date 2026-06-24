@@ -7,7 +7,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, MessageCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -111,12 +111,16 @@ export default function InvitePage() {
               You&apos;ve joined the deal!
             </CardTitle>
             <CardDescription>
-              You are now a participant in this escrow deal. Fund the escrow to start.
+              You are now a participant in this escrow deal, and a private chat for this deal has
+              been created automatically. Fund the escrow to start.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <Button className="w-full" onClick={() => router.push(`/deals/${acceptedDealId}`)}>
               View deal
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/connect">Open the deal chat</Link>
             </Button>
           </CardContent>
         </Card>
@@ -217,6 +221,15 @@ export default function InvitePage() {
       {acceptError && (
         <p className="text-sm text-destructive">{acceptError}</p>
       )}
+
+      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 px-4 py-3 flex items-start gap-2.5">
+        <MessageCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-blue-700 dark:text-blue-400">
+          <strong>Note:</strong> The moment you accept, a private chat tied to this deal is created
+          automatically. You&apos;ll be able to message the seller (and the middleman, once one is
+          added) right from the deal — no extra setup needed.
+        </p>
+      </div>
 
       <div className="flex gap-3">
         <Button asChild variant="outline" className="flex-1">
