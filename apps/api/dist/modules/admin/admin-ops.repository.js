@@ -53,8 +53,9 @@ export async function searchUsers(filters) {
     const params = [];
     let i = 1;
     if (filters.q !== undefined && filters.q !== '') {
-        conds.push(`username ILIKE $${i++}`);
+        conds.push(`(username ILIKE $${i} OR id::text ILIKE $${i})`);
         params.push(`%${filters.q}%`);
+        i++;
     }
     if (filters.status !== undefined && filters.status !== '') {
         conds.push(`account_status::text = $${i++}`);
@@ -67,7 +68,9 @@ export async function searchUsers(filters) {
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : '';
     params.push(filters.limit);
     const res = await query(`SELECT id, username, account_type, account_status, account_label,
-            trust_level, legal_hold, created_at
+            trust_level, legal_hold, created_at,
+            (SELECT COUNT(*)::int FROM deals d
+              WHERE d.buyer_id = users.id OR d.seller_id = users.id OR d.middleman_id = users.id) AS deals_count
        FROM users
        ${where}
       ORDER BY created_at DESC

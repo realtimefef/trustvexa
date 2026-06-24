@@ -98,7 +98,7 @@ interface EnforceDialog {
 export default function AdminUsersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('active');
+  const [statusFilter, setStatusFilter] = React.useState('');
   const [dialog, setDialog] = React.useState<EnforceDialog | null>(null);
   const [reason, setReason] = React.useState('');
   const [label, setLabel] = React.useState<string>('good_standing');

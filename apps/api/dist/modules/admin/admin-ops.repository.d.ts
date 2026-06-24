@@ -34,6 +34,7 @@ export interface UserSearchRow {
     account_label: string;
     trust_level: number;
     legal_hold: boolean;
+    deals_count: number;
     created_at: Date | string;
 }
 export interface UserSearchFilters {

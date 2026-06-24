@@ -82,6 +82,7 @@ export async function searchUsers(filters) {
         accountLabel: row.account_label,
         trustLevel: row.trust_level,
         legalHold: row.legal_hold,
+        dealsCount: row.deals_count,
         createdAt: toIso(row.created_at),
     }));
     return { users, total: users.length };

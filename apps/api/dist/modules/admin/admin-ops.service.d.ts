@@ -32,6 +32,7 @@ export interface UserSearchItem {
     accountLabel: string;
     trustLevel: number;
     legalHold: boolean;
+    dealsCount: number;
     createdAt: string | null;
 }
 export declare function searchUsers(filters: {
