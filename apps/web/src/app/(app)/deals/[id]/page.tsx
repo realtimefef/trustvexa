@@ -1186,6 +1186,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm text-muted-foreground mt-1">The middleman is verifying the delivery and will complete the deal. Your payout is released on completion — you&apos;ll be notified by chat/email.</p>
           </div>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+          {deal.middlemanId && (
+            <Button asChild variant="outline" size="sm" className="mt-3 w-full">
+              <Link href={dealChatHref(deal.connectionId, 'seller_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+            </Button>
+          )}
           <NextStep text="Middleman completes the deal → your payout is released to your wallet." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
@@ -1313,6 +1318,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">⚖️ Middleman assigned</p>
             <p className="text-xs text-muted-foreground font-mono">ID: {deal.middlemanId.slice(0,8)}</p>
           </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href={dealChatHref(deal.connectionId, mmChatType(deal.role))}><MessageCircle className="h-3.5 w-3.5 mr-1" /> Contact the middleman</Link>
+          </Button>
         </div>
       ) : !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
         <div className="rounded-xl border px-4 py-3 space-y-2">
@@ -1690,6 +1698,9 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
             <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">⚖️ Middleman assigned</p>
             <p className="text-xs text-muted-foreground font-mono">ID: {deal.middlemanId.slice(0,8)}</p>
           </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href={dealChatHref(deal.connectionId, mmChatType(deal.role))}><MessageCircle className="h-3.5 w-3.5 mr-1" /> Contact the middleman</Link>
+          </Button>
         </div>
       ) : !TERMINAL_STATES.has(deal.status) && deal.status !== 'Disputed' && (
         <div className="rounded-xl border px-4 py-3 space-y-2">
