@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Activity,
+  DollarSign,
   Handshake,
   Landmark,
   LayoutGrid,
@@ -26,6 +27,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean 
 
 const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin', label: 'Work queue', icon: LayoutGrid, exact: true },
+  { href: '/admin/payouts', label: 'Payouts', icon: DollarSign },
   { href: '/admin/operations', label: 'Operations', icon: Activity },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/support', label: 'Support & Cases', icon: TicketCheck },

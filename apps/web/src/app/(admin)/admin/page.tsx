@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  Clock, FileText, Gavel, Layers, MessageCircle, MessageSquare,
+  Clock, FileText, Gavel, Landmark, Layers, MessageCircle, MessageSquare,
   Send, Shield, Settings, TicketIcon, BarChart3,
   ListChecks, DollarSign, Eye, Users, X,
 } from 'lucide-react';
@@ -251,9 +251,101 @@ function DealActionsPanel({ dealId, status, qc }: { dealId: string; status: stri
 
 // ── Expanded Deal Panel ───────────────────────────────────────────────────────
 
+interface RiskFlagView { id: string; flagType: string; severity: string; details: string | null; createdAt: string }
+interface RiskPanelResp { dealId: string; dealRiskScore: number | null; panel: Record<string, unknown>; flags: RiskFlagView[] }
+interface NoteView { id: string; note: string | null; createdBy: string | null; createdAt: string }
+
+const SEV_COLOR: Record<string, string> = {
+  low: 'text-muted-foreground', medium: 'text-amber-600', high: 'text-orange-600', critical: 'text-destructive',
+};
+
+function RiskNotesPanel({ dealId }: { dealId: string }) {
+  const qc = useQueryClient();
+  const riskQ = useQuery({
+    queryKey: ['admin-risk', dealId],
+    queryFn: () => apiRequest<RiskPanelResp>(`/admin/risk/${dealId}`),
+    retry: false,
+  });
+  const notesQ = useQuery({
+    queryKey: ['admin-notes', 'deal', dealId],
+    queryFn: async () => (await apiRequest<{ notes: NoteView[] }>(`/admin/notes/deal/${dealId}`)).notes,
+  });
+  const [note, setNote] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const submitNote = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await apiRequest(`/admin/notes/deal/${dealId}`, { method: 'POST', body: { note: note.trim() }, idempotencyKey: newIdempotencyKey() });
+      setNote('');
+      void qc.invalidateQueries({ queryKey: ['admin-notes', 'deal', dealId] });
+    } catch (e) { setErr(e instanceof ApiError ? e.message : 'Failed to add note.'); }
+    finally { setBusy(false); }
+  };
+
+  const risk = riskQ.data;
+  const flags = risk?.flags ?? [];
+  const notes = notesQ.data ?? [];
+  const score = risk?.dealRiskScore ?? null;
+  const scoreColor = score == null ? 'text-muted-foreground' : score >= 70 ? 'text-destructive' : score >= 40 ? 'text-amber-600' : 'text-emerald-600';
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {/* Risk panel */}
+      <div className="rounded-xl border bg-background/60 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Risk panel</p>
+          <span className={`font-display text-lg font-bold ${scoreColor}`}>{score == null ? '—' : `${score}/100`}</span>
+        </div>
+        {riskQ.isLoading ? <Skeleton className="h-20 w-full" /> : riskQ.isError ? (
+          <p className="text-xs text-muted-foreground">Risk data is only available for deals assigned to you.</p>
+        ) : flags.length === 0 ? (
+          <p className="text-xs text-emerald-600">No risk flags raised on this deal.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {flags.map((f) => (
+              <li key={f.id} className="flex items-start gap-2 text-xs">
+                <AlertTriangle className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${SEV_COLOR[f.severity] ?? 'text-muted-foreground'}`} />
+                <div>
+                  <span className={`font-medium ${SEV_COLOR[f.severity] ?? ''}`}>{f.flagType.replace(/_/g, ' ')}</span>
+                  <span className="text-muted-foreground"> · {f.severity}</span>
+                  {f.details && <p className="text-muted-foreground">{f.details}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Private notes */}
+      <div className="rounded-xl border bg-background/60 p-3 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Private operator notes</p>
+        <p className="text-[11px] text-muted-foreground">Only visible to operators. Never shown to buyer or seller.</p>
+        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+          {notesQ.isLoading ? <Skeleton className="h-12 w-full" /> : notes.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No notes yet.</p>
+          ) : notes.map((n) => (
+            <div key={n.id} className="rounded-lg bg-muted/30 px-2.5 py-1.5">
+              <p className="text-xs whitespace-pre-wrap">{n.note ?? '—'}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(n.createdAt).toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+        {err && <p className="text-xs text-destructive">{err}</p>}
+        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a private note…" className="h-8 text-xs"
+          onKeyDown={(e) => { if (e.key === 'Enter' && note.trim()) void submitNote(); }} />
+        <Button size="sm" className="h-7 text-xs w-full" disabled={busy || !note.trim()} onClick={() => void submitNote()}>
+          {busy ? 'Saving…' : 'Add note'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: AdminChat[] }) {
   const qc = useQueryClient();
-  const [tab, setTab] = React.useState<'details' | 'chats' | 'parties'>('details');
+  const [tab, setTab] = React.useState<'details' | 'chats' | 'parties' | 'risk'>('details');
   const detailQ = useDealDetail(item.id, true);
   const partyQ = usePartyDetails(item.id, tab === 'parties');
   const deal = detailQ.data;
@@ -262,7 +354,7 @@ function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: Admi
     <div className="border-t bg-muted/5 px-4 py-4 space-y-4">
       {/* Tab nav */}
       <div className="flex gap-1 rounded-lg bg-muted/30 p-0.5 w-fit">
-        {([['details','Deal Details'],['chats','All Chats'],['parties','Party Details']] as const).map(([k,label]) => (
+        {([['details','Deal Details'],['chats','All Chats'],['parties','Party Details'],['risk','Risk & Notes']] as const).map(([k,label]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
             className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${tab === k ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {label}
@@ -300,7 +392,7 @@ function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: Admi
           <p className="text-xs text-muted-foreground">All 3 deal chat channels. As middleman you can read every channel.</p>
           <DealChatViewer dealId={item.id} allChats={allChats} />
           <Button asChild size="sm" variant="outline" className="mt-2">
-            <Link href="/messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Open full messages page</Link>
+            <Link href="/admin/chats"><MessageSquare className="h-3.5 w-3.5 mr-1.5" />Open chat moderation</Link>
           </Button>
         </div>
       )}
@@ -341,6 +433,9 @@ function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: Admi
           )}
         </div>
       )}
+
+      {/* Risk & notes tab */}
+      {tab === 'risk' && <RiskNotesPanel dealId={item.id} />}
     </div>
   );
 }
@@ -380,13 +475,14 @@ function QueueRow({ item, allChats }: { item: QueueItem; allChats: AdminChat[] }
 // ── Quick nav ─────────────────────────────────────────────────────────────────
 
 const NAV_CARDS = [
+  { href: '/admin/payouts', icon: DollarSign, label: 'Payouts', desc: 'Approve & broadcast (dual control)' },
   { href: '/admin/users', icon: Users, label: 'Users', desc: 'Search, block, label, delete accounts' },
   { href: '/connect', icon: MessageSquare, label: 'Deal chats', desc: 'Message buyers & sellers' },
   { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor, categorize & delete chats' },
   { href: '/admin/reviews', icon: FileText, label: 'Reviews', desc: 'Moderate public + deal reviews' },
   { href: '/admin/support', icon: TicketIcon, label: 'Support & Cases', desc: 'User tickets & help requests' },
   { href: '/admin/operations', icon: BarChart3, label: 'Operations', desc: 'Analytics, pauses, flags, holds, audit' },
-  { href: '/treasury', icon: DollarSign, label: 'Treasury', desc: 'Payouts & on-chain reconciliation' },
+  { href: '/treasury', icon: Landmark, label: 'Treasury', desc: 'Reconciliation & balances' },
 ];
 
 // ── Disputes table ────────────────────────────────────────────────────────────
@@ -504,7 +600,7 @@ export default function AdminConsolePage() {
       {/* Quick nav */}
       <div className="space-y-3">
         <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Platform controls</h2>
-        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="grid gap-2 grid-cols-2 sm:grid-cols-4 lg:grid-cols-4">
           {NAV_CARDS.map(n => (
             <Link key={n.href} href={n.href}
               className="flex flex-col items-center gap-1.5 rounded-xl border bg-card/80 hover:bg-card hover:shadow-sm px-3 py-3 text-center transition-all">

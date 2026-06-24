@@ -106,6 +106,149 @@ interface AuditLogEntry {
   createdAt: string;
 }
 
+interface HoldView {
+  id: string;
+  dealId: string;
+  holdType: string;
+  reason: string;
+  visibleMessage?: string | null;
+  createdAt: string;
+}
+
+interface OverrideView {
+  id: string;
+  dealId: string;
+  overrideType: string;
+  oldValue: string;
+  newValue: string;
+  reason: string;
+  confirmedAt?: string | null;
+  createdAt: string;
+}
+
+// ── Holds & overrides ────────────────────────────────────────────────────────
+
+function HoldRow({ hold, onReleased }: { hold: HoldView; onReleased: () => void }) {
+  const [reason, setReason] = React.useState('');
+  const [open, setOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const release = async () => {
+    setBusy(true); setErr(null);
+    try {
+      await apiRequest(`/admin/holds/${hold.id}/release`, {
+        method: 'POST', body: { reason: reason.trim() }, idempotencyKey: newIdempotencyKey(),
+      });
+      onReleased();
+    } catch (e) { setErr(e instanceof ApiError ? e.message : 'Failed to release hold.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="rounded-xl border border-blue-300/40 bg-blue-50/30 dark:bg-blue-950/20 px-3 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Shield className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+            <span className="text-sm font-medium">{hold.holdType.replace(/_/g, ' ')}</span>
+            <span className="text-xs font-mono text-muted-foreground">deal {hold.dealId.slice(0, 8)}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{hold.reason}</p>
+        </div>
+        <Button size="sm" variant="outline" className="h-7 text-xs shrink-0 border-emerald-400/50 text-emerald-700 hover:bg-emerald-50"
+          onClick={() => setOpen((o) => !o)} disabled={busy}>
+          <Play className="h-3 w-3" /> Release
+        </Button>
+      </div>
+      {open && (
+        <div className="mt-2 space-y-1.5">
+          {err && <p className="text-xs text-destructive">{err}</p>}
+          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason for releasing the hold (required)…" className="min-h-[60px] resize-none text-xs" />
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+            <Button size="sm" className="h-7 text-xs" onClick={() => void release()} disabled={busy || !reason.trim()}>{busy ? 'Releasing…' : 'Confirm release'}</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HoldsOverridesSection() {
+  const qc = useQueryClient();
+  const holdsQuery = useQuery({
+    queryKey: ['admin-holds'],
+    queryFn: () => apiRequest<{ holds: HoldView[] }>('/admin/holds'),
+  });
+  const overridesQuery = useQuery({
+    queryKey: ['admin-overrides'],
+    queryFn: () => apiRequest<{ overrides: OverrideView[] }>('/admin/overrides'),
+  });
+  const holds = holdsQuery.data?.holds ?? [];
+  const overrides = overridesQuery.data?.overrides ?? [];
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      {/* Manual review holds */}
+      <Card className="rounded-2xl shadow-soft">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="h-4 w-4 text-blue-500" /> Manual review holds
+          </CardTitle>
+          <CardDescription>Deals you&apos;ve put on hold. Buyers/sellers see &quot;Under review&quot;; your private reason stays hidden.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {holdsQuery.isLoading ? (
+            <div className="space-y-2">{[1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+          ) : holds.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active holds. Place a hold from a deal in the work queue.</p>
+          ) : (
+            <div className="space-y-2">
+              {holds.map((h) => (
+                <HoldRow key={h.id} hold={h} onReleased={() => void qc.invalidateQueries({ queryKey: ['admin-holds'] })} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Manual overrides log */}
+      <Card className="rounded-2xl shadow-soft">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <AlertTriangle className="h-4 w-4 text-amber-500" /> Manual overrides
+          </CardTitle>
+          <CardDescription>Controlled corrections to deal state, timers, payout queue, or trust — every one confirmed and logged.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {overridesQuery.isLoading ? (
+            <div className="space-y-2">{[1, 2].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+          ) : overrides.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No overrides recorded.</p>
+          ) : (
+            <div className="space-y-2 max-h-72 overflow-y-auto">
+              {overrides.map((o) => (
+                <div key={o.id} className="rounded-xl border bg-muted/20 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{o.overrideType.replace(/_/g, ' ')}</span>
+                    <span className="text-xs font-mono text-muted-foreground">deal {o.dealId.slice(0, 8)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <span className="line-through">{o.oldValue || '—'}</span> → <span className="text-foreground font-medium">{o.newValue || '—'}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{o.reason}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(o.createdAt).toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Health dot ────────────────────────────────────────────────────────────
 
 // ── Main page ──────────────────────────────────────────────────────────────
@@ -402,6 +545,9 @@ export default function AdminOperationsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Holds & overrides */}
+      <HoldsOverridesSection />
 
       {/* Audit log */}
       <Card className="rounded-2xl shadow-soft">
