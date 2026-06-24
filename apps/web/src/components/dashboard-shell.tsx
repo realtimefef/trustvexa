@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Menu,
-  MessageCircle,
   Settings,
   Shield,
   Star,
@@ -26,7 +25,6 @@ import { useAuth } from '@/lib/auth/auth-context';
 import { NotificationBell } from '@/components/notification-bell';
 import { LanguageToggle } from '@/components/language-toggle';
 import { SessionTimeoutWarning } from '@/components/session-timeout-warning';
-import { useSocket, parseMessageNewEvent } from '@/lib/socket/socket-context';
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -36,7 +34,6 @@ const NAV: ReadonlyArray<{ section: string; items: NavItem[] }> = [
     items: [
       { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
       { href: '/connect', label: 'Connect & Chat', icon: Handshake },
-      { href: '/messages', label: 'Messages', icon: MessageCircle },
       { href: '/deals', label: 'Deals', icon: Star },
       { href: '/wallet', label: 'Wallet', icon: Wallet },
       { href: '/disputes', label: 'Disputes', icon: Gavel },
@@ -51,7 +48,7 @@ const NAV: ReadonlyArray<{ section: string; items: NavItem[] }> = [
   },
 ];
 
-function NavLinks({ onNavigate, unreadMessages = 0 }: { onNavigate?: () => void; unreadMessages?: number }) {
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const isMiddleman = user?.role === 'middleman';
@@ -68,7 +65,6 @@ function NavLinks({ onNavigate, unreadMessages = 0 }: { onNavigate?: () => void;
               const active =
                 pathname === item.href ||
                 (item.href !== '/dashboard' && pathname.startsWith(item.href));
-              const showBadge = item.href === '/messages' && unreadMessages > 0;
               return (
                 <li key={item.href}>
                   <Link
@@ -89,11 +85,6 @@ function NavLinks({ onNavigate, unreadMessages = 0 }: { onNavigate?: () => void;
                       aria-hidden="true"
                     />
                     <span className="flex-1">{item.label}</span>
-                    {showBadge && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                        {unreadMessages > 99 ? '99+' : unreadMessages}
-                      </span>
-                    )}
                   </Link>
                 </li>
               );
@@ -124,33 +115,7 @@ function NavLinks({ onNavigate, unreadMessages = 0 }: { onNavigate?: () => void;
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const { socket } = useSocket();
-  const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
-  const [unreadMessages, setUnreadMessages] = React.useState(0);
-
-  // Reset unread count when user navigates to the messages page
-  React.useEffect(() => {
-    if (pathname.startsWith('/messages')) {
-      setUnreadMessages(0);
-    }
-  }, [pathname]);
-
-  // Increment unread count on incoming messages when not viewing messages
-  React.useEffect(() => {
-    if (!socket) return;
-    const handleNewMessage = (event: unknown) => {
-      const payload = parseMessageNewEvent(event);
-      if (!payload) return;
-      if (!pathname.startsWith('/messages')) {
-        setUnreadMessages((n) => n + 1);
-      }
-    };
-    socket.on('message:new', handleNewMessage);
-    return () => {
-      socket.off('message:new', handleNewMessage);
-    };
-  }, [socket, pathname]);
 
   const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : 'TV';
 
@@ -164,7 +129,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <BrandLogo />
           </Link>
         </div>
-        <NavLinks unreadMessages={unreadMessages} />
+        <NavLinks />
         <div className="border-t p-3">
           <div className="flex items-center gap-3 rounded-xl px-2 py-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient text-sm font-semibold text-white">
@@ -210,7 +175,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <NavLinks onNavigate={() => setOpen(false)} unreadMessages={unreadMessages} />
+            <NavLinks onNavigate={() => setOpen(false)} />
             <div className="border-t p-3">
               <Button
                 variant="outline"

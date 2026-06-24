@@ -1131,25 +1131,27 @@ export async function sellerHandover(
   });
   let status = result.to;
 
-  // If NO middleman is assigned, there is nobody to manually verify + deliver,
-  // so the platform auto-advances SellerHandover → MiddlemanVerified → Delivered
-  // and the buyer can inspect/approve. When a middleman IS assigned, the deal
-  // stops at SellerHandover for the middleman to verify and deliver manually.
-  if (!middlemanId) {
-    try {
-      const v = await applyDealTransition({
-        dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
-        requestId: `${requestId}:auto-verify`,
-      });
-      status = v.to;
-      const d = await applyDealTransition({
-        dealId, event: 'DeliveredToBuyer', actorId: sellerId,
-        requestId: `${requestId}:auto-deliver`,
-      });
-      status = d.to;
-    } catch {
-      // If auto-advance fails, leave the deal at SellerHandover.
-    }
+  // The seller's handover is the LAST action they take: the deal advances all
+  // the way to Delivered (SellerHandover → MiddlemanVerified → Delivered) so the
+  // buyer immediately sees the "delivered / congratulations" stage. The
+  // middleman then finalises the deal (Delivered → Complete / release). This
+  // applies whether or not a middleman is assigned — there is no separate
+  // "waiting for middleman to verify the handover" stage in the flow.
+  void middlemanId; // retained for logging context; no longer gates advancement
+  try {
+    const v = await applyDealTransition({
+      dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
+      requestId: `${requestId}:auto-verify`,
+    });
+    status = v.to;
+    const d = await applyDealTransition({
+      dealId, event: 'DeliveredToBuyer', actorId: sellerId,
+      requestId: `${requestId}:auto-deliver`,
+    });
+    status = d.to;
+  } catch {
+    // If auto-advance fails, leave the deal at SellerHandover; the middleman
+    // can still verify + deliver manually from the console.
   }
 
   return { dealId, status };

@@ -39,6 +39,10 @@ export function dealStatusVariant(status: string): BadgeVariant {
 
 /** Turn a PascalCase status code into a spaced label (SellerHandover -> Seller Handover). */
 export function dealStatusLabel(status: string): string {
+  // The "SellerHandover" state is, from the parties' point of view, the moment
+  // the middleman takes over to verify + deliver, so we surface it as
+  // "Middleman handover" rather than the internal code's literal split.
+  if (status === 'SellerHandover') return 'Middleman handover';
   return status.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
 }
 
