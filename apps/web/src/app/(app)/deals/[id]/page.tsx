@@ -1187,18 +1187,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm text-muted-foreground mt-1">The middleman is verifying the delivery and will complete the deal. Your payout is released on completion — you&apos;ll be notified by chat/email.</p>
           </div>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          {deal.middlemanId ? (
-            <Button asChild variant="outline" size="sm" className="mt-3 w-full">
-              <Link href={dealChatHref(deal.connectionId, 'seller_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
-            </Button>
-          ) : (
-            <div className="mt-3 space-y-1.5">
-              {mmErr && <p className="text-xs text-destructive">⚠️ {mmErr}</p>}
-              <Button onClick={requestMm} disabled={requestingMm} variant="outline" size="sm" className="w-full">
-                <Shield className="h-3.5 w-3.5 mr-1.5" />{requestingMm ? 'Connecting…' : 'Add a middleman to complete'}
-              </Button>
-            </div>
-          )}
+          <Button asChild variant="outline" size="sm" className="mt-3 w-full">
+            <Link href={dealChatHref(deal.connectionId, 'seller_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+          </Button>
           <NextStep text="Middleman completes the deal → your payout is released to your wallet." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
@@ -1346,7 +1337,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               <p className="text-xs text-muted-foreground mb-1.5">⚠️ {mmErr}</p>
               <p className="text-xs text-muted-foreground mb-2">You can still open a chat with the TrustVexa team for assistance:</p>
               <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                <Link href="/connect"><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open support chat</Link>
+                <Link href={dealChatHref(deal.connectionId, mmChatType(deal.role))}><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open the deal chat</Link>
               </Button>
             </div>
           )}
@@ -1727,7 +1718,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <p className="text-xs text-muted-foreground mb-1.5">⚠️ {mmErr}</p>
               <p className="text-xs text-muted-foreground mb-2">Contact support for assistance:</p>
               <Button asChild size="sm" variant="outline" className="h-7 text-xs">
-                <Link href="/connect"><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open support chat</Link>
+                <Link href={dealChatHref(deal.connectionId, mmChatType(deal.role))}><MessageCircle className="h-3.5 w-3.5 mr-1" /> Open the deal chat</Link>
               </Button>
             </div>
           )}
