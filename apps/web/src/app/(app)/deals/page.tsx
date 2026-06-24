@@ -162,12 +162,14 @@ function EmptyState({ tab }: { tab: FilterTab }) {
 
 export default function DealsPage() {
   const router = useRouter();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const [activeTab, setActiveTab] = React.useState<FilterTab>('all');
 
   React.useEffect(() => {
     if (status === 'anonymous') router.replace('/login?next=/deals');
-  }, [status, router]);
+    // Operators manage deals from the admin all-deals view, not the client list.
+    else if (status === 'authenticated' && user?.role === 'middleman') router.replace('/admin/deals');
+  }, [status, user, router]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard-deals'],

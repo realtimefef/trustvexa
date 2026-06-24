@@ -13,6 +13,7 @@ import {
   Menu,
   ShieldAlert,
   ShieldCheck,
+  Star,
   TicketCheck,
   Users,
   X,
@@ -28,6 +29,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean 
 
 const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin', label: 'Work queue', icon: LayoutGrid, exact: true },
+  { href: '/admin/deals', label: 'All Deals', icon: Star },
   { href: '/admin/payouts', label: 'Payouts', icon: DollarSign },
   { href: '/admin/operations', label: 'Operations', icon: Activity },
   { href: '/admin/controls', label: 'Trust & Safety', icon: ShieldAlert },

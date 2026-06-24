@@ -303,11 +303,13 @@ function ConnItem({ c, active, onClick }: { c: ConnectionView; active: boolean; 
 
   return (
     <button type="button" onClick={onClick}
-      className={`w-full text-left px-4 py-3 transition-colors border-l-2 ${
-        active ? 'bg-primary/8 border-l-primary' : 'border-l-transparent hover:bg-muted/50'
+      className={`w-full text-left px-4 py-3 transition-all border-l-4 ${
+        active
+          ? 'bg-primary/10 border-l-primary ring-1 ring-inset ring-primary/40 shadow-[inset_3px_0_0_0] shadow-primary'
+          : 'border-l-transparent hover:bg-muted/50 hover:border-l-primary/30'
       } ${isClosed ? 'opacity-50' : ''}`}>
       <div className="flex items-center justify-between gap-2 mb-0.5">
-        <span className="font-mono text-xs font-bold tracking-widest">{c.code}</span>
+        <span className={`font-mono text-xs font-bold tracking-widest ${active ? 'text-primary' : ''}`}>{c.code}</span>
         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
           isLive ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
           : isWaiting ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'

@@ -27,7 +27,7 @@ import { formatUsdCents } from '@/lib/fees';
 
 // ── Local types ───────────────────────────────────────────────────────────────
 
-interface AdminChat {
+export interface AdminChat {
   id: string; dealId: string; type: string; status: string;
   createdAt: string; buyerId: string | null; sellerId: string | null; middlemanId: string | null;
 }
@@ -370,7 +370,7 @@ function RiskNotesPanel({ dealId }: { dealId: string }) {
   );
 }
 
-function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: AdminChat[] }) {
+export function ExpandedDealPanel({ item, allChats }: { item: { id: string }; allChats: AdminChat[] }) {
   const qc = useQueryClient();
   const [tab, setTab] = React.useState<'details' | 'chats' | 'parties' | 'risk'>('details');
   const detailQ = useDealDetail(item.id, true);
@@ -409,7 +409,7 @@ function ExpandedDealPanel({ item, allChats }: { item: QueueItem; allChats: Admi
               </div>
             ) : <p className="text-xs text-destructive">Could not load deal detail.</p>}
           </div>
-          <DealActionsPanel dealId={item.id} status={item.status} qc={qc} />
+          <DealActionsPanel dealId={item.id} status={deal?.status ?? ''} qc={qc} />
         </div>
       )}
 
