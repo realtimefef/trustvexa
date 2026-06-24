@@ -8,9 +8,10 @@
  * id controls both sides. Reuses the work-queue ExpandedDealPanel.
  */
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, RefreshCw, Search, ShieldCheck } from 'lucide-react';
+import { ChevronRight, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,6 @@ import {
 import { apiRequest } from '@/lib/api/client';
 import { dealStatusLabel, dealStatusVariant } from '@/lib/deal-status';
 import { useAuth } from '@/lib/auth/auth-context';
-import { ExpandedDealPanel, type AdminChat } from '../page';
 
 interface AdminDeal {
   id: string;
@@ -45,12 +45,11 @@ function fmtCents(cents: string | null): string {
   return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function DealRow({ deal, allChats }: { deal: AdminDeal; allChats: AdminChat[] }) {
-  const [open, setOpen] = React.useState(false);
+function DealRow({ deal }: { deal: AdminDeal }) {
   return (
-    <div className={`rounded-xl border transition-shadow ${open ? 'shadow-md' : 'hover:shadow-sm'}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/20 transition-colors rounded-xl">
+    <Link href={`/admin/deals/${deal.id}`}
+      className="block rounded-xl border transition-shadow hover:shadow-sm">
+      <div className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/20 transition-colors rounded-xl">
         <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-5 text-sm">
           <span className="font-mono text-xs text-muted-foreground">{deal.id.slice(0, 8)}</span>
           <Badge variant={dealStatusVariant(deal.status)} className="text-[10px] w-fit">{dealStatusLabel(deal.status)}</Badge>
@@ -61,10 +60,9 @@ function DealRow({ deal, allChats }: { deal: AdminDeal; allChats: AdminChat[] })
           </div>
           <span className="text-xs text-muted-foreground">{deal.middlemanId ? '⚖️ MM assigned' : 'No middleman'}</span>
         </div>
-        {open ? <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />}
-      </button>
-      {open && <ExpandedDealPanel item={{ id: deal.id }} allChats={allChats} />}
-    </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+      </div>
+    </Link>
   );
 }
 
@@ -87,14 +85,7 @@ export default function AdminDealsPage() {
     },
   });
 
-  const chatsQuery = useQuery({
-    queryKey: ['admin-chats-all'],
-    enabled: status === 'authenticated',
-    queryFn: async () => (await apiRequest<{ chats: AdminChat[] }>('/admin/chats')).chats,
-  });
-
   const deals = dealsQuery.data ?? [];
-  const allChats = chatsQuery.data ?? [];
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -102,7 +93,7 @@ export default function AdminDealsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">All Deals</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Every deal on the platform. Open one to see both the buyer and seller sides — terms, submitted details, chats, risk, and notes.
+            Every deal on the platform. Click one to open its own page — both the buyer and seller sides, terms, chats, risk, and notes.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => void dealsQuery.refetch()}>
@@ -144,7 +135,7 @@ export default function AdminDealsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {deals.map((deal) => <DealRow key={deal.id} deal={deal} allChats={allChats} />)}
+          {deals.map((deal) => <DealRow key={deal.id} deal={deal} />)}
         </div>
       )}
     </div>

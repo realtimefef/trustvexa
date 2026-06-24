@@ -172,9 +172,56 @@ interface ChatPanelProps {
   onSendImage: (file: File, channel: Channel) => Promise<void>;
   onDelete: (msgId: string) => void;
   uploading: boolean;
+  dealBar?: React.ReactNode;
 }
 
-function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading }: ChatPanelProps) {
+interface ConnDeal { id: string; status: string; coin: string; network: string; dealAmountCents?: string | null; itemDescription?: string | null }
+interface ConnParty {
+  sellerDetails: { productName?: string | null; deliveryMethod?: string | null; productDescription?: string | null } | null;
+  buyerDetails: { receivingPlatform?: string | null; receivingAddress?: string | null; contactEmail?: string | null } | null;
+}
+
+/** Channel-aware deal context shown above the chat: buyer↔mm shows the buyer's
+ * submitted side, seller↔mm shows the seller's side, buyer↔seller shows a
+ * neutral deal summary. */
+function DealContextBar({ channel, deal, party }: { channel: Channel; deal: ConnDeal | undefined; party: ConnParty | undefined }) {
+  if (!deal) return null;
+  const money = (c?: string | null) => (c ? `$${(Number(c) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—');
+
+  let side: React.ReactNode = null;
+  if (channel === 'buyer_mm') {
+    const b = party?.buyerDetails;
+    side = (
+      <p className="text-[11px] text-blue-700 dark:text-blue-400">
+        <strong>Buyer side:</strong>{' '}
+        {b ? `Receiving via ${b.receivingPlatform ?? '—'} · ${b.receivingAddress ?? 'no address'}${b.contactEmail ? ` · ${b.contactEmail}` : ''}` : 'Buyer has not filled in their receiving details yet.'}
+      </p>
+    );
+  } else if (channel === 'seller_mm') {
+    const s = party?.sellerDetails;
+    side = (
+      <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+        <strong>Seller side:</strong>{' '}
+        {s ? `${s.productName ?? 'Item'} · delivery via ${s.deliveryMethod ?? '—'}${s.productDescription ? ` · ${s.productDescription}` : ''}` : 'Seller has not filled in their product/delivery details yet.'}
+      </p>
+    );
+  }
+
+  return (
+    <div className="border-b bg-muted/20 px-4 py-2 space-y-1">
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="font-mono text-muted-foreground">Deal {deal.id.slice(0, 8)}</span>
+        {deal.itemDescription && <span className="truncate max-w-[160px]">&quot;{deal.itemDescription}&quot;</span>}
+        <span className="font-semibold">{money(deal.dealAmountCents)} {deal.coin}</span>
+        <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{deal.status}</span>
+        <Link href={`/deals/${deal.id}`} className="text-primary hover:underline ml-auto">View deal →</Link>
+      </div>
+      {side}
+    </div>
+  );
+}
+
+function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading, dealBar }: ChatPanelProps) {
   const [draft, setDraft] = React.useState('');
   const endRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
@@ -195,6 +242,8 @@ function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, 
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      {/* Channel-relevant deal context (buyer side on buyer↔mm, seller side on seller↔mm) */}
+      {dealBar && <div className="shrink-0">{dealBar}</div>}
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1 min-h-0">
         {isLoading ? (
@@ -517,6 +566,23 @@ export default function ConnectPage() {
   const a = active.data;
   const msgList: ConnectionMessage[] = Array.isArray(messages.data) ? messages.data : [];
 
+  // The deal tied to this connection — surfaced in the chat so the operator
+  // sees the relevant side's submitted details next to each channel.
+  const connDealId = a?.dealId ?? null;
+  const connDealQ = useQuery({
+    queryKey: ['conn-deal', connDealId],
+    enabled: !!connDealId,
+    queryFn: () => apiRequest<ConnDeal>(`/dashboard/deals/${connDealId}`),
+  });
+  const connPartyQ = useQuery({
+    queryKey: ['conn-party', connDealId],
+    enabled: !!connDealId,
+    queryFn: async () => {
+      try { return await apiRequest<ConnParty>(`/deals/${connDealId}/party-details`); }
+      catch { return { sellerDetails: null, buyerDetails: null }; }
+    },
+  });
+
   const myRole = !a || !user ? null
     : a.middlemanId === user.id ? 'middleman'
     : a.buyerId === user.id ? 'creator'
@@ -807,6 +873,7 @@ export default function ConnectPage() {
                   onSendImage={handleSendImage}
                   onDelete={handleDelete}
                   uploading={uploading}
+                  dealBar={connDealId ? <DealContextBar channel={activeChannel} deal={connDealQ.data} party={connPartyQ.data} /> : null}
                 />
               </div>
 
