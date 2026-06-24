@@ -20,6 +20,9 @@ export interface ConnectionView {
     status: 'open' | 'closed';
     /** True when both buyer+seller are present. */
     joined: boolean;
+    /** True when a buyer/seller participant account has been deleted — the chat
+     * is then shown under "Archive" in the operator console. */
+    archived: boolean;
     createdAt: string;
     updatedAt: string;
 }

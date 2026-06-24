@@ -17,6 +17,9 @@ export interface ConnectionRow {
     creator_username?: string | null;
     joiner_username?: string | null;
     middleman_username?: string | null;
+    /** Joined account statuses — used to archive chats whose buyer/seller was deleted. */
+    creator_status?: string | null;
+    joiner_status?: string | null;
 }
 export interface ConnectionMessageRow {
     id: string;

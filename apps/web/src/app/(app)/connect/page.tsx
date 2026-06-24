@@ -44,6 +44,7 @@ interface ConnectionView {
   dealId: string | null;
   status: 'open' | 'closed';
   joined: boolean;
+  archived?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -450,6 +451,7 @@ export default function ConnectPage() {
   const [activeChannel, setActiveChannel] = React.useState<Channel>('buyer_seller');
   const [uploading, setUploading] = React.useState(false);
   const [showRolePicker, setShowRolePicker] = React.useState(false);
+  const [showArchive, setShowArchive] = React.useState(false);
   // Desired channel tab from a deep link (?channel=buyer_mm); applied once the
   // connection loads. Lets deal-page "Contact the middleman" open the right tab.
   const [pendingChannel, setPendingChannel] = React.useState<Channel | null>(null);
@@ -640,6 +642,10 @@ export default function ConnectPage() {
   }
 
   const connList: ConnectionView[] = Array.isArray(connections.data) ? connections.data : [];
+  // A connection is archived once a buyer/seller participant account is deleted;
+  // it stays readable for records but moves out of the active chat list.
+  const activeConns = connList.filter((c) => !c.archived);
+  const archivedConns = connList.filter((c) => c.archived);
   const a = active.data;
   const msgList: ConnectionMessage[] = Array.isArray(messages.data) ? messages.data : [];
 
@@ -788,9 +794,25 @@ export default function ConnectPage() {
               </div>
             ) : (
               <div className="divide-y divide-border/20">
-                {connList.map((c) => (
+                {activeConns.map((c) => (
                   <ConnItem key={c.id} c={c} active={activeId === c.id} onClick={() => setActiveId(c.id)} />
                 ))}
+                {archivedConns.length > 0 && (
+                  <div className="pt-1">
+                    <button type="button" onClick={() => setShowArchive((v) => !v)}
+                      className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-muted-foreground hover:bg-muted/40 transition-colors">
+                      <span>🗄 Archive · deleted users ({archivedConns.length})</span>
+                      <span>{showArchive ? '▾' : '▸'}</span>
+                    </button>
+                    {showArchive && (
+                      <div className="divide-y divide-border/20">
+                        {archivedConns.map((c) => (
+                          <ConnItem key={c.id} c={c} active={activeId === c.id} onClick={() => setActiveId(c.id)} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

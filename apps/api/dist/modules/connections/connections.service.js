@@ -68,6 +68,7 @@ function toView(row) {
         dealId: row.deal_id,
         status: row.status,
         joined: row.joiner_id !== null,
+        archived: row.creator_status === 'deleted' || row.joiner_status === 'deleted',
         createdAt: toIso(row.created_at),
         updatedAt: toIso(row.updated_at),
     };

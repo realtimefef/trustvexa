@@ -60,6 +60,9 @@ export interface ConnectionView {
   status: 'open' | 'closed';
   /** True when both buyer+seller are present. */
   joined: boolean;
+  /** True when a buyer/seller participant account has been deleted — the chat
+   * is then shown under "Archive" in the operator console. */
+  archived: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +111,7 @@ function toView(row: ConnectionRow): ConnectionView {
     dealId: row.deal_id,
     status: row.status,
     joined: row.joiner_id !== null,
+    archived: row.creator_status === 'deleted' || row.joiner_status === 'deleted',
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };

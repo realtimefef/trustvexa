@@ -36,6 +36,7 @@ interface AdminDeal {
   buyerId: string | null;
   sellerId: string | null;
   middlemanId: string | null;
+  archived: boolean;
   createdAt: string | null;
 }
 
@@ -57,6 +58,7 @@ function DealRow({ deal }: { deal: AdminDeal }) {
           <div className="flex items-center gap-1.5">
             {deal.riskScore !== null && <Badge variant={deal.riskScore >= 50 ? 'warning' : 'secondary'} className="text-[10px]">Risk {deal.riskScore}</Badge>}
             {deal.legalHold && <Badge variant="destructive" className="text-[10px]">Legal hold</Badge>}
+            {deal.archived && <Badge variant="secondary" className="text-[10px]">🗄 archived</Badge>}
           </div>
           <span className="text-xs text-muted-foreground">{deal.middlemanId ? '⚖️ MM assigned' : 'No middleman'}</span>
         </div>
@@ -71,6 +73,7 @@ export default function AdminDealsPage() {
   const { status } = useAuth();
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
+  const [view, setView] = React.useState<'active' | 'archived'>('active');
 
   React.useEffect(() => { if (status === 'anonymous') router.replace('/login?next=/admin/deals'); }, [status, router]);
 
@@ -85,7 +88,10 @@ export default function AdminDealsPage() {
     },
   });
 
-  const deals = dealsQuery.data ?? [];
+  const all = dealsQuery.data ?? [];
+  const activeDeals = all.filter((d) => !d.archived);
+  const archivedDeals = all.filter((d) => d.archived);
+  const deals = view === 'active' ? activeDeals : archivedDeals;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -99,6 +105,17 @@ export default function AdminDealsPage() {
         <Button size="sm" variant="outline" onClick={() => void dealsQuery.refetch()}>
           <RefreshCw className={`h-3.5 w-3.5 ${dealsQuery.isFetching ? 'animate-spin' : ''}`} />
         </Button>
+      </div>
+
+      {/* Active / Archived toggle. A deal is archived once its buyer or seller
+          account is deleted — kept for records but out of the active worklist. */}
+      <div className="flex gap-1 rounded-lg bg-muted/30 p-0.5 w-fit">
+        {([['active', `Active (${activeDeals.length})`], ['archived', `🗄 Archived (${archivedDeals.length})`]] as const).map(([k, label]) => (
+          <button key={k} type="button" onClick={() => setView(k)}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${view === k ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            {label}
+          </button>
+        ))}
       </div>
 
       <Card className="rounded-2xl shadow-soft">

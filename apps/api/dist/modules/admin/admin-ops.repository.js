@@ -21,26 +21,29 @@ export async function searchDeals(filters) {
     const params = [];
     let i = 1;
     if (filters.status !== undefined && filters.status !== '') {
-        conds.push(`status::text = $${i++}`);
+        conds.push(`d.status::text = $${i++}`);
         params.push(filters.status);
     }
     if (filters.minRisk !== undefined) {
-        conds.push(`risk_score >= $${i++}`);
+        conds.push(`d.risk_score >= $${i++}`);
         params.push(filters.minRisk);
     }
     if (filters.q !== undefined && filters.q !== '') {
-        conds.push(`(CAST(id AS text) ILIKE $${i} OR coin ILIKE $${i})`);
+        conds.push(`(CAST(d.id AS text) ILIKE $${i} OR d.coin ILIKE $${i})`);
         params.push(`%${filters.q}%`);
         i++;
     }
     const where = conds.length > 0 ? `WHERE ${conds.join(' AND ')}` : '';
     params.push(filters.limit);
-    const res = await query(`SELECT id, status, risk_score, deal_amount, coin, network, is_practice,
-            hold_status, legal_hold, buyer_id, seller_id, middleman_id,
-            last_activity_at, created_at
-       FROM deals
+    const res = await query(`SELECT d.id, d.status, d.risk_score, d.deal_amount, d.coin, d.network, d.is_practice,
+            d.hold_status, d.legal_hold, d.buyer_id, d.seller_id, d.middleman_id,
+            (bu.account_status::text = 'deleted' OR su.account_status::text = 'deleted') AS archived,
+            d.last_activity_at, d.created_at
+       FROM deals d
+       LEFT JOIN users bu ON bu.id = d.buyer_id
+       LEFT JOIN users su ON su.id = d.seller_id
        ${where}
-      ORDER BY COALESCE(last_activity_at, updated_at, created_at) DESC
+      ORDER BY COALESCE(d.last_activity_at, d.updated_at, d.created_at) DESC
       LIMIT $${i}`, params);
     return res.rows;
 }

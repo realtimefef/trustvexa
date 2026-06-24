@@ -207,19 +207,21 @@ export async function deleteUser(input: {
       await setAccountStatus(tx, input.targetUserId, 'deleted');
       // Scrub personal data — a deleted account leaves nothing personal behind.
       // (Deal / ledger / audit rows are retained as legally required, but they
-      // reference only the opaque user id, never PII.)
+      // reference only the opaque user id, never PII.) Both email lookup hashes
+      // are cleared so the same email address can be used to register again.
       await tx.query(
         `UPDATE users
-            SET email_enc = NULL, recovery_email_enc = NULL, email_hash = NULL,
+            SET email_enc = NULL, recovery_email_enc = NULL,
+                email_hash = NULL, recovery_email_hash = NULL,
                 username = 'deleted_' || left(replace(id::text, '-', ''), 10),
                 updated_at = now()
           WHERE id = $1`,
         [input.targetUserId],
       );
-      // Cut off all access and close the user's live conversations.
+      // Cut off all access and archive the user's live conversations.
       await tx.query(`UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [input.targetUserId]);
       await tx.query(`UPDATE auth_tokens SET revoked_at = now() WHERE user_id = $1 AND token_type = 'refresh' AND revoked_at IS NULL`, [input.targetUserId]);
-      await tx.query(`UPDATE connections SET status = 'closed', updated_at = now() WHERE (creator_id = $1 OR joiner_id = $1) AND status = 'open'`, [input.targetUserId]);
+      await tx.query(`UPDATE connections SET status = 'closed', updated_at = now() WHERE (creator_id = $1 OR joiner_id = $1 OR middleman_id = $1) AND status = 'open'`, [input.targetUserId]);
     }
     const auditId = await appendAdminAction(tx, {
       actorId: input.actorId,

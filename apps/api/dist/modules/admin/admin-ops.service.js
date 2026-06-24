@@ -60,6 +60,7 @@ export async function searchDeals(filters) {
         buyerId: row.buyer_id,
         sellerId: row.seller_id,
         middlemanId: row.middleman_id,
+        archived: row.archived,
         lastActivityAt: toIso(row.last_activity_at),
         createdAt: toIso(row.created_at),
     }));

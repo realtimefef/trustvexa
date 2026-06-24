@@ -15,6 +15,9 @@ export interface DealSearchRow {
     buyer_id: string | null;
     seller_id: string | null;
     middleman_id: string | null;
+    /** True when the buyer or seller account has been deleted — such deals are
+     * archived in the operator console rather than shown among active work. */
+    archived: boolean;
     last_activity_at: Date | string | null;
     created_at: Date | string;
 }

@@ -56,6 +56,7 @@ export interface DealSearchItem {
   buyerId: string | null;
   sellerId: string | null;
   middlemanId: string | null;
+  archived: boolean;
   lastActivityAt: string | null;
   createdAt: string | null;
 }
@@ -84,6 +85,7 @@ export async function searchDeals(filters: {
     buyerId: row.buyer_id,
     sellerId: row.seller_id,
     middlemanId: row.middleman_id,
+    archived: row.archived,
     lastActivityAt: toIso(row.last_activity_at),
     createdAt: toIso(row.created_at),
   }));

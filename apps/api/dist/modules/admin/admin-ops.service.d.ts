@@ -13,6 +13,7 @@ export interface DealSearchItem {
     buyerId: string | null;
     sellerId: string | null;
     middlemanId: string | null;
+    archived: boolean;
     lastActivityAt: string | null;
     createdAt: string | null;
 }
