@@ -20,6 +20,10 @@ export interface ConnectionRow {
     /** Joined account statuses — used to archive chats whose buyer/seller was deleted. */
     creator_status?: string | null;
     joiner_status?: string | null;
+    /** Joined account types — a chat with a middleman participant is a support
+     * chat (no buyer↔seller deal can be created from it). */
+    creator_account_type?: string | null;
+    joiner_account_type?: string | null;
 }
 export interface ConnectionMessageRow {
     id: string;

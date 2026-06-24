@@ -45,6 +45,7 @@ interface ConnectionView {
   status: 'open' | 'closed';
   joined: boolean;
   archived?: boolean;
+  supportChat?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -727,7 +728,7 @@ export default function ConnectPage() {
    *   this by checking if the creator IS a middleman (middlemanId === creatorId)
    * - Do NOT show if it's only a client↔middleman support chat
    */
-  const isBuyerSellerConn = a && a.joinerId && (
+  const isBuyerSellerConn = a && a.joinerId && !a.supportChat && (
     // Both parties exist AND the middleman is not one of the two original parties
     a.creatorId !== a.middlemanId && a.joinerId !== a.middlemanId
   );

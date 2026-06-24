@@ -25,7 +25,8 @@ export async function getConnectionById(id) {
             d.buyer_id AS deal_buyer_id, d.seller_id AS deal_seller_id,
             cu.username AS creator_username, ju.username AS joiner_username,
             mu.username AS middleman_username,
-            cu.account_status AS creator_status, ju.account_status AS joiner_status
+            cu.account_status AS creator_status, ju.account_status AS joiner_status,
+            cu.account_type AS creator_account_type, ju.account_type AS joiner_account_type
        FROM connections c
        JOIN users cu ON cu.id = c.creator_id
        LEFT JOIN users ju ON ju.id = c.joiner_id
@@ -56,7 +57,8 @@ export async function listConnectionsForUser(userId) {
             d.buyer_id AS deal_buyer_id, d.seller_id AS deal_seller_id,
             cu.username AS creator_username, ju.username AS joiner_username,
             mu.username AS middleman_username,
-            cu.account_status AS creator_status, ju.account_status AS joiner_status
+            cu.account_status AS creator_status, ju.account_status AS joiner_status,
+            cu.account_type AS creator_account_type, ju.account_type AS joiner_account_type
        FROM connections c
        JOIN users cu ON cu.id = c.creator_id
        LEFT JOIN users ju ON ju.id = c.joiner_id

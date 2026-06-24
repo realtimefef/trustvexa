@@ -27,6 +27,13 @@ export declare function findUserByEmailHash(emailHash: string): Promise<UserReco
 export declare function findUserById(id: string): Promise<UserRecord | null>;
 export declare function isUsernameTaken(username: string): Promise<boolean>;
 export declare function isEmailTaken(emailHash: string): Promise<boolean>;
+/**
+ * Scrub all PII from a deleted account so nothing personal remains and — most
+ * importantly — so the same email/recovery address can be used to register a
+ * brand-new account. Clears both lookup hashes (email_hash is the uniqueness
+ * key) and the encrypted blobs, and anonymizes the username.
+ */
+export declare function scrubDeletedUserPii(userId: string): Promise<void>;
 export declare function isReservedName(value: string): Promise<boolean>;
 export declare function getActivePolicyVersion(docType: string): Promise<string | null>;
 export declare function createUser(input: CreateUserInput, policyAcceptances: Array<{

@@ -126,6 +126,7 @@ export async function requestDeletion(
     deletionType: 'user_requested',
   });
   await repo.setAccountStatus(userId, 'deleted');
+  await repo.scrubDeletedUserPii(userId);
   await repo.completeDeletionRequest(userId);
   await revokeEverything(userId, 'blocked');
   await repo.recordSecurityEvent({

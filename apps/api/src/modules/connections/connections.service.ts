@@ -63,6 +63,9 @@ export interface ConnectionView {
   /** True when a buyer/seller participant account has been deleted — the chat
    * is then shown under "Archive" in the operator console. */
   archived: boolean;
+  /** True when one of the two participants is a middleman — i.e. a direct
+   * user↔middleman support chat. No buyer↔seller deal can be created from it. */
+  supportChat: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -112,6 +115,7 @@ function toView(row: ConnectionRow): ConnectionView {
     status: row.status,
     joined: row.joiner_id !== null,
     archived: row.creator_status === 'deleted' || row.joiner_status === 'deleted',
+    supportChat: row.creator_account_type === 'middleman' || row.joiner_account_type === 'middleman',
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };

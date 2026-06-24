@@ -69,6 +69,7 @@ function toView(row) {
         status: row.status,
         joined: row.joiner_id !== null,
         archived: row.creator_status === 'deleted' || row.joiner_status === 'deleted',
+        supportChat: row.creator_account_type === 'middleman' || row.joiner_account_type === 'middleman',
         createdAt: toIso(row.created_at),
         updatedAt: toIso(row.updated_at),
     };

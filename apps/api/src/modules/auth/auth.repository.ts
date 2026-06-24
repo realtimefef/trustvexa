@@ -66,6 +66,24 @@ export async function isEmailTaken(emailHash: string): Promise<boolean> {
   return res.rows.length > 0;
 }
 
+/**
+ * Scrub all PII from a deleted account so nothing personal remains and — most
+ * importantly — so the same email/recovery address can be used to register a
+ * brand-new account. Clears both lookup hashes (email_hash is the uniqueness
+ * key) and the encrypted blobs, and anonymizes the username.
+ */
+export async function scrubDeletedUserPii(userId: string): Promise<void> {
+  await query(
+    `UPDATE users
+        SET email_enc = NULL, recovery_email_enc = NULL,
+            email_hash = NULL, recovery_email_hash = NULL,
+            username = 'deleted_' || left(replace(id::text, '-', ''), 10),
+            updated_at = now()
+      WHERE id = $1`,
+    [userId],
+  );
+}
+
 export async function isReservedName(value: string): Promise<boolean> {
   const res = await query(
     `SELECT 1 FROM reserved_names WHERE lower(reserved_value) = lower($1) LIMIT 1`,
