@@ -1031,11 +1031,12 @@ export async function sellerHandover(
   dealId: string,
   requestId: string,
 ): Promise<{ dealId: string; status: string }> {
+  let middlemanId: string | null = null;
   const client = await acquireClient();
   try {
     await client.query('BEGIN');
-    const dealRes = await client.query<{ seller_id: string | null; status: string }>(
-      `SELECT seller_id, status FROM deals WHERE id = $1 FOR UPDATE`,
+    const dealRes = await client.query<{ seller_id: string | null; middleman_id: string | null; status: string }>(
+      `SELECT seller_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`,
       [dealId],
     );
     const deal = dealRes.rows[0];
@@ -1052,6 +1053,7 @@ export async function sellerHandover(
         409,
       );
     }
+    middlemanId = deal.middleman_id;
     await client.query('COMMIT');
   } catch (err) {
     try { await client.query('ROLLBACK'); } catch { /* ignore */ }
@@ -1066,7 +1068,30 @@ export async function sellerHandover(
     actorId: sellerId,
     requestId,
   });
-  return { dealId, status: result.to };
+  let status = result.to;
+
+  // If NO middleman is assigned, there is nobody to manually verify + deliver,
+  // so the platform auto-advances SellerHandover → MiddlemanVerified → Delivered
+  // and the buyer can inspect/approve. When a middleman IS assigned, the deal
+  // stops at SellerHandover for the middleman to verify and deliver manually.
+  if (!middlemanId) {
+    try {
+      const v = await applyDealTransition({
+        dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
+        requestId: `${requestId}:auto-verify`,
+      });
+      status = v.to;
+      const d = await applyDealTransition({
+        dealId, event: 'DeliveredToBuyer', actorId: sellerId,
+        requestId: `${requestId}:auto-deliver`,
+      });
+      status = d.to;
+    } catch {
+      // If auto-advance fails, leave the deal at SellerHandover.
+    }
+  }
+
+  return { dealId, status };
 }
 
 /**

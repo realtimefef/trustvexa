@@ -748,10 +748,11 @@ export async function confirmFunding(userId, dealId, requestId) {
  * Only the deal's seller may call this.
  */
 export async function sellerHandover(sellerId, dealId, requestId) {
+    let middlemanId = null;
     const client = await acquireClient();
     try {
         await client.query('BEGIN');
-        const dealRes = await client.query(`SELECT seller_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+        const dealRes = await client.query(`SELECT seller_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
         const deal = dealRes.rows[0];
         if (!deal) {
             throw new AppError('deal_not_found', 'Deal was not found.', 404);
@@ -762,6 +763,7 @@ export async function sellerHandover(sellerId, dealId, requestId) {
         if (deal.status !== 'Funded') {
             throw new AppError('invalid_state', `Handover can only be submitted from Funded state (currently ${deal.status}).`, 409);
         }
+        middlemanId = deal.middleman_id;
         await client.query('COMMIT');
     }
     catch (err) {
@@ -780,7 +782,29 @@ export async function sellerHandover(sellerId, dealId, requestId) {
         actorId: sellerId,
         requestId,
     });
-    return { dealId, status: result.to };
+    let status = result.to;
+    // If NO middleman is assigned, there is nobody to manually verify + deliver,
+    // so the platform auto-advances SellerHandover → MiddlemanVerified → Delivered
+    // and the buyer can inspect/approve. When a middleman IS assigned, the deal
+    // stops at SellerHandover for the middleman to verify and deliver manually.
+    if (!middlemanId) {
+        try {
+            const v = await applyDealTransition({
+                dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
+                requestId: `${requestId}:auto-verify`,
+            });
+            status = v.to;
+            const d = await applyDealTransition({
+                dealId, event: 'DeliveredToBuyer', actorId: sellerId,
+                requestId: `${requestId}:auto-deliver`,
+            });
+            status = d.to;
+        }
+        catch {
+            // If auto-advance fails, leave the deal at SellerHandover.
+        }
+    }
+    return { dealId, status };
 }
 /**
  * Middleman confirms that the seller has completed the handover.
