@@ -1088,21 +1088,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
                   <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
                 </>
               )}
-              <NoRollbackBanner text="Only click below after you have delivered. This moves the deal to middleman verification and cannot be undone." />
+              <NoRollbackBanner text="Only click below after you have delivered to the buyer. This submits your case to the middleman and moves the deal to Delivered — it cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
                 {submittingHandover ? 'Submitting…' : '✓ Delivered — submit handover to middleman'}
               </Button>
-              <NextStep text="Middleman verifies → buyer inspects → payout released to your wallet." />
+              <NextStep text="Deal moves to Delivered → the middleman verifies and completes the deal → your payout is released to your wallet." />
             </div>
           ) : (
             <>
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
                 <p className="text-sm font-semibold text-emerald-600">✓ Handover submitted!</p>
-                <p className="text-xs text-muted-foreground mt-1">The middleman is now verifying your delivery.</p>
+                <p className="text-xs text-muted-foreground mt-1">Your case is now with the middleman, who will verify and complete the deal.</p>
               </div>
-              <NextStep text="Middleman confirms → buyer approves → payout sent to your saved wallet." />
+              <NextStep text="Middleman verifies → completes the deal → payout sent to your saved wallet." />
             </>
           )}
 
@@ -1117,9 +1117,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' ? (
-        <ActionCard title="In Progress — handover submitted" icon={Shield} variant="success">
-          <StepLabel step={4} total={6} label="In Progress — middleman verification" />
-          <p className="text-sm text-muted-foreground mb-3">{deal.middlemanId ? 'The middleman is reviewing your handover and confirming delivery to the buyer. Final review of the deal:' : 'Final review of the deal — continue to move it to the buyer\u2019s inspection stage:'}</p>
+        <ActionCard title="Handover submitted — with the middleman" icon={Shield} variant="success">
+          <StepLabel step={5} total={6} label="Delivered — middleman verifying & completing" />
+          <p className="text-sm text-muted-foreground mb-3">{deal.middlemanId ? 'Your case is now with the middleman, who will verify the delivery and complete the deal. Final review:' : 'Final review of the deal — continue to move it to the Delivered stage:'}</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
           {!deal.middlemanId && (
             <div className="mt-3 space-y-2">
@@ -1129,22 +1129,22 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               </Button>
             </div>
           )}
-          <NextStep text="Once verified → buyer enters their inspection window → approves delivery → payout is sent to you." />
+          <NextStep text="The middleman verifies and completes the deal → your payout is released to your wallet." />
         </ActionCard>
       ) : deal.status === 'Delivered' ? (
-        <ActionCard title="🎉 Delivered — waiting for buyer approval" icon={CheckCircle2} variant="success">
-          <StepLabel step={5} total={6} label="Buyer is inspecting the delivery" />
+        <ActionCard title="🎉 Delivered — with the middleman" icon={CheckCircle2} variant="success">
+          <StepLabel step={5} total={6} label="Middleman is verifying & completing" />
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mb-3 text-center">
-            <p className="font-semibold text-emerald-600">Delivery confirmed to the buyer!</p>
-            <p className="text-sm text-muted-foreground mt-1">The buyer is inspecting. Once they approve, your payout is released. You&apos;ll be notified by chat/email.</p>
+            <p className="font-semibold text-emerald-600">Case submitted to the middleman!</p>
+            <p className="text-sm text-muted-foreground mt-1">The middleman is verifying the delivery and will complete the deal. Your payout is released on completion — you&apos;ll be notified by chat/email.</p>
           </div>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          <NextStep text="Buyer approves → your payout is released to your wallet immediately." />
+          <NextStep text="Middleman completes the deal → your payout is released to your wallet." />
         </ActionCard>
       ) : deal.status === 'Approved' || deal.status === 'PayoutQueued' ? (
         <ActionCard title="Payment processing…" icon={Clock} variant="success">
-          <StepLabel step={5} total={6} label="Payout in progress" />
-          <p className="text-sm text-muted-foreground">Buyer approved the delivery. Your payout is being sent to your saved wallet address.</p>
+          <StepLabel step={6} total={6} label="Payout in progress" />
+          <p className="text-sm text-muted-foreground">The middleman completed the deal. Your payout is being sent to your saved wallet address.</p>
         </ActionCard>
       ) : deal.status === 'Released' ? (
         <ActionCard title="✓ Deal complete — payout released!" icon={CheckCircle2} variant="success">
@@ -1539,7 +1539,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               </div>
             </div>
           ) : <Skeleton className="h-32 w-full rounded-xl" />}
-          <NextStep text="Seller delivers the item → submits handover to middleman → middleman verifies → you inspect and approve → deal complete." />
+          <NextStep text="Seller delivers the item & submits the case → Delivered → the middleman verifies and completes the deal. You'll receive your details by chat / email." />
         </ActionCard>
       )}
 
@@ -1565,16 +1565,16 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               </Button>
             </div>
           )}
-          <NextStep text="Seller submits handover → middleman verifies → you'll be asked to inspect and approve." />
+          <NextStep text="Seller submits the case → Delivered → the middleman verifies and completes the deal." />
         </ActionCard>
       )}
 
       {(deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified') && (
-        <ActionCard title="In Progress — middleman is verifying the delivery" icon={Shield} variant="success">
-          <StepLabel step={4} total={6} label="In Progress — middleman verification" />
-          <p className="text-sm text-muted-foreground mb-3">The middleman is reviewing the seller&apos;s handover. Final review of the deal:</p>
+        <ActionCard title="🎉 Delivered — your order is being completed" icon={Shield} variant="success">
+          <StepLabel step={5} total={6} label="Delivered — middleman completing" />
+          <p className="text-sm text-muted-foreground mb-3">Your case is now with the middleman, who will verify the delivery and complete the deal. You&apos;ll receive your details by chat / email.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          <NextStep text="Once verified → the middleman completes the deal and sends your details by chat / email." />
+          <NextStep text="The middleman completes the deal and sends your details by chat / email." />
         </ActionCard>
       )}
 
@@ -1607,7 +1607,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {(deal.status === 'Approved' || deal.status === 'PayoutQueued') && (
         <ActionCard title="Payment processing — almost done!" icon={Clock} variant="success">
           <StepLabel step={6} total={6} label="Payout in progress" />
-          <p className="text-sm text-muted-foreground">You approved the delivery. The seller&apos;s payment is being processed.</p>
+          <p className="text-sm text-muted-foreground">The middleman completed the deal. The seller&apos;s payment is being processed.</p>
         </ActionCard>
       )}
 
