@@ -174,10 +174,9 @@ interface ChatPanelProps {
   onSendImage: (file: File, channel: Channel) => Promise<void>;
   onDelete: (msgId: string) => void;
   uploading: boolean;
-  dealBar?: React.ReactNode;
 }
 
-function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading, dealBar }: ChatPanelProps) {
+function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading }: ChatPanelProps) {
   const [draft, setDraft] = React.useState('');
   const endRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
@@ -198,8 +197,6 @@ function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, 
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Channel-relevant deal context (buyer side on buyer↔mm, seller side on seller↔mm) */}
-      {dealBar && <div className="shrink-0">{dealBar}</div>}
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1 min-h-0">
         {isLoading ? (

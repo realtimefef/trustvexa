@@ -329,6 +329,81 @@ export default function AdminDealDetailPage() {
         )}
       </div>
 
+      {/* Full deal details — every field on the deal record */}
+      <Card className="rounded-2xl shadow-soft">
+        <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Eye className="h-4 w-4 text-primary" /> Full deal details
+          </p>
+          {dealQ.isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : deal ? (
+            <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+              <div className="rounded-xl border bg-background/60 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Terms</p>
+                <DetailRow label="Deal ID" value={deal.id} mono />
+                <DetailRow label="Status" value={dealStatusLabel(deal.status)} />
+                <DetailRow label="Item" value={deal.itemDescription} />
+                <DetailRow label="Coin / network" value={`${deal.coin} · ${deal.network}${deal.networkMode ? ` (${deal.networkMode})` : ''}`} />
+                <DetailRow label="Deal chat code" value={deal.connectionCode} mono />
+                <DetailRow label="Buyer ID" value={deal.buyerId ? deal.buyerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                <DetailRow label="Seller ID" value={deal.sellerId ? deal.sellerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                <DetailRow label="Middleman ID" value={deal.middlemanId ? deal.middlemanId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                <DetailRow label="Attempt / version" value={`#${deal.attemptNo ?? 1} · v${deal.versionNo ?? 1}`} />
+              </div>
+              <div className="rounded-xl border bg-background/60 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Money &amp; fees</p>
+                <DetailRow label="Deal amount" value={fmtCents(deal.dealAmountCents)} />
+                <DetailRow label="Buyer sends (total)" value={fmtCents(deal.buyerTotalCents)} />
+                <DetailRow label="Seller receives (payout)" value={fmtCents(deal.sellerPayoutCents)} />
+                <DetailRow label="Platform fee" value={fmtCents(deal.platformFeeCents)} />
+                <DetailRow label="Settlement fee" value={fmtCents(deal.sellerSettlementFeeCents)} />
+                <DetailRow label="Network (gas) fee" value={fmtCents(deal.transactionFeeCents)} />
+                <DetailRow label="Fee payer" value={deal.feePayer} />
+                {deal.feePayer === 'split' && deal.feeSplitBuyerBps !== null && (
+                  <DetailRow label="Buyer fee share" value={`${(deal.feeSplitBuyerBps / 100).toFixed(0)}%`} />
+                )}
+                <DetailRow label="Risk score" value={deal.riskScore !== null ? `${deal.riskScore}/100` : null} />
+                <DetailRow label="Hold status" value={deal.holdStatus} />
+                <DetailRow label="Legal hold" value={deal.legalHold ? 'Yes' : 'No'} />
+              </div>
+              <div className="rounded-xl border bg-background/60 p-3 sm:col-span-2">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Timeline &amp; dates</p>
+                <div className="grid gap-x-8 sm:grid-cols-2">
+                  <div>
+                    <DetailRow label="Created" value={fmtDate(deal.createdAt)} />
+                    <DetailRow label="Buyer agreed" value={fmtDate(deal.buyerAgreedAt)} />
+                    <DetailRow label="Seller agreed" value={fmtDate(deal.sellerAgreedAt)} />
+                    <DetailRow label="Locked" value={fmtDate(deal.lockedAt)} />
+                  </div>
+                  <div>
+                    <DetailRow label="Fund deadline" value={fmtDate(deal.fundBy)} />
+                    <DetailRow label="Complete by" value={fmtDate(deal.completeBy)} />
+                    <DetailRow label="Inspection until" value={fmtDate(deal.inspectionUntil)} />
+                    <DetailRow label="Last activity" value={fmtDate(deal.lastActivityAt)} />
+                  </div>
+                </div>
+                {Array.isArray(deal.timeline) && deal.timeline.length > 0 && (
+                  <div className="mt-2 border-t pt-2">
+                    <p className="text-[11px] text-muted-foreground mb-1">Activity</p>
+                    <ul className="space-y-0.5">
+                      {deal.timeline.map((t, i) => (
+                        <li key={i} className="flex justify-between gap-3 text-[11px]">
+                          <span className="font-medium">{t.code.replace(/_/g, ' ')} <span className="text-muted-foreground">· {t.actorRole}</span></span>
+                          <span className="text-muted-foreground font-mono">{fmtDate(t.at)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Deal details unavailable.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Whole-deal controls */}
       <Card className="rounded-2xl shadow-soft">
         <CardContent className="p-4 space-y-3">
