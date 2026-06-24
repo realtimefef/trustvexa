@@ -135,6 +135,12 @@ export function dealRouter() {
         roles: [...ACCOUNT_ROLES],
         enforceIdempotency: true,
     }), asyncHandler(controller.approveDeal));
+    // Buyer/seller advances a no-middleman deal SellerHandover → Delivered.
+    router.post('/:id/advance-delivery', ...apiChain({
+        schemas: { params: dealIdParamSchema },
+        roles: [...ACCOUNT_ROLES],
+        enforceIdempotency: true,
+    }), asyncHandler(controller.advanceDeliveryNoMiddleman));
     // Middleman marks the deal complete — chains Delivered → Released.
     router.post('/:id/complete', ...apiChain({
         schemas: { params: dealIdParamSchema },

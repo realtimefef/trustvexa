@@ -98,6 +98,15 @@ export async function agreeToDeal(req: Request, res: Response): Promise<void> {
   res.status(200).json(result);
 }
 
+/** Buyer/seller advances a no-middleman deal SellerHandover → Delivered. */
+export async function advanceDeliveryNoMiddleman(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const dealId = req.params.id!;
+  const requestId = req.header('Idempotency-Key') ?? `${dealId}:advance-delivery:${userId}`;
+  const result = await service.advanceDeliveryNoMiddleman(userId, dealId, requestId);
+  res.status(200).json(result);
+}
+
 /** Middleman marks the deal complete — chains transitions to Released. */
 export async function markDealComplete(req: Request, res: Response): Promise<void> {
   const middlemanId = requireUserId(req);

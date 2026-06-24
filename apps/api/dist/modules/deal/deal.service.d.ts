@@ -109,6 +109,17 @@ export interface MiddlemanUpdateDealResult {
  */
 export declare function middlemanUpdateDeal(middlemanId: string, dealId: string, input: MiddlemanUpdateDealInput): Promise<MiddlemanUpdateDealResult>;
 /**
+ * Advance a deal that is stuck at SellerHandover / MiddlemanVerified with NO
+ * middleman assigned, straight to Delivered. Either party (buyer or seller) may
+ * trigger it. This unblocks deals that handed over before the auto-advance was
+ * added, or any no-middleman deal. When a middleman IS assigned this is rejected
+ * (the middleman must verify + deliver).
+ */
+export declare function advanceDeliveryNoMiddleman(userId: string, dealId: string, requestId: string): Promise<{
+    dealId: string;
+    status: string;
+}>;
+/**
  * Middleman marks a deal complete — drives it through the remaining state
  * transitions to Released so both parties see the "Complete" stage. Used for
  * the simplified middleman-driven completion (Delivered → Released). Only the

@@ -618,6 +618,63 @@ export async function middlemanUpdateDeal(middlemanId, dealId, input) {
     }
 }
 /**
+ * Advance a deal that is stuck at SellerHandover / MiddlemanVerified with NO
+ * middleman assigned, straight to Delivered. Either party (buyer or seller) may
+ * trigger it. This unblocks deals that handed over before the auto-advance was
+ * added, or any no-middleman deal. When a middleman IS assigned this is rejected
+ * (the middleman must verify + deliver).
+ */
+export async function advanceDeliveryNoMiddleman(userId, dealId, requestId) {
+    let status;
+    const client = await acquireClient();
+    try {
+        await client.query('BEGIN');
+        const dealRes = await client.query(`SELECT buyer_id, seller_id, middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+        const deal = dealRes.rows[0];
+        if (!deal)
+            throw new AppError('deal_not_found', 'Deal was not found.', 404);
+        if (deal.buyer_id !== userId && deal.seller_id !== userId) {
+            throw new AppError('forbidden', 'Only a party to the deal can advance it.', 403);
+        }
+        if (deal.middleman_id) {
+            throw new AppError('has_middleman', 'This deal has a middleman who must verify and deliver.', 409);
+        }
+        if (deal.status === 'Delivered') {
+            await client.query('COMMIT');
+            return { dealId, status: 'Delivered' };
+        }
+        if (!['SellerHandover', 'MiddlemanVerified'].includes(deal.status)) {
+            throw new AppError('invalid_state', `Cannot advance from '${deal.status}'.`, 409);
+        }
+        status = deal.status;
+        await client.query('COMMIT');
+    }
+    catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        }
+        catch { /* ignore */ }
+        throw err;
+    }
+    finally {
+        client.release();
+    }
+    const chain = [
+        { from: ['SellerHandover'], event: 'MiddlemanVerifiedTransfer' },
+        { from: ['MiddlemanVerified'], event: 'DeliveredToBuyer' },
+    ];
+    let current = status;
+    for (const step of chain) {
+        if (!step.from.includes(current))
+            continue;
+        const r = await applyDealTransition({
+            dealId, event: step.event, actorId: userId, requestId: `${requestId}:${step.event}`,
+        });
+        current = r.to;
+    }
+    return { dealId, status: current };
+}
+/**
  * Middleman marks a deal complete — drives it through the remaining state
  * transitions to Released so both parties see the "Complete" stage. Used for
  * the simplified middleman-driven completion (Delivered → Released). Only the

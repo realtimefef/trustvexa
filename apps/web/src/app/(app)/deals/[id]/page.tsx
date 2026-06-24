@@ -876,6 +876,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   // Seller can also confirm funding (fallback) if the buyer has paid.
   const [sellerConfirmingFunding, setSellerConfirmingFunding] = React.useState(false);
   const [sellerFundingErr, setSellerFundingErr] = React.useState<string | null>(null);
+  // Advance a no-middleman deal from SellerHandover → Delivered.
+  const [advancing, setAdvancing] = React.useState(false);
+  const [advanceErr, setAdvanceErr] = React.useState<string | null>(null);
+
+  const advanceDelivery = async () => {
+    setAdvancing(true); setAdvanceErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/advance-delivery`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) { setAdvanceErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to advance.'); }
+    finally { setAdvancing(false); }
+  };
 
   const sellerConfirmFunding = async () => {
     if (!window.confirm('Confirm the buyer has funded the escrow? This advances the deal to the delivery stage.')) return;
@@ -1068,10 +1080,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' ? (
-        <ActionCard title="In Progress — handover submitted, middleman verifying" icon={Shield} variant="success">
+        <ActionCard title="In Progress — handover submitted" icon={Shield} variant="success">
           <StepLabel step={4} total={6} label="In Progress — middleman verification" />
-          <p className="text-sm text-muted-foreground mb-3">The middleman is reviewing your handover and confirming delivery to the buyer. Final review of the deal:</p>
+          <p className="text-sm text-muted-foreground mb-3">{deal.middlemanId ? 'The middleman is reviewing your handover and confirming delivery to the buyer. Final review of the deal:' : 'Final review of the deal — continue to move it to the buyer\u2019s inspection stage:'}</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+          {!deal.middlemanId && (
+            <div className="mt-3 space-y-2">
+              {advanceErr && <p className="text-xs text-destructive">⚠️ {advanceErr}</p>}
+              <Button onClick={advanceDelivery} disabled={advancing} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />{advancing ? 'Advancing…' : 'Continue to Delivered →'}
+              </Button>
+            </div>
+          )}
           <NextStep text="Once verified → buyer enters their inspection window → approves delivery → payout is sent to you." />
         </ActionCard>
       ) : deal.status === 'Delivered' ? (
