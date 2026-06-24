@@ -1574,7 +1574,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 font-medium">⚠️ {escrow.networkWarning}</div>
               <PaymentInstructions coin={escrow.coin} network={escrow.network} />
               <div className="space-y-1.5">
-                <Label htmlFor="txhash">Paste your transaction hash <span className="text-muted-foreground text-xs">(optional, for your records)</span></Label>
+                <Label htmlFor="txhash">Paste your transaction hash <span className="text-muted-foreground text-xs">(for payment verification)</span></Label>
                 {txAlreadySaved && <p className="text-xs text-emerald-600 font-medium">✓ Transaction hash saved.</p>}
                 <div className="flex gap-2">
                   <Input id="txhash" value={txHash} onChange={e => setTxHash(e.target.value)} placeholder="0x… or TX ID" className="flex-1 font-mono text-xs" />

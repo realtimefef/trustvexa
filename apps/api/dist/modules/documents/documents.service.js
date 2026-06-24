@@ -9,12 +9,13 @@ import { query } from '@trustvexa/shared';
 import { randomUUID } from 'node:crypto';
 import { getObjectStorage, documentKey } from '../storage/object-storage.js';
 import { AppError, notFound } from '../../errors/app-error.js';
-import { buildLockedAgreement, generateDocumentNumber, renderAgreementText, } from '../deal/agreement.js';
+import { generateDocumentNumber, } from '../deal/agreement.js';
 import { canDownloadDocument } from './receipts.js';
 import { renderPdf } from './pdf.js';
+import { computeFeeBreakdown } from '../money/fee-engine.js';
 import { getDealAccess } from './documents-read.repository.js';
 /** Bumped whenever the PDF layout changes so cached documents are regenerated. */
-const PDF_DESIGN_VERSION = 'v2';
+const PDF_DESIGN_VERSION = 'v3';
 /** Format a USD-cents string as "$1,234.56" (deal money columns are cents). */
 function usd(cents) {
     if (cents === null || cents === '')
@@ -23,6 +24,66 @@ function usd(cents) {
     if (!Number.isFinite(n))
         return '—';
     return `$${(n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+/**
+ * Representative network (gas) cost in USD cents per chain — mirrors the web
+ * fee calculator. The real gas is locked server-side at funding; this is the
+ * same estimate the app shows when the deal's locked fee columns are empty.
+ */
+const NETWORK_GAS_CENTS = {
+    SOLANA: 0n,
+    BNB: 15n,
+    TRON: 100n,
+    ETH: 500n,
+};
+/**
+ * Resolve a deal's money figures for a document. When the authoritative locked
+ * columns are present they are used as-is; otherwise the canonical fee engine
+ * computes the breakdown from the deal amount + fee payer + split + a network
+ * gas estimate, so documents are always fully filled in (never blank "—") and
+ * match the in-app fee breakdown to the cent (excluding live gas).
+ */
+function resolveDealMoney(d) {
+    const base = {
+        dealAmount: d.deal_amount,
+        platformFee: d.platform_fee,
+        settlementFee: d.seller_settlement_fee,
+        gasFee: d.transaction_fee,
+        buyerTotal: d.buyer_total,
+        sellerPayout: d.seller_payout,
+        feePayer: d.fee_payer,
+    };
+    // If the locked totals are already present, trust them.
+    if (d.buyer_total !== null && d.seller_payout !== null && d.platform_fee !== null) {
+        return base;
+    }
+    if (!d.deal_amount)
+        return base;
+    try {
+        const feePayer = d.fee_payer === 'buyer' || d.fee_payer === 'seller' || d.fee_payer === 'split'
+            ? d.fee_payer
+            : 'split';
+        const gas = NETWORK_GAS_CENTS[d.network] ?? 0n;
+        const split = d.fee_split_buyer_bps != null ? BigInt(d.fee_split_buyer_bps) : undefined;
+        const b = computeFeeBreakdown({
+            dealAmountCents: BigInt(d.deal_amount),
+            feePayer,
+            gasFeeCents: gas,
+            ...(split !== undefined ? { splitBuyerBps: split } : {}),
+        });
+        return {
+            dealAmount: d.deal_amount,
+            platformFee: b.platformFeeCents.toString(),
+            settlementFee: b.settlementFeeCents.toString(),
+            gasFee: b.gasFeeCents.toString(),
+            buyerTotal: b.buyerSendsCents.toString(),
+            sellerPayout: b.sellerReceivesCents.toString(),
+            feePayer,
+        };
+    }
+    catch {
+        return base; // amount out of supported range, etc. — fall back to raw columns
+    }
 }
 function roleForUser(deal, userId) {
     if (deal.buyer_id === userId)
@@ -78,7 +139,7 @@ async function buildAgreementPdfRaw(userId, dealId) {
     }
     const { rows } = await query(`SELECT id, buyer_id, seller_id, middleman_id, product_id, coin, network,
             deal_amount, platform_fee, seller_settlement_fee, transaction_fee,
-            buyer_total, seller_payout, fee_payer,
+            buyer_total, seller_payout, fee_payer, fee_split_buyer_bps, item_description,
             inspection_until::text AS inspection_until,
             complete_by::text AS complete_by,
             fund_by::text AS fund_by,
@@ -90,30 +151,44 @@ async function buildAgreementPdfRaw(userId, dealId) {
     }
     const termsRes = await query(`SELECT version FROM deal_terms WHERE deal_id = $1 ORDER BY version DESC LIMIT 1`, [dealId]);
     const termsVersion = termsRes.rows[0] ? `v${termsRes.rows[0].version}` : 'v1';
-    const agreement = buildLockedAgreement({
-        id: deal.id,
-        buyerId: deal.buyer_id,
-        sellerId: deal.seller_id,
-        middlemanId: deal.middleman_id,
-        productId: deal.product_id,
-        coin: deal.coin,
-        network: deal.network,
-        dealAmount: deal.deal_amount,
-        platformFee: deal.platform_fee,
-        sellerSettlementFee: deal.seller_settlement_fee,
-        transactionFee: deal.transaction_fee,
-        buyerTotal: deal.buyer_total,
-        sellerPayout: deal.seller_payout,
-        feePayer: deal.fee_payer,
-        inspectionUntil: deal.inspection_until,
-        completeBy: deal.complete_by,
-        fundBy: deal.fund_by,
-        status: deal.status,
-    }, termsVersion);
+    const m = resolveDealMoney(deal);
     const documentNumber = generateDocumentNumber(dealId);
-    // renderAgreementText's first line is the heading; the PDF supplies its own
-    // title, so drop the duplicate first line.
-    const lines = renderAgreementText(agreement).split('\n').slice(1);
+    const shortId = (v) => (v ? v.replace(/-/g, '').slice(0, 8).toUpperCase() : '—');
+    const dt = (v) => (v ? new Date(v).toLocaleString('en-US') : '—');
+    const feeShare = m.feePayer === 'split' && deal.fee_split_buyer_bps != null
+        ? `split (buyer ${(deal.fee_split_buyer_bps / 100).toFixed(0)}% / seller ${(100 - deal.fee_split_buyer_bps / 100).toFixed(0)}%)`
+        : (m.feePayer ?? '—');
+    const lines = [
+        `Deal ID: ${deal.id}`,
+        `Terms version: ${termsVersion}`,
+        `Status: ${deal.status}`,
+        '',
+        'PARTIES',
+        `Buyer: ${shortId(deal.buyer_id)}`,
+        `Seller: ${shortId(deal.seller_id)}`,
+        `Middleman: ${shortId(deal.middleman_id)}`,
+        '',
+        'SUBJECT',
+        `Item: ${deal.item_description ?? '—'}`,
+        `Coin / network: ${deal.coin} (${deal.network})`,
+        '',
+        'AMOUNTS',
+        `Deal amount: ${usd(m.dealAmount)}`,
+        `Platform fee: ${usd(m.platformFee)}`,
+        `Seller settlement fee (0.5%): ${usd(m.settlementFee)}`,
+        `Network (gas) fee: ${usd(m.gasFee)}`,
+        `Fee payer: ${feeShare}`,
+        `Buyer sends (total): ${usd(m.buyerTotal)}`,
+        `Seller receives (payout): ${usd(m.sellerPayout)}`,
+        '',
+        'DEADLINES',
+        `Fund by: ${dt(deal.fund_by)}`,
+        `Complete by: ${dt(deal.complete_by)}`,
+        `Inspection window until: ${dt(deal.inspection_until)}`,
+        '',
+        'RULES',
+        'Funds are held in escrow until release or refund per the accepted escrow, refund/dispute, crypto-risk, wrong-network, and no-prohibited-items terms.',
+    ];
     const buffer = renderPdf({
         title: 'Deal Agreement',
         subtitle: 'Locked escrow terms',
@@ -143,7 +218,7 @@ async function buildReceiptPdfRaw(userId, dealId) {
     }
     const { rows } = await query(`SELECT id, buyer_id, seller_id, middleman_id, coin, network,
             deal_amount, platform_fee, seller_settlement_fee, transaction_fee,
-            buyer_total, seller_payout, fee_payer, status,
+            buyer_total, seller_payout, fee_payer, fee_split_buyer_bps, status,
             updated_at::text AS updated_at
        FROM deals WHERE id = $1`, [dealId]);
     const deal = rows[0];
@@ -152,19 +227,23 @@ async function buildReceiptPdfRaw(userId, dealId) {
     if (!RECEIPT_STATES.has(deal.status)) {
         throw new AppError('receipt_unavailable', 'A receipt is available only after the deal is settled.', 409);
     }
+    const m = resolveDealMoney(deal);
     const documentNumber = generateDocumentNumber(dealId);
     const settledAt = deal.updated_at ? new Date(deal.updated_at).toLocaleString('en-US') : '—';
+    const feeShare = m.feePayer === 'split' && deal.fee_split_buyer_bps != null
+        ? `split (buyer ${(deal.fee_split_buyer_bps / 100).toFixed(0)}% / seller ${(100 - deal.fee_split_buyer_bps / 100).toFixed(0)}%)`
+        : (m.feePayer ?? '—');
     const lines = [
         'PAYMENT SUMMARY',
-        `Deal amount: ${usd(deal.deal_amount)}`,
-        `Buyer paid (total): ${usd(deal.buyer_total)}`,
-        `Seller received: ${usd(deal.seller_payout)}`,
+        `Deal amount: ${usd(m.dealAmount)}`,
+        `Buyer paid (total): ${usd(m.buyerTotal)}`,
+        `Seller received: ${usd(m.sellerPayout)}`,
         '',
         'FEES',
-        `Platform fee: ${usd(deal.platform_fee)}`,
-        `Settlement fee (0.5%): ${usd(deal.seller_settlement_fee)}`,
-        `Network (gas) fee: ${usd(deal.transaction_fee)}`,
-        `Fee payer: ${deal.fee_payer ?? '—'}`,
+        `Platform fee: ${usd(m.platformFee)}`,
+        `Settlement fee (0.5%): ${usd(m.settlementFee)}`,
+        `Network (gas) fee: ${usd(m.gasFee)}`,
+        `Fee payer: ${feeShare}`,
         '',
         'DETAILS',
         `Receipt number: ${documentNumber}`,
