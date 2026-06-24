@@ -13,6 +13,7 @@ import { apiChain } from '../../routes/api-chain.js';
 import { dealIdParamSchema } from '../deal/deal.schemas.js';
 import * as controller from './admin.controller.js';
 import * as ops from './admin-ops.controller.js';
+import * as extra from './admin-extra.controller.js';
 
 const settingChangeBodySchema = z.object({
   settingKey: z.string().min(1).max(100),
@@ -39,6 +40,27 @@ const enforceBodySchema = z.object({
 });
 
 const reasonBodySchema = z.object({ reason: z.string().trim().min(1).max(2000) });
+const legalHoldBodySchema = z.object({
+  targetType: z.enum(['deal', 'user']),
+  targetId: z.string().uuid(),
+  reason: z.string().trim().min(1).max(2000),
+});
+const appealDecisionBodySchema = z.object({
+  decision: z.enum(['approved', 'rejected']),
+  decisionReason: z.string().trim().min(1).max(2000),
+});
+const amlStatusBodySchema = z.object({
+  status: z.enum(['open', 'reviewing', 'cleared', 'escalated', 'closed']),
+});
+const breakGlassBodySchema = z.object({
+  actorLabel: z.string().trim().min(1).max(200),
+  action: z.enum(['recovery_initiated', 'access_restored', 'procedure_tested']),
+  reason: z.string().trim().min(1).max(2000),
+});
+const piiLookupBodySchema = z.object({
+  fields: z.array(z.enum(['email', 'signup_details', 'recovery_email'])).min(1),
+  reason: z.string().trim().min(1).max(2000),
+});
 const holdIdParamSchema = z.object({ holdId: z.string().uuid() });
 const pauseIdParamSchema = z.object({ pauseId: z.string().uuid() });
 const flagKeyParamSchema = z.object({ key: z.string().trim().min(1).max(100) });
@@ -286,6 +308,77 @@ export function adminRouter(): Router {
       enforceIdempotency: true,
     }),
     asyncHandler(ops.deleteChat),
+  );
+
+  // ── Trust & Safety / Compliance (legal holds, appeals, AML, break-glass, PII) ─
+
+  // Legal holds — evidence-preservation mode (blocks payouts via preflight).
+  router.get('/legal-holds', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listLegalHolds));
+  router.post(
+    '/legal-holds',
+    ...apiChain({
+      schemas: { body: legalHoldBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.placeLegalHold),
+  );
+  router.post(
+    '/legal-holds/:holdId/release',
+    ...apiChain({
+      schemas: { params: z.object({ holdId: z.string().uuid() }), body: reasonBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.releaseLegalHold),
+  );
+
+  // Appeal / unblock requests.
+  router.get('/appeals', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listAppeals));
+  router.post(
+    '/appeals/:appealId/decide',
+    ...apiChain({
+      schemas: { params: z.object({ appealId: z.string().uuid() }), body: appealDecisionBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.decideAppeal),
+  );
+
+  // AML / suspicious-activity alerts.
+  router.get('/aml-alerts', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listAmlAlerts));
+  router.patch(
+    '/aml-alerts/:alertId',
+    ...apiChain({
+      schemas: { params: z.object({ alertId: z.string().uuid() }), body: amlStatusBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.updateAmlAlert),
+  );
+
+  // Break-glass / emergency-recovery audit.
+  router.get('/break-glass', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listBreakGlass));
+  router.post(
+    '/break-glass',
+    ...apiChain({
+      schemas: { body: breakGlassBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.recordBreakGlass),
+  );
+
+  // Audited PII access (decrypt email / signup details; password never shown).
+  router.get('/pii-access-logs', ...apiChain({ roles: ['middleman'] }), asyncHandler(extra.listPiiAccessLogs));
+  router.post(
+    '/users/:userId/pii',
+    ...apiChain({
+      schemas: { params: z.object({ userId: z.string().uuid() }), body: piiLookupBodySchema },
+      roles: ['middleman'],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(extra.lookupUserPii),
   );
 
   return router;

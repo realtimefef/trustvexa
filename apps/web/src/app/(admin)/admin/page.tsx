@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   Clock, FileText, Gavel, Landmark, Layers, MessageCircle, MessageSquare,
-  Send, Shield, Settings, TicketIcon, BarChart3,
+  Send, Shield, ShieldAlert, Settings, Siren, TicketIcon, BarChart3,
   ListChecks, DollarSign, Eye, Users, X,
 } from 'lucide-react';
 
@@ -270,6 +270,11 @@ function RiskNotesPanel({ dealId }: { dealId: string }) {
     queryKey: ['admin-notes', 'deal', dealId],
     queryFn: async () => (await apiRequest<{ notes: NoteView[] }>(`/admin/notes/deal/${dealId}`)).notes,
   });
+  const amlQ = useQuery({
+    queryKey: ['admin-aml', 'deal', dealId],
+    queryFn: async () => (await apiRequest<{ alerts: Array<{ id: string; patternType: string | null; severity: string | null; details: string | null; status: string | null }> }>(`/admin/aml-alerts?dealId=${dealId}`)).alerts,
+    retry: false,
+  });
   const [note, setNote] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
@@ -338,6 +343,28 @@ function RiskNotesPanel({ dealId }: { dealId: string }) {
         <Button size="sm" className="h-7 text-xs w-full" disabled={busy || !note.trim()} onClick={() => void submitNote()}>
           {busy ? 'Saving…' : 'Add note'}
         </Button>
+      </div>
+
+      {/* AML alerts for this deal */}
+      <div className="rounded-xl border bg-background/60 p-3 space-y-2 sm:col-span-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">AML / suspicious-activity alerts</p>
+        {amlQ.isLoading ? <Skeleton className="h-10 w-full" /> : (amlQ.data ?? []).length === 0 ? (
+          <p className="text-xs text-emerald-600">No AML alerts on this deal.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {(amlQ.data ?? []).map((a) => (
+              <li key={a.id} className="flex items-start gap-2 text-xs">
+                <Siren className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${a.severity === 'high' || a.severity === 'critical' ? 'text-destructive' : 'text-amber-600'}`} />
+                <div>
+                  <span className="font-medium">{a.patternType ?? 'pattern'}</span>
+                  <span className="text-muted-foreground"> · {a.severity} · {a.status ?? 'open'}</span>
+                  {a.details && <p className="text-muted-foreground">{a.details}</p>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-[11px] text-muted-foreground">Triage in <Link href="/admin/controls" className="text-primary hover:underline">Trust &amp; Safety</Link>.</p>
       </div>
     </div>
   );
@@ -476,6 +503,7 @@ function QueueRow({ item, allChats }: { item: QueueItem; allChats: AdminChat[] }
 
 const NAV_CARDS = [
   { href: '/admin/payouts', icon: DollarSign, label: 'Payouts', desc: 'Approve & broadcast (dual control)' },
+  { href: '/admin/controls', icon: ShieldAlert, label: 'Trust & Safety', desc: 'Legal holds, appeals, AML, PII access' },
   { href: '/admin/users', icon: Users, label: 'Users', desc: 'Search, block, label, delete accounts' },
   { href: '/connect', icon: MessageSquare, label: 'Deal chats', desc: 'Message buyers & sellers' },
   { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor, categorize & delete chats' },
