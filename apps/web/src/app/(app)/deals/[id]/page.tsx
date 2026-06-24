@@ -37,6 +37,7 @@ import { useAuth } from '@/lib/auth/auth-context';
 import {
   estimateFees,
   estimateGasCents,
+  formatBps,
   formatUsdCents,
   type FeePayer,
 } from '@/lib/fees';
@@ -313,7 +314,14 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
   const dealCents = Number(deal.dealAmountCents ?? '0');
   const feePayerKey = (deal.feePayer ?? 'buyer') as FeePayer;
   const gasCents = estimateGasCents(deal.network);
-  const estimate = dealCents >= 40000 ? estimateFees(dealCents, feePayerKey, 5000, gasCents) : null;
+  const splitBuyerBps = deal.feeSplitBuyerBps ?? 5000;
+  const estimate = dealCents >= 40000 ? estimateFees(dealCents, feePayerKey, splitBuyerBps, gasCents) : null;
+  const role = deal.role; // 'buyer' | 'seller' | 'middleman'
+  const myPlatformShareCents = estimate
+    ? role === 'buyer' ? estimate.buyerPlatformShareCents
+      : role === 'seller' ? estimate.sellerPlatformShareCents
+      : null
+    : null;
 
   const buyerSendsDisplay = deal.buyerTotalCents
     ? cents(deal.buyerTotalCents)
@@ -364,6 +372,45 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
             </div>
           </div>
         </div>
+
+        {/* Platform fee split — who pays what, and YOUR share */}
+        {estimate && (
+          <div className="rounded-lg bg-muted/30 border px-3 py-2.5 space-y-1.5">
+            {feePayerKey === 'split' ? (
+              <>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Platform fee is split — total {isEstimate ? '~' : ''}{formatUsdCents(estimate.platformFeeCents)}
+                </p>
+                <div className="grid grid-cols-2 gap-x-6 text-sm">
+                  <div className="flex justify-between gap-2">
+                    <span className="text-blue-600 dark:text-blue-400">Buyer pays ({formatBps(splitBuyerBps)})</span>
+                    <span className="font-medium">{isEstimate ? '~' : ''}{formatUsdCents(estimate.buyerPlatformShareCents)}</span>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <span className="text-emerald-600">Seller pays ({formatBps(10000 - splitBuyerBps)})</span>
+                    <span className="font-medium">{isEstimate ? '~' : ''}{formatUsdCents(estimate.sellerPlatformShareCents)}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold capitalize text-foreground">{feePayerKey}</span> pays the full platform fee of {isEstimate ? '~' : ''}{formatUsdCents(estimate.platformFeeCents)}.
+              </p>
+            )}
+            {(role === 'buyer' || role === 'seller') && myPlatformShareCents !== null && (
+              <p className="text-sm pt-0.5 border-t border-border/40">
+                <span className="text-muted-foreground">Your share of the platform fee </span>
+                <span className="text-[10px] uppercase font-bold align-middle px-1.5 py-0.5 rounded bg-primary/10 text-primary">{role}</span>
+                <span className="font-bold ml-1">{isEstimate ? '~' : ''}{formatUsdCents(myPlatformShareCents)}</span>
+                {role === 'seller' && (
+                  <span className="block text-[11px] text-muted-foreground mt-0.5">
+                    Plus a 0.5% settlement fee ({isEstimate ? '~' : ''}{formatUsdCents(estimate.settlementFeeCents)}) and network gas, taken from your payout.
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+        )}
         {isEstimate && (
           <p className="text-[10px] text-muted-foreground">
             ~ Estimates based on current fee rates. Exact amounts locked when buyer funds the escrow.
@@ -1416,6 +1463,11 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       </div>
 
       <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
+
+      {/* Edit before lock — either party may edit the deal terms until both agree */}
+      {!deal.lockedAt && !POST_LOCK_STATES.has(deal.status) && (
+        <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
+      )}
 
       {/* Current action — BUYER */}
       {(deal.status === 'Created' || deal.status === 'Invited') && (

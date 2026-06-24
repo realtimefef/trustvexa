@@ -429,13 +429,14 @@ export async function updateDeal(sellerId, dealId, input) {
     const client = await acquireClient();
     try {
         await client.query('BEGIN');
-        const dealRes = await client.query(`SELECT seller_id, locked_at, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
+        const dealRes = await client.query(`SELECT buyer_id, seller_id, locked_at, status FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
         const deal = dealRes.rows[0];
         if (!deal) {
             throw new AppError('deal_not_found', 'Deal was not found.', 404);
         }
-        if (deal.seller_id !== sellerId) {
-            throw new AppError('forbidden', 'Only the deal creator can edit it before locking.', 403);
+        // Either party (buyer or seller) may edit the terms before the deal locks.
+        if (deal.buyer_id !== sellerId && deal.seller_id !== sellerId) {
+            throw new AppError('forbidden', 'Only a party to the deal can edit it before locking.', 403);
         }
         if (deal.locked_at) {
             throw new AppError('deal_locked', 'Deal is locked and can no longer be edited.', 409);
@@ -479,6 +480,10 @@ export async function updateDeal(sellerId, dealId, input) {
         }
         if (setClauses.length > 0) {
             setClauses.push(`updated_at = now()`);
+            // Any change to the terms invalidates prior agreement — both parties must
+            // re-agree to the new terms before the deal can lock.
+            setClauses.push(`buyer_agreed_at = NULL`);
+            setClauses.push(`seller_agreed_at = NULL`);
             await client.query(`UPDATE deals SET ${setClauses.join(', ')} WHERE id = $1`, values);
         }
         // Terms are stored in a separate versioned snapshot table.
