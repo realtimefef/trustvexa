@@ -1289,10 +1289,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [agreedResult, setAgreedResult] = React.useState<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean; status?: string } | null>(null);
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
-  const [approving, setApproving] = React.useState(false);
-  const [approveErr, setApproveErr] = React.useState<string | null>(null);
-  const [disputing, setDisputing] = React.useState(false);
-  const [disputeErr, setDisputeErr] = React.useState<string | null>(null);
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
   const [confirmingFunding, setConfirmingFunding] = React.useState(false);
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
@@ -1336,26 +1332,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       void qc.invalidateQueries({ queryKey: ['payment-status', dealId] });
     } catch (err) { setPayErr(err instanceof Error ? err.message : 'Failed to submit.'); }
     finally { setPaySubmitting(false); }
-  };
-
-  const handleApprove = async () => {
-    if (!window.confirm('Confirm you received exactly what was agreed? This will release the payout to the seller.')) return;
-    setApproving(true); setApproveErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/approve`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setApproveErr(err instanceof Error ? err.message : 'Failed to approve.'); }
-    finally { setApproving(false); }
-  };
-
-  const openDispute = async () => {
-    if (!window.confirm('Open a formal dispute? A middleman will review the case.')) return;
-    setDisputing(true); setDisputeErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/dispute`, { method: 'POST', body: { category: 'delivery_dispute', statement: 'Buyer opened a dispute.' }, idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setDisputeErr(err instanceof Error ? err.message : 'Failed to open dispute.'); }
-    finally { setDisputing(false); }
   };
 
   const requestMm = async () => {
@@ -1544,40 +1520,33 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <StepLabel step={4} total={6} label="In Progress — middleman verification" />
           <p className="text-sm text-muted-foreground mb-3">The middleman is reviewing the seller&apos;s handover. Final review of the deal:</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          <NextStep text="Once verified → you'll enter your inspection window and can approve or open a dispute." />
+          <NextStep text="Once verified → the middleman completes the deal and sends your details by chat / email." />
         </ActionCard>
       )}
 
       {deal.status === 'Delivered' && (
-        <ActionCard title="🎉 Delivery confirmed — inspect & approve" icon={CheckCircle2} variant="warning">
-          <StepLabel step={5} total={6} label="Your inspection window" />
+        <ActionCard title="🎉 Delivered — your order is being completed" icon={CheckCircle2} variant="success">
+          <StepLabel step={5} total={6} label="Delivered" />
 
           {/* Congratulations banner */}
-          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 mb-3 text-center space-y-1">
-            <p className="font-semibold text-emerald-600">🎉 Congratulations! Your delivery has been received.</p>
-            <p className="text-sm text-muted-foreground">You will receive all the information shortly. You can contact the middleman anytime via the deal chat, or wait for their reply by chat / email.</p>
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-4 mb-3 text-center space-y-1.5">
+            <p className="font-semibold text-emerald-600 text-base">🎉 Congratulations! Your delivery has been received.</p>
+            <p className="text-sm text-muted-foreground">
+              You will receive your account / product details by <strong>chat and email</strong> shortly.
+              The middleman is finalising everything for you.
+            </p>
           </div>
 
-          {/* Next steps guidance */}
+          {/* Guidance */}
           <div className="rounded-lg bg-muted/30 border px-3 py-3 mb-3 space-y-1.5 text-sm">
-            <p className="text-xs font-semibold mb-2">What happens next:</p>
-            <p className="text-xs text-muted-foreground">1. The middleman will send your delivery details via <strong>chat or email</strong>.</p>
-            <p className="text-xs text-muted-foreground">2. If everything is as agreed → click <strong>Approve</strong> to release payment to the seller.</p>
-            <p className="text-xs text-muted-foreground">3. If there is a problem → open a dispute and the middleman will review your case.</p>
+            <p className="text-xs text-muted-foreground">• Your delivery details will be sent to you via <strong>chat or email</strong>.</p>
+            <p className="text-xs text-muted-foreground">• Need to talk about the deal? <strong>Contact the middleman</strong> anytime through the deal chat.</p>
+            <p className="text-xs text-muted-foreground">• The middleman will complete the deal and release the funds to the seller.</p>
           </div>
 
-          <NoRollbackBanner text="Once you click 'Approve', the seller receives payment INSTANTLY. This cannot be reversed. Only approve if you are fully satisfied." />
-          <div className="mt-3 space-y-2">
-            {approveErr && <p className="text-xs text-destructive">{approveErr}</p>}
-            {disputeErr && <p className="text-xs text-destructive">{disputeErr}</p>}
-            <Button onClick={handleApprove} disabled={approving} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-              <CheckCircle2 className="h-4 w-4 mr-1.5" />{approving ? 'Approving…' : 'Approve & release payment to seller'}
-            </Button>
-            <Button onClick={openDispute} disabled={disputing} variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10">
-              {disputing ? '…' : '⚠️ Item not as described — open dispute'}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">For questions: use the deal chat to contact your middleman directly.</p>
-          </div>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/messages"><MessageCircle className="h-4 w-4 mr-1.5" /> Contact the middleman</Link>
+          </Button>
         </ActionCard>
       )}
 
