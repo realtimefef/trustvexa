@@ -44,6 +44,13 @@ export declare function claimJoiner(connectionId: string, joinerId: string): Pro
 export declare function claimMiddleman(connectionId: string, middlemanId: string): Promise<ConnectionRow | null>;
 export declare function listConnectionsForUser(userId: string): Promise<ConnectionRow[]>;
 export declare function setConnectionDeal(connectionId: string, dealId: string): Promise<void>;
+/**
+ * Ensure a /connect conversation exists for a deal, so buyer + seller (and the
+ * middleman, if assigned) can chat about it immediately. Idempotent: does
+ * nothing when a connection is already linked to the deal. Derives the
+ * participants from the deals row. Best-effort — callers ignore failures.
+ */
+export declare function ensureConnectionForDeal(dealId: string): Promise<void>;
 export declare function insertConnectionMessage(connectionId: string, senderId: string, body: string, channel?: string): Promise<ConnectionMessageRow>;
 export declare function softDeleteConnectionMessage(messageId: string, senderId: string): Promise<boolean>;
 export declare function listConnectionMessages(connectionId: string, channel?: string, limit?: number): Promise<ConnectionMessageRow[]>;

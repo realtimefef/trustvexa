@@ -112,7 +112,9 @@ export function DealReviewForm({
             </div>
             {mutation.isError && !alreadyReviewed ? (
               <p className="text-sm text-destructive">
-                Could not submit your review. Please try again.
+                {mutation.error instanceof ApiError
+                  ? mutation.error.message
+                  : 'Could not submit your review. Please try again.'}
               </p>
             ) : null}
             <Button

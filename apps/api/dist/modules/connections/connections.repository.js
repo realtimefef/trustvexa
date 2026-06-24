@@ -75,6 +75,43 @@ export async function setConnectionDeal(connectionId, dealId) {
         dealId,
     ]);
 }
+/** Unambiguous join-code alphabet (matches the service generator). */
+const CONN_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+function genConnCode() {
+    let out = '';
+    for (let i = 0; i < 8; i += 1) {
+        out += CONN_CODE_ALPHABET[Math.floor(Math.random() * CONN_CODE_ALPHABET.length)];
+    }
+    return out;
+}
+/**
+ * Ensure a /connect conversation exists for a deal, so buyer + seller (and the
+ * middleman, if assigned) can chat about it immediately. Idempotent: does
+ * nothing when a connection is already linked to the deal. Derives the
+ * participants from the deals row. Best-effort — callers ignore failures.
+ */
+export async function ensureConnectionForDeal(dealId) {
+    const existing = await query(`SELECT 1 FROM connections WHERE deal_id = $1 LIMIT 1`, [dealId]);
+    if (existing.rows.length > 0)
+        return;
+    const dealRes = await query(`SELECT buyer_id, seller_id, middleman_id FROM deals WHERE id = $1 LIMIT 1`, [dealId]);
+    const d = dealRes.rows[0];
+    if (!d || !d.buyer_id || !d.seller_id)
+        return; // both parties required
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+            await query(`INSERT INTO connections (code, creator_id, creator_role, joiner_id, middleman_id, deal_id, status)
+         VALUES ($1, $2, 'seller', $3, $4, $5, 'open')`, [genConnCode(), d.seller_id, d.buyer_id, d.middleman_id, dealId]);
+            return;
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes('duplicate') || msg.includes('unique'))
+                continue; // code clash → retry
+            throw err;
+        }
+    }
+}
 export async function insertConnectionMessage(connectionId, senderId, body, channel = 'buyer_seller') {
     const res = await query(`INSERT INTO connection_messages (connection_id, sender_id, body, channel)
      VALUES ($1, $2, $3, $4)

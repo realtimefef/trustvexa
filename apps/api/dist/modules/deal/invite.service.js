@@ -202,6 +202,17 @@ export async function acceptInvite(args) {
             riskWarning: safety.warning,
         });
         await client.query('COMMIT');
+        // Auto-create the /connect conversation tied to this deal so the buyer and
+        // seller can chat immediately (the deal-chats rooms above are a separate
+        // system; the /connect UI reads the `connections` table). Best-effort and
+        // idempotent — never block a successful accept on this.
+        try {
+            const { ensureConnectionForDeal } = await import('../connections/connections.repository.js');
+            await ensureConnectionForDeal(invite.deal_id);
+        }
+        catch {
+            /* non-fatal: the connection can also be created later from the chat */
+        }
         // The buyer has joined. The deal stays in 'Invited' (or 'Created') status.
         // Both parties must still explicitly click "I agree" to lock the deal.
         // Invite acceptance = "buyer is here", NOT "both parties agreed".

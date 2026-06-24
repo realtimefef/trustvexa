@@ -177,109 +177,6 @@ interface ChatPanelProps {
   dealBar?: React.ReactNode;
 }
 
-interface ConnDeal { id: string; status: string; coin: string; network: string; dealAmountCents?: string | null; itemDescription?: string | null }
-interface ConnSellerSide {
-  productName?: string | null; productDescription?: string | null; requirements?: string | null;
-  deliveryMethod?: string | null; deliveryInstructions?: string | null; estimatedDeliveryTime?: string | null;
-  additionalNotes?: string | null; verifiedByMiddleman?: boolean;
-}
-interface ConnBuyerSide {
-  receivingPlatform?: string | null; receivingAddress?: string | null; contactEmail?: string | null;
-  backupContact?: string | null; specialInstructions?: string | null; suggestions?: string | null;
-  confirmedByBuyer?: boolean;
-}
-interface ConnParty {
-  sellerDetails: ConnSellerSide | null;
-  buyerDetails: ConnBuyerSide | null;
-}
-
-function DealRow({ label, value }: { label: string; value: string | null | undefined }) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-2 text-[11px]">
-      <span className="text-muted-foreground shrink-0 w-24">{label}</span>
-      <span className="break-words">{value}</span>
-    </div>
-  );
-}
-
-/**
- * Channel-aware deal context shown at the top of the chat. The two sides are
- * kept STRICTLY separate so the operator never mixes them up:
- *   • buyer↔middleman  → ONLY the buyer's submitted side (receiving details)
- *   • seller↔middleman → ONLY the seller's submitted side (product/delivery)
- *   • buyer↔seller     → neutral deal summary only (no private side details)
- */
-function DealContextBar({ channel, deal, party }: { channel: Channel; deal: ConnDeal | undefined; party: ConnParty | undefined }) {
-  if (!deal) return null;
-  const money = (c?: string | null) => (c ? `$${(Number(c) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—');
-
-  let side: React.ReactNode = null;
-  if (channel === 'buyer_mm') {
-    const b = party?.buyerDetails;
-    side = (
-      <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 space-y-1">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">
-          🛒 Buyer side {b?.confirmedByBuyer ? '· ✓ confirmed' : ''}
-        </p>
-        {b ? (
-          <div className="space-y-0.5">
-            <DealRow label="Receiving on" value={b.receivingPlatform} />
-            <DealRow label="Address" value={b.receivingAddress} />
-            <DealRow label="Contact" value={b.contactEmail} />
-            <DealRow label="Backup" value={b.backupContact} />
-            <DealRow label="Instructions" value={b.specialInstructions} />
-            <DealRow label="Suggestions" value={b.suggestions} />
-            {!b.receivingPlatform && !b.receivingAddress && !b.contactEmail && (
-              <p className="text-[11px] text-muted-foreground">Buyer has not filled in their receiving details yet.</p>
-            )}
-          </div>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">Buyer has not filled in their receiving details yet.</p>
-        )}
-      </div>
-    );
-  } else if (channel === 'seller_mm') {
-    const s = party?.sellerDetails;
-    side = (
-      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 space-y-1">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-          📦 Seller side {s?.verifiedByMiddleman ? '· ✓ verified' : ''}
-        </p>
-        {s ? (
-          <div className="space-y-0.5">
-            <DealRow label="Product" value={s.productName} />
-            <DealRow label="Description" value={s.productDescription} />
-            <DealRow label="Requirements" value={s.requirements} />
-            <DealRow label="Delivery via" value={s.deliveryMethod} />
-            <DealRow label="Instructions" value={s.deliveryInstructions} />
-            <DealRow label="ETA" value={s.estimatedDeliveryTime} />
-            <DealRow label="Notes" value={s.additionalNotes} />
-            {!s.productName && !s.deliveryMethod && !s.productDescription && (
-              <p className="text-[11px] text-muted-foreground">Seller has not filled in their product/delivery details yet.</p>
-            )}
-          </div>
-        ) : (
-          <p className="text-[11px] text-muted-foreground">Seller has not filled in their product/delivery details yet.</p>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="border-b bg-muted/10 px-4 py-2 space-y-2">
-      <div className="flex items-center gap-2 flex-wrap text-xs">
-        <span className="font-mono text-muted-foreground">Deal {deal.id.slice(0, 8)}</span>
-        {deal.itemDescription && <span className="truncate max-w-[160px]">&quot;{deal.itemDescription}&quot;</span>}
-        <span className="font-semibold">{money(deal.dealAmountCents)} {deal.coin}</span>
-        <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{deal.status}</span>
-        <Link href={`/deals/${deal.id}`} className="text-primary hover:underline ml-auto">View deal →</Link>
-      </div>
-      {side}
-    </div>
-  );
-}
-
 function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading, dealBar }: ChatPanelProps) {
   const [draft, setDraft] = React.useState('');
   const endRef = React.useRef<HTMLDivElement>(null);
@@ -498,30 +395,6 @@ export default function ConnectPage() {
     queryFn: async () => {
       const res = await apiRequest<{ messages: ConnectionMessage[] }>(`/connections/${activeId}/messages`);
       return res.messages ?? [];
-    },
-  });
-
-  // The deal tied to this connection — surfaced in the chat so each side (and
-  // the operator) sees the relevant side's submitted details next to its
-  // channel. Declared here (before any early return) to respect the Rules of
-  // Hooks. The party endpoint is role-scoped server-side: the assigned
-  // middleman gets both sides; each party only ever gets their own.
-  const connDealId = active.data?.dealId ?? null;
-  const connDealQ = useQuery({
-    queryKey: ['conn-deal', connDealId],
-    enabled: !!connDealId && status === 'authenticated',
-    refetchInterval: 8_000,
-    refetchIntervalInBackground: true,
-    queryFn: () => apiRequest<ConnDeal>(`/dashboard/deals/${connDealId}`),
-  });
-  const connPartyQ = useQuery({
-    queryKey: ['conn-party', connDealId],
-    enabled: !!connDealId && status === 'authenticated',
-    refetchInterval: 8_000,
-    refetchIntervalInBackground: true,
-    queryFn: async () => {
-      try { return await apiRequest<ConnParty>(`/deals/${connDealId}/party-details`); }
-      catch { return { sellerDetails: null, buyerDetails: null }; }
     },
   });
 
@@ -972,7 +845,6 @@ export default function ConnectPage() {
                   onSendImage={handleSendImage}
                   onDelete={handleDelete}
                   uploading={uploading}
-                  dealBar={connDealId ? <DealContextBar channel={activeChannel} deal={connDealQ.data} party={connPartyQ.data} /> : null}
                 />
               </div>
 
@@ -997,7 +869,7 @@ export default function ConnectPage() {
                     )}
                   </div>
                   {a.dealId ? (
-                    <Link href={`/deals/${a.dealId}`}
+                    <Link href={myRole === 'middleman' ? `/admin/deals/${a.dealId}` : `/deals/${a.dealId}`}
                       className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
                       View deal →
                     </Link>
