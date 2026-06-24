@@ -27,7 +27,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiRequest, ApiError, newIdempotencyKey } from '@/lib/api/client';
 import { dealStatusLabel, dealStatusVariant } from '@/lib/deal-status';
-import { formatUsdCents } from '@/lib/fees';
+import { formatUsdCents, estimateFees, estimateGasCents, type FeePayer } from '@/lib/fees';
 import { useAuth } from '@/lib/auth/auth-context';
 import type { DealDetail } from '@/lib/api/types';
 import { RiskNotesPanel } from '../../page';
@@ -58,7 +58,9 @@ function fmtDate(v: string | null | undefined): string {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString();
 }
 
-function DetailRow({ label, value, mono }: { label: string; value: string | null | undefined; mono?: boolean }) {
+function DetailRow({ label, value, mono, always }: { label: string; value: string | null | undefined; mono?: boolean; always?: boolean }) {
+  const empty = value === null || value === undefined || value === '' || value === '—';
+  if (empty && !always) return null; // hide blank fields instead of cluttering with "—"
   return (
     <div className="flex justify-between gap-3 text-xs py-0.5">
       <span className="text-muted-foreground shrink-0">{label}</span>
@@ -138,6 +140,23 @@ export default function AdminDealDetailPage() {
   const st = deal?.status ?? '';
   const isTerminal = TERMINAL.has(st);
 
+  // The deal's fee columns are computed at display time (locked at funding),
+  // so when they're empty we compute the canonical breakdown the same way the
+  // user deal page does — never show a blank "—" for money that is knowable.
+  const amtCents = Number(deal?.dealAmountCents ?? 0);
+  const fees = amtCents > 0
+    ? estimateFees(amtCents, (deal?.feePayer as FeePayer) ?? 'split', deal?.feeSplitBuyerBps ?? undefined, estimateGasCents(deal?.network))
+    : null;
+  const moneyDealAmount = deal?.dealAmountCents ?? null;
+  const moneyBuyerSends = deal?.buyerTotalCents ?? (fees ? String(fees.buyerSendsCents) : null);
+  const moneySellerReceives = deal?.sellerPayoutCents ?? (fees ? String(fees.sellerReceivesCents) : null);
+  const moneyPlatformFee = deal?.platformFeeCents ?? (fees ? String(fees.platformFeeCents) : null);
+  const moneySettlementFee = deal?.sellerSettlementFeeCents ?? (fees ? String(fees.settlementFeeCents) : null);
+  const moneyGasFee = deal?.transactionFeeCents ?? (fees ? String(fees.transactionFeeCents) : null);
+  const feePayerLabel = deal?.feePayer === 'split' && deal?.feeSplitBuyerBps != null
+    ? `split · buyer ${(deal.feeSplitBuyerBps / 100).toFixed(0)}% / seller ${(100 - deal.feeSplitBuyerBps / 100).toFixed(0)}%`
+    : (deal?.feePayer ?? null);
+
   const buyerChatHref = connId ? `/admin/connect?open=${connId}&channel=buyer_mm` : '/admin/connect';
   const sellerChatHref = connId ? `/admin/connect?open=${connId}&channel=seller_mm` : '/admin/connect';
 
@@ -175,12 +194,12 @@ export default function AdminDealDetailPage() {
                 <p className="text-sm font-semibold">{fmtCents(deal.dealAmountCents)} <span className="font-normal text-muted-foreground">{deal.coin} · {deal.network}</span></p>
               </div>
               <div>
-                <p className="text-xs text-blue-600">💳 Buyer sends</p>
-                <p className="text-sm font-semibold text-blue-600">{fmtCents(deal.buyerTotalCents)}</p>
+                <p className="text-xs text-blue-600">💳 Buyer pays</p>
+                <p className="text-sm font-semibold text-blue-600">{fmtCents(moneyBuyerSends)}</p>
               </div>
               <div>
                 <p className="text-xs text-emerald-600">💰 Seller receives</p>
-                <p className="text-sm font-semibold text-emerald-600">{fmtCents(deal.sellerPayoutCents)}</p>
+                <p className="text-sm font-semibold text-emerald-600">{fmtCents(moneySellerReceives)}</p>
               </div>
               <div className="ml-auto">
                 <Button asChild size="sm" variant="outline">
@@ -221,16 +240,16 @@ export default function AdminDealDetailPage() {
 
                 {/* Money */}
                 <div className="rounded-xl border bg-blue-500/5 p-3">
-                  <DetailRow label="Buyer sends (total)" value={fmtCents(deal?.buyerTotalCents)} />
-                  <DetailRow label="Deal amount" value={fmtCents(deal?.dealAmountCents)} />
-                  <DetailRow label="Coin / network" value={deal ? `${deal.coin} · ${deal.network}` : null} />
+                  <DetailRow label="Buyer pays (total)" value={fmtCents(moneyBuyerSends)} always />
+                  <DetailRow label="Deal amount" value={fmtCents(moneyDealAmount)} always />
+                  <DetailRow label="Coin / network" value={deal ? `${deal.coin} · ${deal.network}` : null} always />
                 </div>
 
                 {/* Submitted details */}
                 <div className="rounded-xl border bg-background/60 p-3">
                   {buyer ? (
                     <div className="divide-y divide-border/40">
-                      <DetailRow label="Buyer ID" value={deal?.buyerId ? deal.buyerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                      <DetailRow label="Buyer ID" value={deal?.buyerId ? deal.buyerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono always />
                       <DetailRow label="Receiving on" value={buyer.receivingPlatform} />
                       <DetailRow label="Receiving address / payment ID" value={buyer.receivingAddress} mono />
                       <DetailRow label="Contact email" value={buyer.contactEmail} />
@@ -278,16 +297,16 @@ export default function AdminDealDetailPage() {
 
                 {/* Money */}
                 <div className="rounded-xl border bg-emerald-500/5 p-3">
-                  <DetailRow label="Seller receives (payout)" value={fmtCents(deal?.sellerPayoutCents)} />
-                  <DetailRow label="Deal amount" value={fmtCents(deal?.dealAmountCents)} />
-                  <DetailRow label="Settlement fee" value={fmtCents(deal?.sellerSettlementFeeCents)} />
+                  <DetailRow label="Seller receives (payout)" value={fmtCents(moneySellerReceives)} always />
+                  <DetailRow label="Deal amount" value={fmtCents(moneyDealAmount)} always />
+                  <DetailRow label="Settlement fee (0.5%)" value={fmtCents(moneySettlementFee)} always />
                 </div>
 
                 {/* Submitted details */}
                 <div className="rounded-xl border bg-background/60 p-3">
                   {seller ? (
                     <div className="divide-y divide-border/40">
-                      <DetailRow label="Seller ID" value={deal?.sellerId ? deal.sellerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                      <DetailRow label="Seller ID" value={deal?.sellerId ? deal.sellerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono always />
                       <DetailRow label="Product" value={seller.productName} />
                       <DetailRow label="Description" value={seller.productDescription} />
                       <DetailRow label="Requirements" value={seller.requirements} />
@@ -341,31 +360,28 @@ export default function AdminDealDetailPage() {
             <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
               <div className="rounded-xl border bg-background/60 p-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Terms</p>
-                <DetailRow label="Deal ID" value={deal.id} mono />
-                <DetailRow label="Status" value={dealStatusLabel(deal.status)} />
+                <DetailRow label="Deal ID" value={deal.id} mono always />
+                <DetailRow label="Status" value={dealStatusLabel(deal.status)} always />
                 <DetailRow label="Item" value={deal.itemDescription} />
-                <DetailRow label="Coin / network" value={`${deal.coin} · ${deal.network}${deal.networkMode ? ` (${deal.networkMode})` : ''}`} />
+                <DetailRow label="Coin / network" value={`${deal.coin} · ${deal.network}${deal.networkMode ? ` (${deal.networkMode})` : ''}`} always />
                 <DetailRow label="Deal chat code" value={deal.connectionCode} mono />
-                <DetailRow label="Buyer ID" value={deal.buyerId ? deal.buyerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
-                <DetailRow label="Seller ID" value={deal.sellerId ? deal.sellerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
+                <DetailRow label="Buyer ID" value={deal.buyerId ? deal.buyerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono always />
+                <DetailRow label="Seller ID" value={deal.sellerId ? deal.sellerId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono always />
                 <DetailRow label="Middleman ID" value={deal.middlemanId ? deal.middlemanId.replace(/-/g, '').slice(0, 8).toUpperCase() : null} mono />
-                <DetailRow label="Attempt / version" value={`#${deal.attemptNo ?? 1} · v${deal.versionNo ?? 1}`} />
+                <DetailRow label="Attempt / version" value={`#${deal.attemptNo ?? 1} · v${deal.versionNo ?? 1}`} always />
               </div>
               <div className="rounded-xl border bg-background/60 p-3">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Money &amp; fees</p>
-                <DetailRow label="Deal amount" value={fmtCents(deal.dealAmountCents)} />
-                <DetailRow label="Buyer sends (total)" value={fmtCents(deal.buyerTotalCents)} />
-                <DetailRow label="Seller receives (payout)" value={fmtCents(deal.sellerPayoutCents)} />
-                <DetailRow label="Platform fee" value={fmtCents(deal.platformFeeCents)} />
-                <DetailRow label="Settlement fee" value={fmtCents(deal.sellerSettlementFeeCents)} />
-                <DetailRow label="Network (gas) fee" value={fmtCents(deal.transactionFeeCents)} />
-                <DetailRow label="Fee payer" value={deal.feePayer} />
-                {deal.feePayer === 'split' && deal.feeSplitBuyerBps !== null && (
-                  <DetailRow label="Buyer fee share" value={`${(deal.feeSplitBuyerBps / 100).toFixed(0)}%`} />
-                )}
+                <DetailRow label="Deal amount" value={fmtCents(moneyDealAmount)} always />
+                <DetailRow label="Buyer pays (total)" value={fmtCents(moneyBuyerSends)} always />
+                <DetailRow label="Seller receives (payout)" value={fmtCents(moneySellerReceives)} always />
+                <DetailRow label="Platform fee" value={fmtCents(moneyPlatformFee)} always />
+                <DetailRow label="Settlement fee (0.5%)" value={fmtCents(moneySettlementFee)} always />
+                <DetailRow label="Network (gas) fee" value={fmtCents(moneyGasFee)} always />
+                <DetailRow label="Fee payer" value={feePayerLabel} always />
                 <DetailRow label="Risk score" value={deal.riskScore !== null ? `${deal.riskScore}/100` : null} />
                 <DetailRow label="Hold status" value={deal.holdStatus} />
-                <DetailRow label="Legal hold" value={deal.legalHold ? 'Yes' : 'No'} />
+                <DetailRow label="Legal hold" value={deal.legalHold ? 'Yes' : 'No'} always />
               </div>
               <div className="rounded-xl border bg-background/60 p-3 sm:col-span-2">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">Timeline &amp; dates</p>
