@@ -181,7 +181,7 @@ export default function AdminUsersPage() {
             <Label className="text-xs">Status</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 text-xs w-32">
-                <SelectValue />
+                <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="" className="text-xs">All statuses</SelectItem>

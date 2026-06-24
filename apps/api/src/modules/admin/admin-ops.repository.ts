@@ -106,7 +106,9 @@ export interface UserSearchFilters {
  * the `*_enc` PII columns — only non-sensitive account metadata is returned.
  */
 export async function searchUsers(filters: UserSearchFilters): Promise<UserSearchRow[]> {
-  const conds: string[] = [];
+  // User Management governs buyer/seller accounts only — operator (middleman)
+  // accounts are never listed or enforceable here.
+  const conds: string[] = [`account_type::text = 'user'`];
   const params: unknown[] = [];
   let i = 1;
   if (filters.q !== undefined && filters.q !== '') {

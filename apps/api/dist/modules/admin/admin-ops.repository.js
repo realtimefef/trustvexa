@@ -49,7 +49,9 @@ export async function searchDeals(filters) {
  * the `*_enc` PII columns — only non-sensitive account metadata is returned.
  */
 export async function searchUsers(filters) {
-    const conds = [];
+    // User Management governs buyer/seller accounts only — operator (middleman)
+    // accounts are never listed or enforceable here.
+    const conds = [`account_type::text = 'user'`];
     const params = [];
     let i = 1;
     if (filters.q !== undefined && filters.q !== '') {

@@ -68,9 +68,15 @@ export function SelectValue({ placeholder }: { placeholder?: string }) {
 
 export function SelectContent({ children, className }: { children: React.ReactNode; className?: string }) {
   const { open, setOpen } = useSelect();
+  const ref = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (!open) return;
-    const handler = () => setOpen(false);
+    const handler = (e: MouseEvent) => {
+      // Only close on clicks OUTSIDE the menu — clicking an item must register
+      // its selection first (the item's own onClick closes the menu).
+      if (ref.current && ref.current.contains(e.target as Node)) return;
+      setOpen(false);
+    };
     document.addEventListener('click', handler, { capture: true });
     return () => document.removeEventListener('click', handler, { capture: true });
   }, [open, setOpen]);
@@ -78,11 +84,11 @@ export function SelectContent({ children, className }: { children: React.ReactNo
   if (!open) return null;
   return (
     <div
+      ref={ref}
       className={cn(
         'absolute z-50 mt-1 max-h-60 min-w-full overflow-y-auto rounded-md border bg-popover shadow-md',
         className,
       )}
-      onClick={(e) => e.stopPropagation()}
     >
       {children}
     </div>
