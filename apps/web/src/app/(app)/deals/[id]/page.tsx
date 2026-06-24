@@ -419,7 +419,21 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
   );
 }
 
-function ChatLink() {
+/** Map a deal role to the middleman chat channel that role participates in. */
+function mmChatType(role: string): 'buyer_mm' | 'seller_mm' | undefined {
+  if (role === 'buyer') return 'buyer_mm';
+  if (role === 'seller') return 'seller_mm';
+  return undefined;
+}
+
+/** Build a deep link into the Messages inbox that opens THIS deal's chat. */
+function dealChatHref(dealId: string, type?: string): string {
+  const params = new URLSearchParams({ deal: dealId });
+  if (type) params.set('type', type);
+  return `/messages?${params.toString()}`;
+}
+
+function ChatLink({ dealId }: { dealId: string }) {
   return (
     <div className="rounded-xl border bg-muted/20 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -428,7 +442,7 @@ function ChatLink() {
         <span className="text-xs text-muted-foreground">with your counterparty and middleman</span>
       </div>
       <Button asChild variant="outline" size="sm">
-        <Link href="/messages"><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open chat</Link>
+        <Link href={dealChatHref(dealId)}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open chat</Link>
       </Button>
     </div>
   );
@@ -820,6 +834,7 @@ interface SellerViewProps {
 }
 
 function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
+  const router = useRouter();
   const [inviteUrl, setInviteUrl] = React.useState<string | null>(null);
   const [inviting, setInviting] = React.useState(false);
   const [inviteErr, setInviteErr] = React.useState<string | null>(null);
@@ -934,6 +949,10 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
     try {
       await apiRequest(`/deals/${dealId}/request-middleman`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+      void qc.invalidateQueries({ queryKey: ['chats'] });
+      // Take the user straight into THIS deal's chat with the middleman that
+      // was just assigned (buyer→buyer_mm, seller→seller_mm).
+      router.push(dealChatHref(dealId, mmChatType(deal.role)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'No middleman available.';
       setMmErr(msg.toLowerCase().includes('unexpected') ? 'No middleman available right now.' : msg);
@@ -1256,7 +1275,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         </div>
       )}
 
-      <ChatLink />
+      <ChatLink dealId={dealId} />
       <DealInfoCollapsible deal={deal} />
       <DealReviewForm dealId={dealId} status={deal.status} role={deal.role} />
     </div>
@@ -1273,6 +1292,7 @@ interface BuyerViewProps {
 }
 
 function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
+  const router = useRouter();
   const escrowQuery = useEscrowAddress(dealId, ['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded'].includes(deal.status));
   const escrow = escrowQuery.data;
   const [txHash, setTxHash] = React.useState('');
@@ -1342,6 +1362,10 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
     try {
       await apiRequest(`/deals/${dealId}/request-middleman`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+      void qc.invalidateQueries({ queryKey: ['chats'] });
+      // Take the user straight into THIS deal's chat with the middleman that
+      // was just assigned (buyer→buyer_mm, seller→seller_mm).
+      router.push(dealChatHref(dealId, mmChatType(deal.role)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'No middleman available.';
       setMmErr(msg.toLowerCase().includes('unexpected') ? 'No middleman available right now.' : msg);
@@ -1517,7 +1541,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                 the deal chat, or wait for their reply. The middleman will complete the deal.
               </p>
               <Button asChild variant="outline" size="sm" className="mt-1">
-                <Link href="/messages"><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+                <Link href={dealChatHref(dealId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
               </Button>
             </div>
           )}
@@ -1555,7 +1579,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           </div>
 
           <Button asChild variant="outline" className="w-full">
-            <Link href="/messages"><MessageCircle className="h-4 w-4 mr-1.5" /> Contact the middleman</Link>
+            <Link href={dealChatHref(dealId, 'buyer_mm')}><MessageCircle className="h-4 w-4 mr-1.5" /> Contact the middleman</Link>
           </Button>
         </ActionCard>
       )}
@@ -1618,7 +1642,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         </div>
       )}
 
-      <ChatLink />
+      <ChatLink dealId={dealId} />
       <DealInfoCollapsible deal={deal} />
       <DealReviewForm dealId={dealId} status={deal.status} role={deal.role} />
     </div>
@@ -1884,7 +1908,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         </Card>
       </div>
 
-      <ChatLink />
+      <ChatLink dealId={dealId} />
       <DealInfoCollapsible deal={deal} />
 
       {SETTLED_STATES.has(deal.status) && (

@@ -235,6 +235,50 @@ export default function MessagesPage() {
     status === 'authenticated',
   );
 
+  // Deep link from a deal page: /messages?deal=<dealId>&type=<chatType> or
+  // /messages?chat=<chatId>. Once the chat list has loaded we resolve the
+  // target chat and open it, then strip the query string so a refresh doesn't
+  // re-trigger. This is how "Open chat" / "Contact the middleman" / "Add
+  // middleman" land the user in the chat tied to that specific deal.
+  const deepLinkAppliedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    if (status !== 'authenticated') return;
+    const chats = chatsQ.data;
+    if (!chats) return; // wait for the chat list
+    const params = new URLSearchParams(window.location.search);
+    const wantChat = params.get('chat');
+    const wantDeal = params.get('deal');
+    const wantType = params.get('type');
+    if (!wantChat && !wantDeal) { deepLinkAppliedRef.current = true; return; }
+
+    let target: ChatSummary | undefined;
+    if (wantChat) {
+      target = chats.find((c) => c.id === wantChat);
+    } else if (wantDeal) {
+      const dealChats = chats.filter((c) => c.dealId === wantDeal);
+      if (wantType) target = dealChats.find((c) => c.type === wantType);
+      // Fallbacks: a middleman channel the user is in, then buyer↔seller, then any.
+      if (!target) {
+        target =
+          dealChats.find((c) => c.type === 'buyer_mm' || c.type === 'seller_mm') ??
+          dealChats.find((c) => c.type === 'buyer_seller') ??
+          dealChats[0];
+      }
+    }
+
+    if (target) {
+      const found = target;
+      if (found.isArchived) setArchiveTab('archived');
+      setSelectedId(found.id);
+      setSelectedKind('chat');
+      setUnreadChatIds((p) => { const n = new Set(p); n.delete(found.id); return n; });
+      deepLinkAppliedRef.current = true;
+      // Strip the query so a later refresh doesn't re-open it.
+      window.history.replaceState({}, '', '/messages');
+    }
+  }, [status, chatsQ.data]);
+
   const sendMsg = async () => {
     if (!draftMsg.trim() || !selectedId || selectedKind !== 'connection') return;
     setSending(true);
