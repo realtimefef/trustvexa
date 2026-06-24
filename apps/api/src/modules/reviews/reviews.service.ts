@@ -4,7 +4,7 @@
  * from their missed-deadline count using the pure restriction engine.
  * (Requirements 25.x, 26.1-26.10)
  */
-import { getClient } from '@trustvexa/shared';
+import { getClient, query } from '@trustvexa/shared';
 
 import { AppError, notFound } from '../../errors/app-error.js';
 import type { DealStatus } from '../deal/state-machine.js';
@@ -76,6 +76,28 @@ const REVIEWABLE_STATUSES: ReadonlySet<DealStatus> = new Set<DealStatus>([
 export interface SubmitReviewInput {
   rating: number;
   comment: string | null;
+}
+
+/**
+ * Whether the caller has already reviewed this deal, plus whether the deal is
+ * even reviewable for them. Lets the UI show the right state on load (so a
+ * refresh after submitting doesn't re-prompt for a review). Returns
+ * `reviewed: false` for deals the caller isn't a party to rather than leaking
+ * existence.
+ */
+export async function getMyDealReviewStatus(
+  userId: string,
+  dealId: string,
+): Promise<{ reviewed: boolean; eligible: boolean }> {
+  const deal = await getDealForUser(dealId, userId);
+  if (!deal) return { reviewed: false, eligible: false };
+  const isParty = deal.buyer_id === userId || deal.seller_id === userId;
+  const eligible = isParty && !deal.is_practice && REVIEWABLE_STATUSES.has(deal.status);
+  const res = await query<{ one: number }>(
+    `SELECT 1 AS one FROM reviews WHERE deal_id = $1 AND reviewer_id = $2 LIMIT 1`,
+    [dealId, userId],
+  );
+  return { reviewed: res.rows.length > 0, eligible };
 }
 
 export interface SubmitReviewResult {

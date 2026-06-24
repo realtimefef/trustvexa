@@ -70,6 +70,7 @@ export async function uploadFile(req: Request, res: Response): Promise<void> {
     'image/jpeg',
     'image/png',
     'image/webp',
+    'image/gif',
     'application/pdf',
     'video/mp4',
     'audio/webm',

@@ -7,6 +7,8 @@ import type { Request, Response } from 'express';
 export declare function getUserReviews(req: Request, res: Response): Promise<void>;
 export declare function getMyTrust(req: Request, res: Response): Promise<void>;
 export declare function submitReview(req: Request, res: Response): Promise<void>;
+/** Whether the caller already reviewed this deal (so the UI shows the right state). */
+export declare function getMyDealReviewStatus(req: Request, res: Response): Promise<void>;
 /** Middleman: list every review about a user (including hidden) for moderation. */
 export declare function listReviewsForModeration(req: Request, res: Response): Promise<void>;
 /** Middleman: hide or unhide a review (audited, reason required). */

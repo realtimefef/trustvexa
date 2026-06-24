@@ -22,6 +22,17 @@ export interface SubmitReviewInput {
     rating: number;
     comment: string | null;
 }
+/**
+ * Whether the caller has already reviewed this deal, plus whether the deal is
+ * even reviewable for them. Lets the UI show the right state on load (so a
+ * refresh after submitting doesn't re-prompt for a review). Returns
+ * `reviewed: false` for deals the caller isn't a party to rather than leaking
+ * existence.
+ */
+export declare function getMyDealReviewStatus(userId: string, dealId: string): Promise<{
+    reviewed: boolean;
+    eligible: boolean;
+}>;
 export interface SubmitReviewResult {
     id: string;
     dealId: string;

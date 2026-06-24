@@ -4,7 +4,7 @@
  * from their missed-deadline count using the pure restriction engine.
  * (Requirements 25.x, 26.1-26.10)
  */
-import { getClient } from '@trustvexa/shared';
+import { getClient, query } from '@trustvexa/shared';
 import { AppError, notFound } from '../../errors/app-error.js';
 import { getDealForUser } from '../dashboard/deal-read.repository.js';
 import { restrictionFor } from './trust-restrictions.js';
@@ -46,6 +46,22 @@ const REVIEWABLE_STATUSES = new Set([
     'Refunded',
     'PartiallySettled',
 ]);
+/**
+ * Whether the caller has already reviewed this deal, plus whether the deal is
+ * even reviewable for them. Lets the UI show the right state on load (so a
+ * refresh after submitting doesn't re-prompt for a review). Returns
+ * `reviewed: false` for deals the caller isn't a party to rather than leaking
+ * existence.
+ */
+export async function getMyDealReviewStatus(userId, dealId) {
+    const deal = await getDealForUser(dealId, userId);
+    if (!deal)
+        return { reviewed: false, eligible: false };
+    const isParty = deal.buyer_id === userId || deal.seller_id === userId;
+    const eligible = isParty && !deal.is_practice && REVIEWABLE_STATUSES.has(deal.status);
+    const res = await query(`SELECT 1 AS one FROM reviews WHERE deal_id = $1 AND reviewer_id = $2 LIMIT 1`, [dealId, userId]);
+    return { reviewed: res.rows.length > 0, eligible };
+}
 /**
  * Submit a review of the counterparty on a completed deal. Eligibility is
  * enforced entirely server-side: the caller must be a party to the deal, the

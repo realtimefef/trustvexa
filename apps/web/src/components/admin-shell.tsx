@@ -29,6 +29,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean 
 
 const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin', label: 'Work queue', icon: LayoutGrid, exact: true },
+  { href: '/admin/connect', label: 'Chats', icon: Handshake },
   { href: '/admin/deals', label: 'All Deals', icon: Star },
   { href: '/admin/payouts', label: 'Payouts', icon: DollarSign },
   { href: '/admin/operations', label: 'Operations', icon: Activity },
@@ -37,7 +38,6 @@ const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin/support', label: 'Support & Cases', icon: TicketCheck },
   { href: '/admin/reviews', label: 'Reviews', icon: ShieldCheck },
   { href: '/treasury', label: 'Treasury', icon: Landmark },
-  { href: '/admin/connect', label: 'Chats', icon: Handshake },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

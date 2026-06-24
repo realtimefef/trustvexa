@@ -56,6 +56,7 @@ export async function uploadFile(req, res) {
         'image/jpeg',
         'image/png',
         'image/webp',
+        'image/gif',
         'application/pdf',
         'video/mp4',
         'audio/webm',

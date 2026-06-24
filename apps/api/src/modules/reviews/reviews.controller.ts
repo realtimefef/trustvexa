@@ -42,6 +42,16 @@ export async function submitReview(req: Request, res: Response): Promise<void> {
   res.status(201).json(result);
 }
 
+/** Whether the caller already reviewed this deal (so the UI shows the right state). */
+export async function getMyDealReviewStatus(req: Request, res: Response): Promise<void> {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    throw new Error('Authenticated user id missing after auth middleware.');
+  }
+  const result = await service.getMyDealReviewStatus(userId, req.params.id!);
+  res.status(200).json(result);
+}
+
 /** Middleman: list every review about a user (including hidden) for moderation. */
 export async function listReviewsForModeration(req: Request, res: Response): Promise<void> {
   requireUserId(req);

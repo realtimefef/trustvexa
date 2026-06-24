@@ -8,7 +8,7 @@
  * `already_reviewed` conflict is surfaced gracefully.
  */
 import * as React from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +38,17 @@ export function DealReviewForm({
 }) {
   const [rating, setRating] = React.useState(0);
   const [comment, setComment] = React.useState('');
+  const qc = useQueryClient();
+
+  const reviewable = REVIEWABLE_STATUSES.has(status) && role !== 'middleman';
+
+  // Check on load whether the caller already reviewed this deal, so a refresh
+  // after submitting doesn't re-prompt for a review.
+  const statusQ = useQuery({
+    queryKey: ['my-deal-review', dealId],
+    enabled: reviewable,
+    queryFn: () => apiRequest<{ reviewed: boolean; eligible: boolean }>(`/reviews/deals/${dealId}/me`),
+  });
 
   const mutation = useMutation({
     mutationFn: async () =>
@@ -47,25 +58,28 @@ export function DealReviewForm({
         idempotencyKey: newIdempotencyKey(),
       }),
     retry: false,
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['my-deal-review', dealId] }); },
   });
 
-  if (!REVIEWABLE_STATUSES.has(status) || role === 'middleman') {
+  if (!reviewable) {
     return null;
   }
 
-  if (mutation.isSuccess) {
+  const alreadyReviewed =
+    statusQ.data?.reviewed === true ||
+    mutation.isSuccess ||
+    (mutation.error instanceof ApiError && mutation.error.code === 'already_reviewed');
+
+  if (alreadyReviewed) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Review submitted</CardTitle>
-          <CardDescription>Thanks for rating your counterparty.</CardDescription>
+          <CardDescription>Thanks for rating your counterparty — your review is saved.</CardDescription>
         </CardHeader>
       </Card>
     );
   }
-
-  const alreadyReviewed =
-    mutation.error instanceof ApiError && mutation.error.code === 'already_reviewed';
 
   return (
     <Card>

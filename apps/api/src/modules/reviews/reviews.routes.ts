@@ -97,6 +97,16 @@ export function reviewsRouter(): Router {
     asyncHandler(controller.submitReview),
   );
 
+  // Whether the signed-in caller already reviewed this deal (UI state on load).
+  router.get(
+    '/deals/:id/me',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema },
+      roles: ['user', 'middleman'],
+    }),
+    asyncHandler(controller.getMyDealReviewStatus),
+  );
+
   // --- Site-wide public reviews ------------------------------------------
   // Public board: anyone can read; any signed-in user can post.
   router.get(
