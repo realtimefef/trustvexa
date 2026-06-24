@@ -174,7 +174,9 @@ services:
       pnpm install --no-frozen-lockfile --prod=false &&
       pnpm --filter @trustvexa/shared build &&
       pnpm --filter @trustvexa/api build
-    preDeployCommand: pnpm migrate:up
+    preDeployCommand: >-
+      pnpm migrate:up &&
+      sh -c 'if [ -n "$MM_EMAIL" ] && [ -n "$MM_PASSWORD" ]; then node apps/api/dist/scripts/setup-middleman.js; fi'
     startCommand: pnpm --filter @trustvexa/api start
     autoDeploy: true
     domains:
@@ -192,6 +194,16 @@ services:
           type: redis
           name: trustvexa-redis
           property: connectionString
+      # ── Middleman bootstrap ───────────────────────────────────────────────
+      # Set MM_EMAIL + MM_PASSWORD in Render Dashboard to auto-create the
+      # middleman account on the next deploy. The script is idempotent (safe
+      # to re-run). Clear the vars after first run if desired.
+      - key: MM_EMAIL
+        sync: false   # e.g. admin@trustvexa.com
+      - key: MM_PASSWORD
+        sync: false   # min 10 chars, ≥3 char classes, no email name/username
+      - key: MM_USERNAME
+        value: trustvexa_admin
 
   # ── Web (Next.js) — trustvexa.com ─────────────────────────────────────────
   - type: web
