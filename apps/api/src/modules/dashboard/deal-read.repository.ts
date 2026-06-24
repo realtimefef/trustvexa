@@ -50,6 +50,9 @@ export interface DealRow {
   locked_at: Date | string | null;
   /** Free-text item label (added by migration 1700002800000_deal_item_description). */
   item_description: string | null;
+  /** The connection this deal was created from (detail read only). */
+  connection_id?: string | null;
+  connection_code?: string | null;
 }
 
 /** Exact column list shared by the list and detail reads. */
@@ -79,7 +82,9 @@ export async function listDealsForUser(userId: string): Promise<DealRow[]> {
 /** A single deal, but only if the user is a party to it (else `null`). */
 export async function getDealForUser(dealId: string, userId: string): Promise<DealRow | null> {
   const res = await query<DealRow>(
-    `SELECT ${DEAL_COLUMNS}
+    `SELECT ${DEAL_COLUMNS},
+            (SELECT c.id   FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_id,
+            (SELECT c.code FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_code
        FROM deals
       WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2 OR middleman_id = $2)
       LIMIT 1`,

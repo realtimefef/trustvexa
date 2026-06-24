@@ -36,6 +36,11 @@ interface ConnectionView {
   creatorUsername: string | null;
   joinerUsername: string | null;
   middlemanUsername: string | null;
+  creatorRole: 'buyer' | 'seller';
+  buyerId: string | null;
+  sellerId: string | null;
+  buyerUsername: string | null;
+  sellerUsername: string | null;
   dealId: string | null;
   status: 'open' | 'closed';
   joined: boolean;
@@ -336,13 +341,18 @@ export default function ConnectPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [activeChannel, setActiveChannel] = React.useState<Channel>('buyer_seller');
   const [uploading, setUploading] = React.useState(false);
+  const [showRolePicker, setShowRolePicker] = React.useState(false);
+  // Desired channel tab from a deep link (?channel=buyer_mm); applied once the
+  // connection loads. Lets deal-page "Contact the middleman" open the right tab.
+  const [pendingChannel, setPendingChannel] = React.useState<Channel | null>(null);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const p = new URLSearchParams(window.location.search);
-    const openId = p.get('open'); const joinParam = p.get('join');
+    const openId = p.get('open'); const joinParam = p.get('join'); const ch = p.get('channel');
     if (openId) setActiveId(openId);
     if (joinParam) setJoinCode(joinParam.toUpperCase());
+    if (ch === 'buyer_seller' || ch === 'buyer_mm' || ch === 'seller_mm') setPendingChannel(ch);
   }, []);
 
   // ── Queries ──────────────────────────────────────────────────────────────────
@@ -387,9 +397,9 @@ export default function ConnectPage() {
   // ── Mutations ─────────────────────────────────────────────────────────────────
 
   const create = useMutation({
-    mutationFn: async () => apiRequest<ConnectionView>('/connections', { method: 'POST', body: {} }),
-    onSuccess: (c) => { setActiveId(c.id); setError(null); void queryClient.invalidateQueries({ queryKey: ['connections'] }); },
-    onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not create.'),
+    mutationFn: async (role: 'buyer' | 'seller') => apiRequest<ConnectionView>('/connections', { method: 'POST', body: { role } }),
+    onSuccess: (c) => { setActiveId(c.id); setError(null); setShowRolePicker(false); void queryClient.invalidateQueries({ queryKey: ['connections'] }); },
+    onError: (e) => { setShowRolePicker(false); setError(e instanceof ApiError ? e.message : 'Could not create.'); },
   });
 
   const contactMm = useMutation({
@@ -501,17 +511,23 @@ export default function ConnectPage() {
 
   const myRole = !a || !user ? null
     : a.middlemanId === user.id ? 'middleman'
-    : a.creatorId === user.id ? 'creator'
-    : a.joinerId === user.id ? 'joiner'
+    : a.buyerId === user.id ? 'creator'
+    : a.sellerId === user.id ? 'joiner'
+    // Fall back to raw slots before roles are resolved (e.g. waiting to join).
+    : a.creatorId === user.id ? (a.creatorRole === 'seller' ? 'joiner' : 'creator')
+    : a.joinerId === user.id ? (a.creatorRole === 'seller' ? 'creator' : 'joiner')
     : null;
 
   const senderLabel = (id: string): string => {
     if (!a) return id.slice(0, 8);
     if (id === 'system') return '🤝 System';
     if (user && id === user.id) return 'You';
-    if (id === a.creatorId) return a.creatorUsername ?? 'Buyer';
-    if (id === a.joinerId) return a.joinerUsername ?? 'Seller';
+    if (id === a.buyerId) return a.buyerUsername ?? 'Buyer';
+    if (id === a.sellerId) return a.sellerUsername ?? 'Seller';
     if (id === a.middlemanId) return `⚖️ ${a.middlemanUsername ?? 'Middleman'}`;
+    // Pre-resolution fallback.
+    if (id === a.creatorId) return a.creatorUsername ?? (a.creatorRole === 'seller' ? 'Seller' : 'Buyer');
+    if (id === a.joinerId) return a.joinerUsername ?? (a.creatorRole === 'seller' ? 'Buyer' : 'Seller');
     return id.slice(0, 8);
   };
 
@@ -530,6 +546,17 @@ export default function ConnectPage() {
   React.useEffect(() => {
     setActiveChannel('buyer_seller');
   }, [activeId]);
+
+  // Apply a deep-linked channel (?channel=) once the connection has loaded and
+  // the tab is actually available to this user; then clear it.
+  React.useEffect(() => {
+    if (!pendingChannel || !a) return;
+    if (availableTabs.includes(pendingChannel)) {
+      setActiveChannel(pendingChannel);
+      setPendingChannel(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingChannel, a, availableTabs.length]);
 
   // Can send in current channel
   const canSendInChannel = (ch: Channel): boolean => {
@@ -574,7 +601,7 @@ export default function ConnectPage() {
           <div className="px-3 py-2 border-b border-border/40 shrink-0 space-y-2">
             <div className="grid grid-cols-2 gap-1.5">
               <button type="button" disabled={create.isPending}
-                onClick={() => { setError(null); create.mutate(); }}
+                onClick={() => { setError(null); setShowRolePicker(true); }}
                 className="flex flex-col items-center gap-1 rounded-xl border bg-background p-2 hover:bg-muted/60 transition-colors text-center disabled:opacity-50">
                 <Plus className="h-4 w-4 text-primary" />
                 <span className="text-[10px] font-medium leading-tight">{create.isPending ? 'Creating…' : 'New chat'}</span>
@@ -639,7 +666,7 @@ export default function ConnectPage() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <Button size="sm" variant="outline" disabled={create.isPending} onClick={() => { setError(null); create.mutate(); }}>
+                <Button size="sm" variant="outline" disabled={create.isPending} onClick={() => { setError(null); setShowRolePicker(true); }}>
                   <Plus className="h-3.5 w-3.5 mr-1.5" />{create.isPending ? 'Creating…' : 'New connection'}
                 </Button>
                 <Button size="sm" variant="outline" disabled={contactMm.isPending} onClick={() => { setError(null); contactMm.mutate(); }}>
@@ -655,16 +682,18 @@ export default function ConnectPage() {
                   {/* Participants */}
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">Buyer</span>
-                        <span className="text-sm font-semibold">{a.creatorUsername ?? a.creatorId.slice(0, 8)}</span>
-                      </div>
-                      {a.joinerId && (
+                      {a.buyerId && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">Buyer</span>
+                          <span className="text-sm font-semibold">{a.buyerUsername ?? a.buyerId.slice(0, 8)}</span>
+                        </div>
+                      )}
+                      {a.sellerId && (
                         <>
-                          <span className="text-muted-foreground text-xs">↔</span>
+                          {a.buyerId && <span className="text-muted-foreground text-xs">↔</span>}
                           <div className="flex items-center gap-1">
                             <span className="text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">Seller</span>
-                            <span className="text-sm font-semibold">{a.joinerUsername ?? a.joinerId.slice(0, 8)}</span>
+                            <span className="text-sm font-semibold">{a.sellerUsername ?? a.sellerId.slice(0, 8)}</span>
                           </div>
                         </>
                       )}
@@ -680,8 +709,8 @@ export default function ConnectPage() {
                     </div>
                     {/* User IDs — shown to all participants so each side knows who they're talking to */}
                     <p className="text-[10px] text-muted-foreground">
-                      Buyer ID: <span className="font-mono">{a.creatorId.replace(/-/g,'').slice(0,8).toUpperCase()}</span>
-                      {a.joinerId && <> · Seller ID: <span className="font-mono">{a.joinerId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
+                      {a.buyerId && <>Buyer ID: <span className="font-mono">{a.buyerId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
+                      {a.sellerId && <> · Seller ID: <span className="font-mono">{a.sellerId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
                       {a.middlemanId && <> · MM: <span className="font-mono">{a.middlemanId.replace(/-/g,'').slice(0,8).toUpperCase()}</span></>}
                     </p>
                   </div>
@@ -775,7 +804,7 @@ export default function ConnectPage() {
                       <span className="text-xs text-muted-foreground">Ready to create a deal?</span>
                     )}
                   </div>
-                  <Link href={a.dealId ? `/deals/${a.dealId}` : `/deals/new?connection=${a.id}`}
+                  <Link href={a.dealId ? `/deals/${a.dealId}` : `/deals/new?connection=${a.id}&role=${myRole === 'joiner' ? 'seller' : 'buyer'}`}
                     className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
                     {a.dealId ? 'View deal →' : 'Create escrow deal →'}
                   </Link>
@@ -785,6 +814,38 @@ export default function ConnectPage() {
           )}
         </div>
       </div>
+
+      {/* Role picker — ask the creator whether they're buying or selling so the
+          chat (and any deal created from it) labels both sides correctly. */}
+      {showRolePicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !create.isPending && setShowRolePicker(false)}>
+          <div className="w-full max-w-sm rounded-2xl border bg-background p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-semibold text-base">Start a new chat</h2>
+            <p className="text-sm text-muted-foreground mt-1">In this deal, are you the buyer or the seller? The other person takes the opposite side.</p>
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <button type="button" disabled={create.isPending}
+                onClick={() => create.mutate('buyer')}
+                className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 p-4 hover:bg-blue-500/10 transition-colors disabled:opacity-50">
+                <span className="text-2xl">🛒</span>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">I&apos;m the Buyer</span>
+                <span className="text-[10px] text-muted-foreground text-center">I&apos;m paying for the item</span>
+              </button>
+              <button type="button" disabled={create.isPending}
+                onClick={() => create.mutate('seller')}
+                className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-emerald-500/30 bg-emerald-500/5 p-4 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">
+                <span className="text-2xl">📦</span>
+                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">I&apos;m the Seller</span>
+                <span className="text-[10px] text-muted-foreground text-center">I&apos;m delivering the item</span>
+              </button>
+            </div>
+            {create.isPending && <p className="text-xs text-muted-foreground mt-3 text-center">Creating…</p>}
+            <button type="button" onClick={() => setShowRolePicker(false)} disabled={create.isPending}
+              className="mt-3 w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

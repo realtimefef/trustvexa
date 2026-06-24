@@ -28,7 +28,9 @@ export async function listDealsForUser(userId) {
 }
 /** A single deal, but only if the user is a party to it (else `null`). */
 export async function getDealForUser(dealId, userId) {
-    const res = await query(`SELECT ${DEAL_COLUMNS}
+    const res = await query(`SELECT ${DEAL_COLUMNS},
+            (SELECT c.id   FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_id,
+            (SELECT c.code FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_code
        FROM deals
       WHERE id = $1 AND (buyer_id = $2 OR seller_id = $2 OR middleman_id = $2)
       LIMIT 1`, [dealId, userId]);

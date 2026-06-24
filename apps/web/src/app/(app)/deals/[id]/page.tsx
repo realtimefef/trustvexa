@@ -382,6 +382,13 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
       {open && (
         <div className="border-t px-4 py-3 space-y-1">
           <Row label="Deal ID" value={<span className="font-mono text-xs">{deal.id}</span>} />
+          {deal.connectionCode && (
+            <Row label="Deal chat" value={
+              <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="font-mono text-xs text-primary hover:underline">
+                {deal.connectionCode} →
+              </Link>
+            } />
+          )}
           <Row label="Status" value={<StateBadge status={deal.status} />} />
           <Row label="Coin / Network" value={`${deal.coin} · ${deal.network}`} />
           <Row label="Fee payer" value={<span className="capitalize">{deal.feePayer ?? '—'}</span>} />
@@ -426,14 +433,17 @@ function mmChatType(role: string): 'buyer_mm' | 'seller_mm' | undefined {
   return undefined;
 }
 
-/** Build a deep link into the Messages inbox that opens THIS deal's chat. */
-function dealChatHref(dealId: string, type?: string): string {
-  const params = new URLSearchParams({ deal: dealId });
-  if (type) params.set('type', type);
-  return `/messages?${params.toString()}`;
+/** Build a deep link into the connection (chat) tied to THIS deal, optionally
+ * opening a specific channel tab. Falls back to the connect inbox if the deal
+ * has no linked connection. */
+function dealChatHref(connectionId: string | null | undefined, channel?: string): string {
+  if (!connectionId) return '/connect';
+  const params = new URLSearchParams({ open: connectionId });
+  if (channel) params.set('channel', channel);
+  return `/connect?${params.toString()}`;
 }
 
-function ChatLink({ dealId }: { dealId: string }) {
+function ChatLink({ connectionId }: { connectionId: string | null }) {
   return (
     <div className="rounded-xl border bg-muted/20 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -442,7 +452,7 @@ function ChatLink({ dealId }: { dealId: string }) {
         <span className="text-xs text-muted-foreground">with your counterparty and middleman</span>
       </div>
       <Button asChild variant="outline" size="sm">
-        <Link href={dealChatHref(dealId)}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open chat</Link>
+        <Link href={dealChatHref(connectionId)}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open chat</Link>
       </Button>
     </div>
   );
@@ -952,7 +962,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
       void qc.invalidateQueries({ queryKey: ['chats'] });
       // Take the user straight into THIS deal's chat with the middleman that
       // was just assigned (buyer→buyer_mm, seller→seller_mm).
-      router.push(dealChatHref(dealId, mmChatType(deal.role)));
+      router.push(dealChatHref(deal.connectionId, mmChatType(deal.role)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'No middleman available.';
       setMmErr(msg.toLowerCase().includes('unexpected') ? 'No middleman available right now.' : msg);
@@ -990,6 +1000,11 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <h1 className="font-display text-xl font-bold truncate">
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
+          {deal.connectionCode && (
+            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+              <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
+            </Link>
+          )}
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-xs font-bold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">Seller</span>
             <StateBadge status={deal.status} />
@@ -1275,7 +1290,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         </div>
       )}
 
-      <ChatLink dealId={dealId} />
+      <ChatLink connectionId={deal.connectionId ?? null} />
       <DealInfoCollapsible deal={deal} />
       <DealReviewForm dealId={dealId} status={deal.status} role={deal.role} />
     </div>
@@ -1365,7 +1380,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       void qc.invalidateQueries({ queryKey: ['chats'] });
       // Take the user straight into THIS deal's chat with the middleman that
       // was just assigned (buyer→buyer_mm, seller→seller_mm).
-      router.push(dealChatHref(dealId, mmChatType(deal.role)));
+      router.push(dealChatHref(deal.connectionId, mmChatType(deal.role)));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'No middleman available.';
       setMmErr(msg.toLowerCase().includes('unexpected') ? 'No middleman available right now.' : msg);
@@ -1382,6 +1397,11 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <h1 className="font-display text-xl font-bold truncate">
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
+          {deal.connectionCode && (
+            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+              <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
+            </Link>
+          )}
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-xs font-bold uppercase bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">Buyer</span>
             <StateBadge status={deal.status} />
@@ -1541,7 +1561,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                 the deal chat, or wait for their reply. The middleman will complete the deal.
               </p>
               <Button asChild variant="outline" size="sm" className="mt-1">
-                <Link href={dealChatHref(dealId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+                <Link href={dealChatHref(deal.connectionId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
               </Button>
             </div>
           )}
@@ -1579,7 +1599,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           </div>
 
           <Button asChild variant="outline" className="w-full">
-            <Link href={dealChatHref(dealId, 'buyer_mm')}><MessageCircle className="h-4 w-4 mr-1.5" /> Contact the middleman</Link>
+            <Link href={dealChatHref(deal.connectionId, 'buyer_mm')}><MessageCircle className="h-4 w-4 mr-1.5" /> Contact the middleman</Link>
           </Button>
         </ActionCard>
       )}
@@ -1642,7 +1662,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         </div>
       )}
 
-      <ChatLink dealId={dealId} />
+      <ChatLink connectionId={deal.connectionId ?? null} />
       <DealInfoCollapsible deal={deal} />
       <DealReviewForm dealId={dealId} status={deal.status} role={deal.role} />
     </div>
@@ -1736,6 +1756,11 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
           <h1 className="font-display text-xl font-bold truncate">
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
+          {deal.connectionCode && (
+            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+              <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
+            </Link>
+          )}
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-xs font-bold uppercase bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-full">⚖️ Middleman</span>
             <StateBadge status={deal.status} />
@@ -1908,7 +1933,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         </Card>
       </div>
 
-      <ChatLink dealId={dealId} />
+      <ChatLink connectionId={deal.connectionId ?? null} />
       <DealInfoCollapsible deal={deal} />
 
       {SETTLED_STATES.has(deal.status) && (

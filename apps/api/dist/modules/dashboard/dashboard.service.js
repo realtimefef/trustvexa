@@ -131,6 +131,8 @@ export async function getDealDetail(userId, dealId) {
         lockedAt: row.locked_at ? new Date(row.locked_at).toISOString() : null,
         buyerAgreedAt: row.buyer_agreed_at ? new Date(row.buyer_agreed_at).toISOString() : null,
         sellerAgreedAt: row.seller_agreed_at ? new Date(row.seller_agreed_at).toISOString() : null,
+        connectionId: row.connection_id ?? null,
+        connectionCode: row.connection_code ?? null,
     };
 }
 //# sourceMappingURL=dashboard.service.js.map

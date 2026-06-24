@@ -2,7 +2,9 @@ import { requireParam, requireUserId } from '../../lib/http-params.js';
 import * as service from './connections.service.js';
 export async function createConnection(req, res) {
     const userId = requireUserId(req);
-    const result = await service.createConnection(userId);
+    const body = (req.body ?? {});
+    const role = body.role === 'seller' ? 'seller' : 'buyer';
+    const result = await service.createConnection(userId, role);
     res.status(201).json(result);
 }
 export async function joinConnection(req, res) {

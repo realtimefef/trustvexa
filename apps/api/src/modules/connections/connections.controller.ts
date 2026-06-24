@@ -9,7 +9,9 @@ import * as service from './connections.service.js';
 
 export async function createConnection(req: Request, res: Response): Promise<void> {
   const userId = requireUserId(req);
-  const result = await service.createConnection(userId);
+  const body = (req.body ?? {}) as { role?: string };
+  const role = body.role === 'seller' ? 'seller' : 'buyer';
+  const result = await service.createConnection(userId, role);
   res.status(201).json(result);
 }
 

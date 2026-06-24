@@ -7,6 +7,15 @@ export interface ConnectionView {
     creatorUsername: string | null;
     joinerUsername: string | null;
     middlemanUsername: string | null;
+    /** Creator's self-declared role for the pre-deal phase. */
+    creatorRole: 'buyer' | 'seller';
+    /** Resolved buyer/seller — deal-authoritative when a deal is linked, else
+     * derived from creatorRole. The UI must label/route from THESE, never from
+     * creator/joiner, so the chat always matches the deal. */
+    buyerId: string | null;
+    sellerId: string | null;
+    buyerUsername: string | null;
+    sellerUsername: string | null;
     dealId: string | null;
     status: 'open' | 'closed';
     /** True when both buyer+seller are present. */
@@ -15,7 +24,7 @@ export interface ConnectionView {
     updatedAt: string;
 }
 /** Create a new connection owned by the caller; returns the join code. */
-export declare function createConnection(userId: string): Promise<ConnectionView>;
+export declare function createConnection(userId: string, creatorRole?: 'buyer' | 'seller'): Promise<ConnectionView>;
 /** Join an existing connection by code. Idempotent for the same joiner. */
 export declare function joinConnection(userId: string, codeRaw: string): Promise<ConnectionView>;
 export declare function listConnections(userId: string): Promise<{

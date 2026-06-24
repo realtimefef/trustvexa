@@ -50,6 +50,10 @@ export interface DealDetail extends DealSummary {
     lockedAt: string | null;
     buyerAgreedAt: string | null;
     sellerAgreedAt: string | null;
+    /** The connection (chat) this deal was created from — shown in the header and
+     * used to deep-link into the deal's chat on /connect. */
+    connectionId: string | null;
+    connectionCode: string | null;
 }
 /** Buyer/seller/middleman dashboard: every deal the user is a party to. */
 export declare function getDashboard(userId: string): Promise<{

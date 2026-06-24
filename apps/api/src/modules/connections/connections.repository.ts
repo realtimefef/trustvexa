@@ -15,6 +15,11 @@ export interface ConnectionRow {
   status: 'open' | 'closed';
   created_at: Date | string;
   updated_at: Date | string;
+  /** Creator's self-declared role for the pre-deal phase ('buyer' | 'seller'). */
+  creator_role?: string;
+  /** Authoritative buyer/seller once a deal is linked (from the deals row). */
+  deal_buyer_id?: string | null;
+  deal_seller_id?: string | null;
   /** Joined usernames for display. */
   creator_username?: string | null;
   joiner_username?: string | null;
@@ -32,12 +37,16 @@ export interface ConnectionMessageRow {
 }
 
 /** Insert a new connection. Throws on code collision (caller retries). */
-export async function insertConnection(creatorId: string, code: string): Promise<ConnectionRow> {
+export async function insertConnection(
+  creatorId: string,
+  code: string,
+  creatorRole: 'buyer' | 'seller' = 'buyer',
+): Promise<ConnectionRow> {
   const res = await query<ConnectionRow>(
-    `INSERT INTO connections (code, creator_id)
-     VALUES ($1, $2)
-     RETURNING id, code, creator_id, joiner_id, deal_id, status, created_at, updated_at`,
-    [code, creatorId],
+    `INSERT INTO connections (code, creator_id, creator_role)
+     VALUES ($1, $2, $3)
+     RETURNING id, code, creator_id, joiner_id, deal_id, status, creator_role, created_at, updated_at`,
+    [code, creatorId, creatorRole],
   );
   const row = res.rows[0];
   if (!row) throw new Error('insertConnection returned no row');
@@ -56,13 +65,15 @@ export async function findConnectionByCode(code: string): Promise<ConnectionRow 
 export async function getConnectionById(id: string): Promise<ConnectionRow | null> {
   const res = await query<ConnectionRow>(
     `SELECT c.id, c.code, c.creator_id, c.joiner_id, c.middleman_id, c.deal_id, c.status,
-            c.created_at, c.updated_at,
+            c.creator_role, c.created_at, c.updated_at,
+            d.buyer_id AS deal_buyer_id, d.seller_id AS deal_seller_id,
             cu.username AS creator_username, ju.username AS joiner_username,
             mu.username AS middleman_username
        FROM connections c
        JOIN users cu ON cu.id = c.creator_id
        LEFT JOIN users ju ON ju.id = c.joiner_id
        LEFT JOIN users mu ON mu.id = c.middleman_id
+       LEFT JOIN deals d ON d.id = c.deal_id
       WHERE c.id = $1 LIMIT 1`,
     [id],
   );
@@ -102,13 +113,15 @@ export async function claimMiddleman(
 export async function listConnectionsForUser(userId: string): Promise<ConnectionRow[]> {
   const res = await query<ConnectionRow>(
     `SELECT c.id, c.code, c.creator_id, c.joiner_id, c.middleman_id, c.deal_id, c.status,
-            c.created_at, c.updated_at,
+            c.creator_role, c.created_at, c.updated_at,
+            d.buyer_id AS deal_buyer_id, d.seller_id AS deal_seller_id,
             cu.username AS creator_username, ju.username AS joiner_username,
             mu.username AS middleman_username
        FROM connections c
        JOIN users cu ON cu.id = c.creator_id
        LEFT JOIN users ju ON ju.id = c.joiner_id
        LEFT JOIN users mu ON mu.id = c.middleman_id
+       LEFT JOIN deals d ON d.id = c.deal_id
       WHERE c.creator_id = $1 OR c.joiner_id = $1 OR c.middleman_id = $1
       ORDER BY c.updated_at DESC
       LIMIT 100`,

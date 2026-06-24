@@ -70,6 +70,10 @@ export interface DealDetail extends DealSummary {
   lockedAt: string | null;
   buyerAgreedAt: string | null;
   sellerAgreedAt: string | null;
+  /** The connection (chat) this deal was created from — shown in the header and
+   * used to deep-link into the deal's chat on /connect. */
+  connectionId: string | null;
+  connectionCode: string | null;
 }
 
 /** Determine which party the user is for this deal, or `null` if none. */
@@ -199,5 +203,7 @@ export async function getDealDetail(userId: string, dealId: string): Promise<Dea
     lockedAt: row.locked_at ? new Date(row.locked_at as string).toISOString() : null,
     buyerAgreedAt: row.buyer_agreed_at ? new Date(row.buyer_agreed_at as string).toISOString() : null,
     sellerAgreedAt: row.seller_agreed_at ? new Date(row.seller_agreed_at as string).toISOString() : null,
+    connectionId: row.connection_id ?? null,
+    connectionCode: row.connection_code ?? null,
   };
 }

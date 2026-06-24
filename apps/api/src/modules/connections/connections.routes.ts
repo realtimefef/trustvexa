@@ -21,6 +21,7 @@ import * as controller from './connections.controller.js';
 const idParamSchema = z.object({ id: z.string().uuid() });
 const msgParamSchema = z.object({ id: z.string().uuid(), msgId: z.string().uuid() });
 const joinSchema = z.object({ code: z.string().trim().min(4).max(16) });
+const createSchema = z.object({ role: z.enum(['buyer', 'seller']).optional() });
 const messageSchema = z.object({
   body: z.string().trim().min(1).max(4000),
   channel: z.enum(['buyer_seller', 'buyer_mm', 'seller_mm']).optional(),
@@ -34,7 +35,7 @@ export function connectionsRouter(): Router {
 
   router.post(
     '/',
-    ...apiChain({ roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 100 } }),
+    ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 100 } }),
     asyncHandler(controller.createConnection),
   );
 

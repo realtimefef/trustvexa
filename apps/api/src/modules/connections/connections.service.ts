@@ -47,6 +47,15 @@ export interface ConnectionView {
   creatorUsername: string | null;
   joinerUsername: string | null;
   middlemanUsername: string | null;
+  /** Creator's self-declared role for the pre-deal phase. */
+  creatorRole: 'buyer' | 'seller';
+  /** Resolved buyer/seller — deal-authoritative when a deal is linked, else
+   * derived from creatorRole. The UI must label/route from THESE, never from
+   * creator/joiner, so the chat always matches the deal. */
+  buyerId: string | null;
+  sellerId: string | null;
+  buyerUsername: string | null;
+  sellerUsername: string | null;
   dealId: string | null;
   status: 'open' | 'closed';
   /** True when both buyer+seller are present. */
@@ -55,7 +64,33 @@ export interface ConnectionView {
   updatedAt: string;
 }
 
+/**
+ * Resolve who the buyer and seller are for a connection.
+ * - Once a deal is linked, the deal's buyer_id/seller_id are authoritative.
+ * - Before any deal exists, the creator's self-declared role decides: a creator
+ *   who said "seller" makes the joiner the buyer, and vice versa.
+ */
+function resolveRoles(row: ConnectionRow): { buyerId: string | null; sellerId: string | null } {
+  if (row.deal_id && row.deal_buyer_id && row.deal_seller_id) {
+    return { buyerId: row.deal_buyer_id, sellerId: row.deal_seller_id };
+  }
+  if (row.creator_role === 'seller') {
+    return { buyerId: row.joiner_id, sellerId: row.creator_id };
+  }
+  return { buyerId: row.creator_id, sellerId: row.joiner_id };
+}
+
+/** Map a participant id to its display username within the connection. */
+function usernameFor(row: ConnectionRow, id: string | null): string | null {
+  if (!id) return null;
+  if (id === row.creator_id) return row.creator_username ?? null;
+  if (id === row.joiner_id) return row.joiner_username ?? null;
+  if (id === row.middleman_id) return row.middleman_username ?? null;
+  return null;
+}
+
 function toView(row: ConnectionRow): ConnectionView {
+  const { buyerId, sellerId } = resolveRoles(row);
   return {
     id: row.id,
     code: row.code,
@@ -65,6 +100,11 @@ function toView(row: ConnectionRow): ConnectionView {
     creatorUsername: row.creator_username ?? null,
     joinerUsername: row.joiner_username ?? null,
     middlemanUsername: row.middleman_username ?? null,
+    creatorRole: row.creator_role === 'seller' ? 'seller' : 'buyer',
+    buyerId,
+    sellerId,
+    buyerUsername: usernameFor(row, buyerId),
+    sellerUsername: usernameFor(row, sellerId),
     dealId: row.deal_id,
     status: row.status,
     joined: row.joiner_id !== null,
@@ -78,11 +118,14 @@ function isParticipant(row: ConnectionRow, userId: string): boolean {
 }
 
 /** Create a new connection owned by the caller; returns the join code. */
-export async function createConnection(userId: string): Promise<ConnectionView> {
+export async function createConnection(
+  userId: string,
+  creatorRole: 'buyer' | 'seller' = 'buyer',
+): Promise<ConnectionView> {
   // Retry a few times on the (extremely unlikely) code collision.
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      const row = await insertConnection(userId, generateCode());
+      const row = await insertConnection(userId, generateCode(), creatorRole);
       const full = await getConnectionById(row.id);
       return toView(full ?? row);
     } catch (err) {
@@ -154,11 +197,13 @@ export async function listMessages(
     throw notFound('Connection not found.');
   }
   // Channel access control: buyer_seller is visible to all 3 parties,
-  // buyer_mm only to buyer (creator) + middleman, seller_mm only to seller (joiner) + middleman
+  // buyer_mm only to buyer + middleman, seller_mm only to seller + middleman.
+  // Buyer/seller are resolved (deal-authoritative) — NOT raw creator/joiner.
   if (channel) {
+    const { buyerId, sellerId } = resolveRoles(row);
     const isMm = row.middleman_id === userId;
-    const isBuyer = row.creator_id === userId;
-    const isSeller = row.joiner_id === userId;
+    const isBuyer = buyerId === userId;
+    const isSeller = sellerId === userId;
     if (channel === 'buyer_mm' && !isBuyer && !isMm) {
       throw new AppError('forbidden', 'You cannot access this channel.', 403);
     }
@@ -202,10 +247,11 @@ export async function postMessage(
     throw new AppError('connection_closed', 'This connection is closed.', 409);
   }
 
-  // Channel access control
+  // Channel access control — buyer/seller resolved (deal-authoritative).
+  const { buyerId, sellerId } = resolveRoles(row);
   const isMm = row.middleman_id === userId;
-  const isBuyer = row.creator_id === userId;
-  const isSeller = row.joiner_id === userId;
+  const isBuyer = buyerId === userId;
+  const isSeller = sellerId === userId;
   if (channel === 'buyer_seller') {
     if (!isBuyer && !isSeller && !isMm) {
       throw new AppError('forbidden', 'You cannot post to this channel.', 403);
@@ -245,12 +291,12 @@ export async function postMessage(
     });
     let recipients: string[];
     if (channel === 'buyer_mm') {
-      recipients = [row.creator_id, row.middleman_id].filter(Boolean) as string[];
+      recipients = [buyerId, row.middleman_id].filter(Boolean) as string[];
     } else if (channel === 'seller_mm') {
-      recipients = [row.joiner_id, row.middleman_id].filter(Boolean) as string[];
+      recipients = [sellerId, row.middleman_id].filter(Boolean) as string[];
     } else {
       // buyer_seller — notify buyer + seller (middleman observes but doesn't get live push for this channel)
-      recipients = [row.creator_id, row.joiner_id].filter(Boolean) as string[];
+      recipients = [buyerId, sellerId].filter(Boolean) as string[];
     }
     for (const uid of recipients) {
       await redis.publish(`realtime:connection:${uid}`, payload);
