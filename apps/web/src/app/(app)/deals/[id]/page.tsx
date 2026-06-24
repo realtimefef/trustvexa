@@ -209,10 +209,13 @@ function statusToStage(status: string): number {
   return 0;
 }
 
-function DealStepper({ status }: { status: string }) {
+function DealStepper({ status, agreedInProgress }: { status: string; agreedInProgress?: boolean }) {
   const isDisputed = status === 'Disputed';
   const isClosed = ['Cancelled', 'Expired', 'Refunded'].includes(status);
-  const current = statusToStage(status);
+  let current = statusToStage(status);
+  // When the deal is still Created/Invited but at least one party has agreed,
+  // surface the "Agreed" stage (2) so the stepper reflects real progress.
+  if (agreedInProgress && current === 1) current = 2;
 
   if (isDisputed) {
     return (
@@ -981,7 +984,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
 
       {/* Edit before lock — show as long as the deal isn't locked yet */}
       {!deal.lockedAt && !isPostLock && (
@@ -1368,7 +1371,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
 
       {/* Current action — BUYER */}
       {(deal.status === 'Created' || deal.status === 'Invited') && (
@@ -1506,9 +1509,16 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
             </Button>
           ) : (
-            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
-              <p className="text-sm font-semibold text-emerald-600">✓ Submitted to the middleman</p>
-              <p className="text-xs text-muted-foreground mt-1">The middleman has your details. The seller is delivering and will submit a handover for verification.</p>
+            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-4 text-center space-y-1.5">
+              <p className="font-semibold text-emerald-600 text-base">🎉 Submitted — congratulations!</p>
+              <p className="text-sm text-muted-foreground">
+                Your details have been submitted to the middleman. You will receive your account / product
+                details by <strong>chat and email</strong> shortly. You can contact the middleman anytime via
+                the deal chat, or wait for their reply. The middleman will complete the deal.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-1">
+                <Link href="/messages"><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+              </Button>
             </div>
           )}
           <NextStep text="Seller submits handover → middleman verifies → you'll be asked to inspect and approve." />
@@ -1717,7 +1727,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
 
       {/* Middleman: verify the buyer's deposit transaction (Funded onward) */}
       {(deal.status === 'Funded' || deal.status === 'SellerHandover') && (
