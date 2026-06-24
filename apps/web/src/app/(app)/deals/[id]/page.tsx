@@ -1007,6 +1007,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
       await apiRequest(`/deals/${dealId}/request-middleman`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
       void qc.invalidateQueries({ queryKey: ['chats'] });
+      void qc.invalidateQueries({ queryKey: ['connections'] });
       // Take the user straight into THIS deal's chat with the middleman that
       // was just assigned (buyer→buyer_mm, seller→seller_mm).
       router.push(dealChatHref(deal.connectionId, mmChatType(deal.role)));
@@ -1186,10 +1187,17 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <p className="text-sm text-muted-foreground mt-1">The middleman is verifying the delivery and will complete the deal. Your payout is released on completion — you&apos;ll be notified by chat/email.</p>
           </div>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          {deal.middlemanId && (
+          {deal.middlemanId ? (
             <Button asChild variant="outline" size="sm" className="mt-3 w-full">
               <Link href={dealChatHref(deal.connectionId, 'seller_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
             </Button>
+          ) : (
+            <div className="mt-3 space-y-1.5">
+              {mmErr && <p className="text-xs text-destructive">⚠️ {mmErr}</p>}
+              <Button onClick={requestMm} disabled={requestingMm} variant="outline" size="sm" className="w-full">
+                <Shield className="h-3.5 w-3.5 mr-1.5" />{requestingMm ? 'Connecting…' : 'Add a middleman to complete'}
+              </Button>
+            </div>
           )}
           <NextStep text="Middleman completes the deal → your payout is released to your wallet." />
         </ActionCard>
@@ -1433,6 +1441,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       await apiRequest(`/deals/${dealId}/request-middleman`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
       void qc.invalidateQueries({ queryKey: ['chats'] });
+      void qc.invalidateQueries({ queryKey: ['connections'] });
       // Take the user straight into THIS deal's chat with the middleman that
       // was just assigned (buyer→buyer_mm, seller→seller_mm).
       router.push(dealChatHref(deal.connectionId, mmChatType(deal.role)));

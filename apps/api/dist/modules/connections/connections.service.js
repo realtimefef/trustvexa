@@ -342,6 +342,12 @@ export async function inviteMiddlemanToConnection(userId, connectionId) {
             throw notFound('Connection not found.');
         return toView(current);
     }
+    // Keep the linked deal in sync: assigning a middleman in the chat should also
+    // make them the deal's middleman so the deal page reflects it (and vice
+    // versa — see requestMiddleman which syncs the connection).
+    if (row.deal_id) {
+        await query(`UPDATE deals SET middleman_id = $2, updated_at = now() WHERE id = $1 AND middleman_id IS NULL`, [row.deal_id, middlemanId]);
+    }
     // Notify all three participants via realtime.
     try {
         const { getRedis } = await import('@trustvexa/shared');

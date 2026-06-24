@@ -438,6 +438,12 @@ export default function ConnectPage() {
       void queryClient.setQueryData(['connection', c.id], c);
       void queryClient.invalidateQueries({ queryKey: ['connections'] });
       void queryClient.invalidateQueries({ queryKey: ['connection-messages', c.id] });
+      // Open the caller's middleman channel right away so they land in the
+      // freshly created mm conversation instead of staying on buyer↔seller.
+      if (user) {
+        if (c.buyerId === user.id) setPendingChannel('buyer_mm');
+        else if (c.sellerId === user.id) setPendingChannel('seller_mm');
+      }
     },
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not invite a middleman.'),
   });

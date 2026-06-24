@@ -237,6 +237,12 @@ export async function requestMiddleman(userId, dealId) {
             dealId,
             middlemanId,
         ]);
+        // Keep the linked connection in sync: the /connect chat gates the buyer_mm /
+        // seller_mm channels (and the middleman's posting access) on the
+        // CONNECTION's middleman_id, not the deal's. Without this, adding a
+        // middleman to the deal would never reveal the middleman chat channels.
+        await client.query(`UPDATE connections SET middleman_id = $2, updated_at = now()
+        WHERE deal_id = $1 AND middleman_id IS NULL`, [dealId, middlemanId]);
         await client.query('COMMIT');
         return { dealId, middlemanId, alreadyAssigned: false };
     }
