@@ -404,6 +404,23 @@ export default function ConnectPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Invalid code.'),
   });
 
+  // Auto-join when arriving via a shared link like /connect?join=SJKF334M.
+  // Fires once after auth so the recipient doesn't have to click "Join".
+  const autoJoinedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (status !== 'authenticated' || autoJoinedRef.current) return;
+    if (typeof window === 'undefined') return;
+    const joinParam = new URLSearchParams(window.location.search).get('join');
+    if (!joinParam) return;
+    autoJoinedRef.current = true;
+    join.mutate(joinParam.trim().toUpperCase());
+    // Clean the URL so a refresh doesn't try to join again.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('join');
+    window.history.replaceState({}, '', url.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   const inviteMm = useMutation({
     mutationFn: async (id: string) => apiRequest<ConnectionView>(`/connections/${id}/invite-middleman`, { method: 'POST', body: {}, idempotencyKey: newIdempotencyKey() }),
     onSuccess: (c) => {

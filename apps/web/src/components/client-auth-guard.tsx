@@ -33,7 +33,10 @@ export function ClientAuthGuard({ children }: Props) {
 
   React.useEffect(() => {
     if (status === 'anonymous') {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      // Preserve the full path + query string (e.g. /connect?join=CODE) so the
+      // user returns to the exact link — and any auto-join — after logging in.
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      router.replace(`/login?next=${encodeURIComponent(pathname + search)}`);
     }
   }, [status, router, pathname]);
 
