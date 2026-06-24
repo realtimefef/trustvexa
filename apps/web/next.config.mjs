@@ -15,8 +15,17 @@ const withPWA = withPWAInit({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
   register: true,
+  // Make a freshly deployed service worker take over immediately instead of
+  // waiting for every tab to close. Without this, browsers keep serving the
+  // previously cached app shell after a deploy ("still shows old"). skipWaiting
+  // + clientsClaim activate the new SW right away; reloadOnOnline refreshes
+  // when connectivity returns.
+  reloadOnOnline: true,
+  cacheOnFrontEndNav: true,
   workboxOptions: {
     disableDevLogs: true,
+    skipWaiting: true,
+    clientsClaim: true,
   },
 });
 
