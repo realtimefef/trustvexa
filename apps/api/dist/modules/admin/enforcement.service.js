@@ -42,6 +42,9 @@ export async function blockUser(input) {
                 reason: input.reason,
             });
             await setAccountStatus(tx, input.targetUserId, 'blocked');
+            // Log the blocked user out everywhere (revoke sessions + refresh tokens).
+            await tx.query(`UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [input.targetUserId]);
+            await tx.query(`UPDATE auth_tokens SET revoked_at = now() WHERE user_id = $1 AND token_type = 'refresh' AND revoked_at IS NULL`, [input.targetUserId]);
         }
         const auditId = await appendAdminAction(tx, {
             actorId: input.actorId,
@@ -147,6 +150,12 @@ export async function deleteUser(input) {
             await tx.query(`INSERT INTO account_deletions (user_id, requested_by, reason, deletion_type, deleted_at)
          VALUES ($1, $2, $3, 'admin_enforced', now())`, [input.targetUserId, input.actorId, input.reason]);
             await setAccountStatus(tx, input.targetUserId, 'deleted');
+            // Cascade: cut off all access and close the user's live conversations.
+            // Financial / deal / audit rows are intentionally retained (escrow &
+            // payment audit minimum); full PII purge runs via the retention pipeline.
+            await tx.query(`UPDATE user_sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL`, [input.targetUserId]);
+            await tx.query(`UPDATE auth_tokens SET revoked_at = now() WHERE user_id = $1 AND token_type = 'refresh' AND revoked_at IS NULL`, [input.targetUserId]);
+            await tx.query(`UPDATE connections SET status = 'closed', updated_at = now() WHERE (creator_id = $1 OR joiner_id = $1) AND status = 'open'`, [input.targetUserId]);
         }
         const auditId = await appendAdminAction(tx, {
             actorId: input.actorId,
