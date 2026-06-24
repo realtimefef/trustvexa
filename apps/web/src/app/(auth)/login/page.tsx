@@ -32,7 +32,7 @@ const SECURITY_POINTS = [
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const { login, verifyTotp, status } = useAuth();
+  const { login, verifyTotp, status, user } = useAuth();
   const [formError, setFormError] = React.useState<string | null>(null);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showTotpStep, setShowTotpStep] = React.useState(false);
@@ -44,11 +44,11 @@ export default function LoginPage() {
   React.useEffect(() => {
     if (status === 'authenticated') {
       const next = searchParams.get('next');
-      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      const dest = next && next.startsWith('/') ? next : user?.role === 'middleman' ? '/admin' : '/dashboard';
       // Full navigation so the page and auth context initialise fresh.
       window.location.replace(dest);
     }
-  }, [status, searchParams]);
+  }, [status, searchParams, user]);
 
   const { register, handleSubmit, getValues, formState: { errors, isSubmitting } } = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -61,7 +61,7 @@ export default function LoginPage() {
       const res = await login({ ...values, rememberMe: values.rememberMe ?? true });
       if (res.totp_required) { setShowTotpStep(true); return; }
       const next = searchParams.get('next');
-      const dest = next && next.startsWith('/') ? next : '/dashboard';
+      const dest = next && next.startsWith('/') ? next : res.role === 'middleman' ? '/admin' : '/dashboard';
       // Use a full page navigation instead of router.push so the browser
       // sends the cookie in the next request (avoids cross-domain loop).
       window.location.href = dest;

@@ -84,7 +84,7 @@ export async function searchUsers(filters) {
         legalHold: row.legal_hold,
         createdAt: toIso(row.created_at),
     }));
-    return { users };
+    return { users, total: users.length };
 }
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export async function getAnalytics() {

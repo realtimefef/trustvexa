@@ -106,7 +106,7 @@ export async function searchUsers(filters: {
   status?: string;
   label?: string;
   limit?: number;
-}): Promise<{ users: UserSearchItem[] }> {
+}): Promise<{ users: UserSearchItem[]; total: number }> {
   const repoFilters: repo.UserSearchFilters = { limit: filters.limit ?? 50 };
   if (filters.q !== undefined) repoFilters.q = filters.q;
   if (filters.status !== undefined) repoFilters.status = filters.status;
@@ -122,7 +122,7 @@ export async function searchUsers(filters: {
     legalHold: row.legal_hold,
     createdAt: toIso(row.created_at),
   }));
-  return { users };
+  return { users, total: users.length };
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────

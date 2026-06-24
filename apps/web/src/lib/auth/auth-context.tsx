@@ -39,7 +39,7 @@ export interface VerifyTotpArgs {
 interface AuthContextValue {
   status: AuthStatus;
   user: PublicUser | null;
-  login: (args: LoginArgs) => Promise<{ totp_required?: boolean }>;
+  login: (args: LoginArgs) => Promise<{ totp_required?: boolean; role?: string }>;
   register: (args: RegisterArgs) => Promise<void>;
   logout: () => Promise<void>;
   verifyTotp: (args: VerifyTotpArgs) => Promise<void>;
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = React.useCallback(async (args: LoginArgs): Promise<{ totp_required?: boolean }> => {
+  const login = React.useCallback(async (args: LoginArgs): Promise<{ totp_required?: boolean; role?: string }> => {
     const res = await apiRequest<AuthResponse & { totp_required?: boolean }>('/auth/login', {
       method: 'POST',
       body: args,
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { totp_required: true };
     }
     applyAuth(res, setUser, setStatus);
-    return {};
+    return { role: res.user?.role };
   }, []);
 
   const register = React.useCallback(async (args: RegisterArgs) => {

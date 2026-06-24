@@ -543,15 +543,26 @@ export default function ConnectPage() {
   const canSeeBuyerMm = hasMiddleman && (myRole === 'creator' || myRole === 'middleman');
   const canSeeSellerMm = hasMiddleman && (myRole === 'joiner' || myRole === 'middleman');
 
-  // Available tabs for this connection
-  const availableTabs: Channel[] = ['buyer_seller'];
-  if (canSeeBuyerMm) availableTabs.push('buyer_mm');
-  if (canSeeSellerMm) availableTabs.push('seller_mm');
+  // Available tabs for this connection. For the operator (middleman) the
+  // middleman↔buyer and middleman↔seller channels come FIRST, then the
+  // buyer↔seller channel they observe; everyone else sees buyer↔seller first.
+  const availableTabs: Channel[] = [];
+  if (myRole === 'middleman') {
+    if (canSeeBuyerMm) availableTabs.push('buyer_mm');
+    if (canSeeSellerMm) availableTabs.push('seller_mm');
+    availableTabs.push('buyer_seller');
+  } else {
+    availableTabs.push('buyer_seller');
+    if (canSeeBuyerMm) availableTabs.push('buyer_mm');
+    if (canSeeSellerMm) availableTabs.push('seller_mm');
+  }
+  const defaultChannel: Channel = availableTabs[0] ?? 'buyer_seller';
 
-  // Reset to first available tab when connection changes
+  // Reset to the role-appropriate first tab when the connection (or resolved
+  // role) changes. Manual tab switches are preserved (defaultChannel is stable).
   React.useEffect(() => {
-    setActiveChannel('buyer_seller');
-  }, [activeId]);
+    setActiveChannel(defaultChannel);
+  }, [activeId, defaultChannel]);
 
   // Apply a deep-linked channel (?channel=) once the connection has loaded and
   // the tab is actually available to this user; then clear it.

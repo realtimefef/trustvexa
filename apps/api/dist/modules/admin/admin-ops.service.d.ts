@@ -41,6 +41,7 @@ export declare function searchUsers(filters: {
     limit?: number;
 }): Promise<{
     users: UserSearchItem[];
+    total: number;
 }>;
 export declare function getAnalytics(): Promise<{
     analytics: repo.AnalyticsSnapshotRow | null;

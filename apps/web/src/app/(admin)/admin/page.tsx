@@ -505,7 +505,7 @@ const NAV_CARDS = [
   { href: '/admin/payouts', icon: DollarSign, label: 'Payouts', desc: 'Approve & broadcast (dual control)' },
   { href: '/admin/controls', icon: ShieldAlert, label: 'Trust & Safety', desc: 'Legal holds, appeals, AML, PII access' },
   { href: '/admin/users', icon: Users, label: 'Users', desc: 'Search, block, label, delete accounts' },
-  { href: '/connect', icon: MessageSquare, label: 'Deal chats', desc: 'Message buyers & sellers' },
+  { href: '/admin/connect', icon: MessageSquare, label: 'Deal chats', desc: 'Message buyers & sellers' },
   { href: '/admin/chats', icon: MessageCircle, label: 'Chat moderation', desc: 'Monitor, categorize & delete chats' },
   { href: '/admin/reviews', icon: FileText, label: 'Reviews', desc: 'Moderate public + deal reviews' },
   { href: '/admin/support', icon: TicketIcon, label: 'Support & Cases', desc: 'User tickets & help requests' },

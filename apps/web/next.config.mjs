@@ -123,7 +123,7 @@ const nextConfig = {
               // dev additionally needs 'unsafe-eval' for React Fast Refresh.
               `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV !== 'production' ? " 'unsafe-eval'" : ''};`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
-              `img-src 'self' data: https://*.googleusercontent.com ${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''};`,
+              `img-src 'self' data: blob: https://*.googleusercontent.com ${process.env.NEXT_PUBLIC_API_BASE_URL ?? ''};`,
               `connect-src 'self' ws: wss: ${process.env.NODE_ENV !== 'production' ? "http:" : ""} https:;`,
               // frame-ancestors in CSP supersedes X-Frame-Options in modern browsers. (Audit FIX-P2-6)
               "frame-ancestors 'none';",

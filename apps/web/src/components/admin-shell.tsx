@@ -35,7 +35,7 @@ const NAV: ReadonlyArray<NavItem> = [
   { href: '/admin/support', label: 'Support & Cases', icon: TicketCheck },
   { href: '/admin/reviews', label: 'Reviews', icon: ShieldCheck },
   { href: '/treasury', label: 'Treasury', icon: Landmark },
-  { href: '/connect', label: 'Chats', icon: Handshake },
+  { href: '/admin/connect', label: 'Chats', icon: Handshake },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
