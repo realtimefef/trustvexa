@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -161,6 +162,55 @@ function HoldRow({ hold, onReleased }: { hold: HoldView; onReleased: () => void 
         </div>
       )}
     </div>
+  );
+}
+
+// ── Announcement composer ────────────────────────────────────────────────────
+
+function AnnouncementComposer() {
+  const [title, setTitle] = React.useState('');
+  const [body, setBody] = React.useState('');
+  const [audience, setAudience] = React.useState<'all' | 'user' | 'middleman'>('all');
+  const [busy, setBusy] = React.useState(false);
+  const [msg, setMsg] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<string | null>(null);
+
+  const post = async () => {
+    setBusy(true); setErr(null); setMsg(null);
+    try {
+      await apiRequest('/admin/announcements', {
+        method: 'POST',
+        body: { title: title.trim(), body: body.trim(), audience },
+        idempotencyKey: newIdempotencyKey(),
+      });
+      setTitle(''); setBody(''); setMsg('Announcement published.');
+    } catch (e) { setErr(e instanceof ApiError ? e.message : 'Failed to publish.'); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Card className="rounded-2xl shadow-soft">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base"><Activity className="h-4 w-4 text-primary" /> Post announcement</CardTitle>
+        <CardDescription>Publish a platform announcement to all users, buyers/sellers, or operators.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {err && <p className="text-xs text-destructive">{err}</p>}
+        {msg && <p className="text-xs text-emerald-600">{msg}</p>}
+        <div className="grid gap-2 sm:grid-cols-[1fr_160px]">
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="h-8 text-sm" />
+          <select value={audience} onChange={(e) => setAudience(e.target.value as 'all' | 'user' | 'middleman')} className="h-8 rounded-md border bg-background px-2 text-xs">
+            <option value="all">Everyone</option>
+            <option value="user">Buyers & sellers</option>
+            <option value="middleman">Operators</option>
+          </select>
+        </div>
+        <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Announcement body…" className="min-h-[80px] resize-none text-sm" />
+        <Button size="sm" disabled={busy || !title.trim() || !body.trim()} onClick={() => void post()}>
+          {busy ? 'Publishing…' : 'Publish announcement'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -547,6 +597,9 @@ export default function AdminOperationsPage() {
 
       {/* Holds & overrides */}
       <HoldsOverridesSection />
+
+      {/* Announcement composer */}
+      <AnnouncementComposer />
 
       {/* Audit log */}
       <Card className="rounded-2xl shadow-soft">
