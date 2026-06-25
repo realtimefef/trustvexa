@@ -1121,6 +1121,19 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <StepLabel step={3} total={6} label="Escrow funded — start delivering" />
           <p className="text-sm text-muted-foreground mb-3">The buyer has funded the escrow. Review the full deal below, make sure your product &amp; delivery details are saved, then start your delivery to move to In Progress.</p>
 
+          {/* Payout address stays editable here — the buyer funding the escrow
+              must never remove the seller's payout field. */}
+          <div className="space-y-2 rounded-xl border bg-muted/20 p-3 mb-3">
+            <Label htmlFor="payoutAddrFunded">Your {deal.coin} payout address ({deal.network})</Label>
+            {payoutAlreadySaved && <p className="text-xs text-emerald-600 font-medium">✓ Saved — edit below to change.</p>}
+            <div className="flex gap-2">
+              <Input id="payoutAddrFunded" value={payoutAddr} onChange={e => setPayoutAddr(e.target.value)} placeholder={`Your ${deal.network} address`} className="flex-1 font-mono text-xs" />
+              <Button onClick={savePayout} disabled={paySubmitting || !payoutAddr.trim()}>{paySubmitting ? '…' : payoutAlreadySaved ? 'Update' : 'Save'}</Button>
+            </div>
+            {payMsg && <p className="text-xs text-emerald-600">{payMsg}</p>}
+            {payErr && <p className="text-xs text-destructive">{payErr}</p>}
+          </div>
+
           {/* Final review of all deal details */}
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
 

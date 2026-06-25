@@ -208,27 +208,27 @@ export default function NewDealPage() {
   // ── Step 1: Deal Basics ──────────────────────────────────────────────────
   const renderStep1 = () => (
     <div className="space-y-8">
-      {/* Compact connection banner */}
-      {connectionId && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-          <span className="text-muted-foreground">Creating from your chat — I am the:</span>
-          {(['buyer', 'seller'] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setCreatorRole(r)}
-              className={cn(
-                'rounded-full px-3 py-0.5 text-xs font-semibold capitalize transition-colors',
-                creatorRole === r
-                  ? 'bg-primary text-primary-foreground'
-                  : 'border border-border hover:bg-muted/40',
-              )}
-            >
-              {r === 'buyer' ? 'Buyer' : 'Seller'}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Role picker — always ask whether the creator is the buyer or the
+          seller, both when creating from a chat and when starting a deal
+          directly (no chat), mirroring the chat's role question. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+        <span className="text-muted-foreground">{connectionId ? 'Creating from your chat — in this deal I am the:' : 'In this deal, I am the:'}</span>
+        {(['buyer', 'seller'] as const).map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setCreatorRole(r)}
+            className={cn(
+              'rounded-full px-3 py-1 text-xs font-semibold capitalize transition-colors',
+              creatorRole === r
+                ? 'bg-primary text-primary-foreground'
+                : 'border border-border hover:bg-muted/40',
+            )}
+          >
+            {r === 'buyer' ? '🛒 Buyer (I pay)' : '📦 Seller (I deliver)'}
+          </button>
+        ))}
+      </div>
 
       {/* Item description */}
       <div className="space-y-2">
