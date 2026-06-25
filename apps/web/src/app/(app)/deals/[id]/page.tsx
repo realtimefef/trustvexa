@@ -1504,9 +1504,10 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
   const [submittedToMm, setSubmittedToMm] = React.useState(false);
   const [submitErr, setSubmitErr] = React.useState<string | null>(null);
-  // Two-phase buyer flow at Funded: review/edit receiving details → submit /
-  // handover to the middleman (with a "back to edit" option).
-  const [proceedToSubmitBuyer, setProceedToSubmitBuyer] = React.useState(false);
+  // Buyer at Funded: go STRAIGHT to submit/handover by default — the receiving
+  // details were already entered during the funding step. "Back to edit my
+  // details" flips into edit mode; "Continue" returns to the submit view.
+  const [buyerEditMode, setBuyerEditMode] = React.useState(false);
   // The submission is persisted server-side (deal.buyerSubmittedAt), so refresh
   // keeps the submitted state — no local-only flag needed.
   const buyerSubmitted = submittedToMm || !!deal.buyerSubmittedAt;
@@ -1821,7 +1822,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               )}
               <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
             </>
-          ) : proceedToSubmitBuyer && buyerDetailsSaved ? (
+          ) : !buyerEditMode && buyerDetailsSaved ? (
             <>
               <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Submit &amp; handover them to the middleman now — your side completes independently, no waiting on the seller.</p>
               <DealReviewSummary deal={deal} partyDetails={partyDetails} />
@@ -1829,7 +1830,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               <Button onClick={() => void markSubmittedToMm()} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white">
                 <Shield className="h-4 w-4 mr-1.5" /> Submit &amp; handover my details to the middleman
               </Button>
-              <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setProceedToSubmitBuyer(false)}>← Back to edit my details</Button>
+              <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setBuyerEditMode(true)}>← Back to edit my details</Button>
               <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
             </>
           ) : (
@@ -1844,7 +1845,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                   ⚠️ Save <strong>your receiving details</strong> above before continuing.
                 </div>
               )}
-              <Button onClick={() => setProceedToSubmitBuyer(true)} disabled={!buyerDetailsSaved} className="w-full mt-3">
+              <Button onClick={() => setBuyerEditMode(false)} disabled={!buyerDetailsSaved} className="w-full mt-3">
                 Continue to next step →
               </Button>
               <NextStep text="Next: submit & handover your saved details to the middleman (step 4). Your side stays independent of the seller." />
