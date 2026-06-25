@@ -1163,17 +1163,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         ]}
       />
 
-      {/* Middleman has reviewed/verified the seller's side — reassure them. */}
-      {partyDetails?.sellerDetails?.verifiedByMiddleman && (
-        <div className="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
-          <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Your payout will be released to your saved wallet once the deal is completed — you&apos;ll be notified by chat and email.</p>
-          </div>
-        </div>
-      )}
-
       {/* Edit before lock — show as long as the deal isn't locked yet */}
       {!deal.lockedAt && !isPostLock && (
         <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
@@ -1225,6 +1214,15 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
                 <Link href={dealChatHref(deal.connectionId, 'seller_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
               </Button>
             </div>
+            {partyDetails?.sellerDetails?.verifiedByMiddleman && (
+              <div className="mt-3 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
+                <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Your payout will be released to your saved wallet once the deal is completed — you&apos;ll be notified by chat and email.</p>
+                </div>
+              </div>
+            )}
             <DealReviewSummary deal={deal} partyDetails={partyDetails} />
             <NextStep text="Middleman completes the deal → payout sent to your saved wallet. You don't wait on the buyer." />
           </ActionCard>
@@ -1614,17 +1612,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         ]}
       />
 
-      {/* Middleman has reviewed/confirmed the buyer's side — reassure them. */}
-      {partyDetails?.buyerDetails?.confirmedByBuyer && (
-        <div className="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
-          <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
-            <p className="text-xs text-muted-foreground mt-0.5">You&apos;ll receive your purchase / account details by chat and email once the middleman completes the deal.</p>
-          </div>
-        </div>
-      )}
-
       {/* Edit before lock — either party may edit the deal terms until both agree */}
       {!deal.lockedAt && !POST_LOCK_STATES.has(deal.status) && (
         <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
@@ -1778,6 +1765,15 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                   <Link href={dealChatHref(deal.connectionId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
                 </Button>
               </div>
+              {partyDetails?.buyerDetails?.confirmedByBuyer && (
+                <div className="mt-3 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
+                  <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">You&apos;ll receive your purchase / account details by chat and email once the middleman completes the deal.</p>
+                  </div>
+                </div>
+              )}
               <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
             </>
           ) : proceedToSubmitBuyer && buyerDetailsSaved ? (
