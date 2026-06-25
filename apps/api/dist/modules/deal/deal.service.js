@@ -826,7 +826,6 @@ export async function confirmFunding(userId, dealId, requestId) {
  * Only the deal's seller may call this.
  */
 export async function sellerHandover(sellerId, dealId, requestId) {
-    let middlemanId = null;
     const client = await acquireClient();
     try {
         await client.query('BEGIN');
@@ -841,7 +840,19 @@ export async function sellerHandover(sellerId, dealId, requestId) {
         if (deal.status !== 'Funded') {
             throw new AppError('invalid_state', `Handover can only be submitted from Funded state (currently ${deal.status}).`, 409);
         }
-        middlemanId = deal.middleman_id;
+        // Every required detail must actually be filled in (whitespace does not
+        // count) before the seller can mark the deal delivered. The payout address
+        // and the seller's product/account details are mandatory.
+        const payoutRes = await client.query(`SELECT new_address_enc FROM wallet_change_requests
+        WHERE deal_id = $1 AND wallet_type = 'payout'
+        ORDER BY created_at DESC LIMIT 1`, [dealId]);
+        if (!payoutRes.rows[0]?.new_address_enc) {
+            throw new AppError('payout_address_required', 'Save your payout address before marking the deal delivered.', 422);
+        }
+        const sdRes = await client.query(`SELECT product_name FROM deal_seller_details WHERE deal_id = $1 LIMIT 1`, [dealId]);
+        if (!sdRes.rows[0] || !(sdRes.rows[0].product_name ?? '').trim()) {
+            throw new AppError('seller_details_required', 'Fill in your product / account details before marking the deal delivered.', 422);
+        }
         await client.query('COMMIT');
     }
     catch (err) {
@@ -854,17 +865,13 @@ export async function sellerHandover(sellerId, dealId, requestId) {
     finally {
         client.release();
     }
-    const result = await applyDealTransition({
-        dealId,
-        event: 'SellerHandoverSent',
-        actorId: sellerId,
-        requestId,
-    });
-    // Funded → SellerHandover ONLY. This is the seller's "start delivery / In
-    // Progress" step. Reaching Delivered is a SEPARATE explicit seller action
-    // (advanceDeliveryNoMiddleman) so the seller's stepper moves Funded → In
-    // Progress → Delivered one step at a time, independently of the buyer.
-    void middlemanId;
+    // Single seller action: "Mark as delivered" carries Funded → Delivered with
+    // no extra manual middle step and no middleman gate. The middleman only acts
+    // after Delivered (to complete/release). SellerHandover and MiddlemanVerified
+    // are internal technical transitions on the way to Delivered.
+    await applyDealTransition({ dealId, event: 'SellerHandoverSent', actorId: sellerId, requestId });
+    await applyDealTransition({ dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId, requestId: `${requestId}:v` });
+    const result = await applyDealTransition({ dealId, event: 'DeliveredToBuyer', actorId: sellerId, requestId: `${requestId}:d` });
     return { dealId, status: result.to };
 }
 /**

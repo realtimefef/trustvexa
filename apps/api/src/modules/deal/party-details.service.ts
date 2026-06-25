@@ -227,6 +227,10 @@ export async function submitSellerDetails(
       403,
     );
   }
+  // Required field must contain real content, not just whitespace.
+  if (!(input.productName ?? '').trim()) {
+    throw new AppError('product_name_required', 'Enter what you are selling / the account to be transferred.', 422);
+  }
 
   // Encrypt all PII fields in parallel.
   const [
@@ -317,6 +321,10 @@ export async function submitBuyerDetails(
       'Only the deal\'s buyer can submit buyer details.',
       403,
     );
+  }
+  // Required field must contain real content, not just whitespace.
+  if (!(input.receivingAddress ?? '').trim()) {
+    throw new AppError('receiving_address_required', 'Enter the account / address where you want to receive the item.', 422);
   }
 
   // Encrypt all PII fields in parallel.

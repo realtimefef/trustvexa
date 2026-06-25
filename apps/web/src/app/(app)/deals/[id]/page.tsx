@@ -966,7 +966,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   };
 
   const submitHandover = async () => {
-    if (!window.confirm('Start delivering to the buyer? This moves the deal to In Progress.')) return;
+    if (!window.confirm('Confirm the buyer has received everything as agreed? This marks the deal Delivered and cannot be undone.')) return;
     setSubmittingHandover(true); setHandoverErr(null);
     try {
       await apiRequest(`/deals/${dealId}/handover`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
@@ -1140,28 +1140,30 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           {!handoverOk ? (
             <div className="space-y-3">
               {!sellerDetailsSaved && (
-                <>
-                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Complete <strong>Your product &amp; delivery details</strong> below before marking as delivered.
-                  </div>
-                  <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
-                </>
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  ⚠️ Save <strong>Your product &amp; delivery details</strong> below before marking as delivered.
+                </div>
               )}
-              <NoRollbackBanner text="Click below once you've begun delivering to the buyer. This moves the deal to In Progress." />
+              {!payoutAlreadySaved && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  ⚠️ Save <strong>your payout address</strong> above before marking as delivered.
+                </div>
+              )}
+              <NoRollbackBanner text="Only click below after the buyer has actually received everything as agreed. This moves the deal to Delivered — it cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
-              <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                <Send className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '→ Start delivery (move to In Progress)'}
+              <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved || !payoutAlreadySaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                {submittingHandover ? 'Submitting…' : '✓ Mark as delivered to the buyer'}
               </Button>
-              <NextStep text="Deal moves to In Progress. Once you've delivered, you'll mark it as delivered there." />
+              <NextStep text="Deal moves to Delivered → the middleman then completes the deal and releases your payout." />
             </div>
           ) : (
             <>
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-emerald-600">✓ In Progress</p>
-                <p className="text-xs text-muted-foreground mt-1">You&apos;re now delivering to the buyer. Mark it delivered when done (below).</p>
+                <p className="text-sm font-semibold text-emerald-600">✓ Marked as delivered!</p>
+                <p className="text-xs text-muted-foreground mt-1">The deal is now Delivered. The middleman will complete it and release your payout.</p>
               </div>
-              <NextStep text="Mark as delivered when you've handed over → the middleman then completes the deal." />
+              <NextStep text="Middleman completes the deal → payout sent to your saved wallet." />
             </>
           )}
 
@@ -1300,27 +1302,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         )
       )}
 
-      {/* Seller product & delivery details — only at the Funded step */}
-      {DETAIL_FORM_STATES.has(deal.status) && (
+      {/* Seller product & delivery details — editable from lock through Funded */}
+      {(DETAIL_FORM_STATES.has(deal.status) || deal.status === 'Funded') && (
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
-      )}
-
-      {/* After lock, the seller prepares (payout address + product details) and
-          then WAITS for the buyer to fund. Funding is the buyer's action only —
-          the seller must not advance it, so the two sides' steps never trigger
-          each other. Once the buyer funds, the deal moves to Funded and the
-          seller's "deliver" action (below) appears. */}
-      {DETAIL_FORM_STATES.has(deal.status) && (
-        <ActionCard title="Waiting for the buyer to fund the escrow" icon={Shield} variant="default">
-          <p className="text-sm text-muted-foreground">
-            Save your payout address and product &amp; delivery details above. Once the buyer funds the
-            escrow, this deal moves to <strong>In Progress</strong> and you&apos;ll be able to deliver and
-            mark it delivered. You don&apos;t need to do anything else here right now.
-          </p>
-          {!sellerDetailsSaved && (
-            <p className="text-xs text-amber-600 mt-2">⚠️ Save your product &amp; delivery details above so you&apos;re ready to deliver.</p>
-          )}
-        </ActionCard>
       )}
 
       {/* Middleman status */}
