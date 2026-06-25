@@ -1063,8 +1063,12 @@ export async function confirmFunding(
     if (!deal) {
       throw new AppError('deal_not_found', 'Deal was not found.', 404);
     }
-    if (deal.buyer_id !== userId && deal.seller_id !== userId && deal.middleman_id !== userId) {
-      throw new AppError('forbidden', 'Only a party to the deal can confirm funding.', 403);
+    if (deal.buyer_id !== userId) {
+      throw new AppError(
+        'forbidden',
+        'Only the buyer can confirm funding — funding is the buyer\'s step and must not be advanced by the seller or middleman.',
+        403,
+      );
     }
     if (deal.status === 'Funded') {
       await client.query('COMMIT');

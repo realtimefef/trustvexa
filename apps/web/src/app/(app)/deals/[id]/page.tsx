@@ -948,9 +948,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [refunding, setRefunding] = React.useState(false);
   const [refundErr, setRefundErr] = React.useState<string | null>(null);
   const [refundOk, setRefundOk] = React.useState(false);
-  // Seller can also confirm funding (fallback) if the buyer has paid.
-  const [sellerConfirmingFunding, setSellerConfirmingFunding] = React.useState(false);
-  const [sellerFundingErr, setSellerFundingErr] = React.useState<string | null>(null);
   // Advance a no-middleman deal from SellerHandover → Delivered.
   const [advancing, setAdvancing] = React.useState(false);
   const [advanceErr, setAdvanceErr] = React.useState<string | null>(null);
@@ -962,16 +959,6 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
     } catch (err) { setAdvanceErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to advance.'); }
     finally { setAdvancing(false); }
-  };
-
-  const sellerConfirmFunding = async () => {
-    if (!window.confirm('Confirm the buyer has funded the escrow? This advances the deal to the delivery stage.')) return;
-    setSellerConfirmingFunding(true); setSellerFundingErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/confirm-funding`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setSellerFundingErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to confirm funding.'); }
-    finally { setSellerConfirmingFunding(false); }
   };
 
   const submitHandover = async () => {
@@ -1302,17 +1289,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
       )}
 
-      {/* Continue to In Progress — shown after the detail forms, advances Confirmed→Funded (In Progress) */}
+      {/* After lock, the seller prepares (payout address + product details) and
+          then WAITS for the buyer to fund. Funding is the buyer's action only —
+          the seller must not advance it, so the two sides' steps never trigger
+          each other. Once the buyer funds, the deal moves to Funded and the
+          seller's "deliver" action (below) appears. */}
       {DETAIL_FORM_STATES.has(deal.status) && (
-        <ActionCard title="Continue to In Progress" icon={Send} variant="success">
-          <p className="text-sm text-muted-foreground mb-2">Once you&apos;ve saved your payout address and product &amp; delivery details above, continue to the In Progress stage to do a final review and hand over to the middleman.</p>
+        <ActionCard title="Waiting for the buyer to fund the escrow" icon={Shield} variant="default">
+          <p className="text-sm text-muted-foreground">
+            Save your payout address and product &amp; delivery details above. Once the buyer funds the
+            escrow, this deal moves to <strong>In Progress</strong> and you&apos;ll be able to deliver and
+            mark it delivered. You don&apos;t need to do anything else here right now.
+          </p>
           {!sellerDetailsSaved && (
-            <p className="text-xs text-amber-600 mb-2">⚠️ Save your product &amp; delivery details above first.</p>
+            <p className="text-xs text-amber-600 mt-2">⚠️ Save your product &amp; delivery details above so you&apos;re ready to deliver.</p>
           )}
-          {sellerFundingErr && <p className="text-xs text-destructive mb-2">⚠️ {sellerFundingErr}</p>}
-          <Button onClick={sellerConfirmFunding} disabled={sellerConfirmingFunding || !sellerDetailsSaved} className="w-full">
-            {sellerConfirmingFunding ? 'Continuing…' : 'Continue to In Progress →'}
-          </Button>
         </ActionCard>
       )}
 
