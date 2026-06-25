@@ -657,9 +657,9 @@ export async function advanceDeliveryNoMiddleman(userId, dealId, requestId) {
         if (deal.buyer_id !== userId && deal.seller_id !== userId) {
             throw new AppError('forbidden', 'Only a party to the deal can advance it.', 403);
         }
-        if (deal.middleman_id) {
-            throw new AppError('has_middleman', 'This deal has a middleman who must verify and deliver.', 409);
-        }
+        // The seller drives delivery (SellerHandover → Delivered) with no middleman
+        // gate in between — the middleman only acts after Delivered. So this is
+        // allowed whether or not a middleman is assigned.
         if (deal.status === 'Delivered') {
             await client.query('COMMIT');
             return { dealId, status: 'Delivered' };
@@ -860,30 +860,12 @@ export async function sellerHandover(sellerId, dealId, requestId) {
         actorId: sellerId,
         requestId,
     });
-    let status = result.to;
-    // The middleman has NO role between Funded and Delivered. The seller's
-    // delivery is their own action and carries the deal straight to Delivered
-    // (SellerHandover → MiddlemanVerified → Delivered are internal technical
-    // transitions, NOT middleman actions). The middleman only steps in AFTER
-    // Delivered, to finalise the deal (Delivered → Complete / release). This is
-    // independent of whether a middleman is assigned.
+    // Funded → SellerHandover ONLY. This is the seller's "start delivery / In
+    // Progress" step. Reaching Delivered is a SEPARATE explicit seller action
+    // (advanceDeliveryNoMiddleman) so the seller's stepper moves Funded → In
+    // Progress → Delivered one step at a time, independently of the buyer.
     void middlemanId;
-    try {
-        const v = await applyDealTransition({
-            dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
-            requestId: `${requestId}:auto-verify`,
-        });
-        status = v.to;
-        const d = await applyDealTransition({
-            dealId, event: 'DeliveredToBuyer', actorId: sellerId,
-            requestId: `${requestId}:auto-deliver`,
-        });
-        status = d.to;
-    }
-    catch {
-        // If a transition fails, leave the deal at its last good state.
-    }
-    return { dealId, status };
+    return { dealId, status: result.to };
 }
 /**
  * Middleman confirms that the seller has completed the handover.

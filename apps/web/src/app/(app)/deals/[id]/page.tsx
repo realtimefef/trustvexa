@@ -198,22 +198,26 @@ function getRequiredConfirmations(network: string): number {
 
 const STAGES = ['Created', 'Agreed', 'Funded', 'In Progress', 'Delivered', 'Complete'] as const;
 
-function statusToStage(status: string): number {
-  // User model: 1 Created · 2 Agreed · 3 Funded (pay + fill all details) ·
-  // 4 In Progress (final review + submit handover) · 5 Delivered · 6 Complete
+function statusToStage(status: string, role?: string): number {
+  // User model: 1 Created · 2 Agreed · 3 Funded · 4 In Progress · 5 Delivered · 6 Complete
+  // Per-side: the buyer's and seller's progress are independent so one side's
+  // action never advances the other side's stepper. The only divergence is the
+  // 'Funded' status: the buyer paying makes the BUYER "In Progress" (4) while
+  // the SELLER stays at "Funded" (3) until they start their own delivery.
   if (['Released', 'PartiallySettled'].includes(status)) return 6;
   if (['Delivered', 'Approved', 'PayoutQueued', 'MilestoneReleased'].includes(status)) return 5;
-  if (['Funded', 'SellerHandover', 'MiddlemanVerified'].includes(status)) return 4; // In Progress
+  if (['SellerHandover', 'MiddlemanVerified'].includes(status)) return 4; // In Progress (seller delivering)
+  if (status === 'Funded') return role === 'seller' ? 3 : 4;
   if (['Confirmed', 'Amended'].includes(status)) return 3; // Funded — fund + enter details
   if (['Agreed', 'Verified'].includes(status)) return 2; // Agreed
   if (['Created', 'Invited'].includes(status)) return 1;
   return 0;
 }
 
-function DealStepper({ status, agreedInProgress }: { status: string; agreedInProgress?: boolean }) {
+function DealStepper({ status, agreedInProgress, role }: { status: string; agreedInProgress?: boolean; role?: string }) {
   const isDisputed = status === 'Disputed';
   const isClosed = ['Cancelled', 'Expired', 'Refunded'].includes(status);
-  let current = statusToStage(status);
+  let current = statusToStage(status, role);
   // When the deal is still Created/Invited but at least one party has agreed,
   // surface the "Agreed" stage (2) so the stepper reflects real progress.
   if (agreedInProgress && current === 1) current = 2;
@@ -962,7 +966,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   };
 
   const submitHandover = async () => {
-    if (!window.confirm('Confirm you have delivered the item to the buyer as agreed? This moves the deal to Delivered.')) return;
+    if (!window.confirm('Start delivering to the buyer? This moves the deal to In Progress.')) return;
     setSubmittingHandover(true); setHandoverErr(null);
     try {
       await apiRequest(`/deals/${dealId}/handover`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
@@ -1053,7 +1057,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
 
       {/* Edit before lock — show as long as the deal isn't locked yet */}
       {!deal.lockedAt && !isPostLock && (
@@ -1113,9 +1117,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <NextStep text="Save your payout address and product details below, then continue to In Progress." />
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Step 4 of 6 — In Progress: Deliver to the buyer" icon={Send} variant="warning">
-          <StepLabel step={4} total={6} label="Deliver the item, then mark it delivered" />
-          <p className="text-sm text-muted-foreground mb-3">Escrow is funded. Review the full deal below, deliver the item to the buyer, then mark it as delivered to move the deal forward.</p>
+        <ActionCard title="Step 3 of 6 — Funded: escrow is funded, start your delivery" icon={Send} variant="warning">
+          <StepLabel step={3} total={6} label="Escrow funded — start delivering" />
+          <p className="text-sm text-muted-foreground mb-3">The buyer has funded the escrow. Review the full deal below, make sure your product &amp; delivery details are saved, then start your delivery to move to In Progress.</p>
 
           {/* Final review of all deal details */}
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
@@ -1130,21 +1134,21 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
                   <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
                 </>
               )}
-              <NoRollbackBanner text="Only click below after you have actually delivered to the buyer. This moves the deal to Delivered — it cannot be undone." />
+              <NoRollbackBanner text="Click below once you've begun delivering to the buyer. This moves the deal to In Progress." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '✓ Mark as delivered to the buyer'}
+                {submittingHandover ? 'Submitting…' : '→ Start delivery (move to In Progress)'}
               </Button>
-              <NextStep text="Deal moves to Delivered → the middleman then completes the deal and releases your payout to your wallet." />
+              <NextStep text="Deal moves to In Progress. Once you've delivered, you'll mark it as delivered there." />
             </div>
           ) : (
             <>
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-emerald-600">✓ Marked as delivered!</p>
-                <p className="text-xs text-muted-foreground mt-1">The deal is now at Delivered. The middleman will complete it and release your payout.</p>
+                <p className="text-sm font-semibold text-emerald-600">✓ In Progress</p>
+                <p className="text-xs text-muted-foreground mt-1">You&apos;re now delivering to the buyer. Mark it delivered when done (below).</p>
               </div>
-              <NextStep text="Middleman completes the deal → payout sent to your saved wallet." />
+              <NextStep text="Mark as delivered when you've handed over → the middleman then completes the deal." />
             </>
           )}
 
@@ -1159,19 +1163,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           </div>
         </ActionCard>
       ) : deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' ? (
-        <ActionCard title="Handover submitted — with the middleman" icon={Shield} variant="success">
-          <StepLabel step={5} total={6} label="Delivered — middleman verifying & completing" />
-          <p className="text-sm text-muted-foreground mb-3">{deal.middlemanId ? 'Your case is now with the middleman, who will verify the delivery and complete the deal. Final review:' : 'Final review of the deal — continue to move it to the Delivered stage:'}</p>
+        <ActionCard title="Step 4 of 6 — In Progress: delivering to the buyer" icon={Send} variant="warning">
+          <StepLabel step={4} total={6} label="Mark as delivered when you've handed over" />
+          <p className="text-sm text-muted-foreground mb-3">You&apos;re delivering to the buyer. Once they have received everything as agreed, mark the deal as delivered.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          {!deal.middlemanId && (
-            <div className="mt-3 space-y-2">
-              {advanceErr && <p className="text-xs text-destructive">⚠️ {advanceErr}</p>}
-              <Button onClick={advanceDelivery} disabled={advancing} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                <CheckCircle2 className="h-4 w-4 mr-1.5" />{advancing ? 'Advancing…' : 'Continue to Delivered →'}
-              </Button>
-            </div>
-          )}
-          <NextStep text="The middleman verifies and completes the deal → your payout is released to your wallet." />
+          <div className="mt-3 space-y-2">
+            <NoRollbackBanner text="Only mark as delivered after the buyer has actually received everything. This moves the deal to Delivered — it cannot be undone." />
+            {advanceErr && <p className="text-xs text-destructive">⚠️ {advanceErr}</p>}
+            <Button onClick={advanceDelivery} disabled={advancing} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />{advancing ? 'Submitting…' : '✓ Mark as delivered to the buyer'}
+            </Button>
+          </div>
+          <NextStep text="Deal moves to Delivered → the middleman then completes the deal and releases your payout." />
         </ActionCard>
       ) : deal.status === 'Delivered' ? (
         <ActionCard title="🎉 Delivered — with the middleman" icon={CheckCircle2} variant="success">
@@ -1468,7 +1471,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
 
       {/* Edit before lock — either party may edit the deal terms until both agree */}
       {!deal.lockedAt && !POST_LOCK_STATES.has(deal.status) && (
@@ -1837,7 +1840,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} />
+      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
 
       {/* Middleman: verify the buyer's deposit transaction (Funded onward) */}
       {(deal.status === 'Funded' || deal.status === 'SellerHandover') && (
