@@ -1085,6 +1085,16 @@ export async function confirmFunding(
         409,
       );
     }
+    // The buyer must have submitted their on-chain payment transaction hash
+    // before the deal can be marked funded — it is the proof of payment and is
+    // required (not optional).
+    const txRes = await client.query(
+      `SELECT 1 FROM payment_status_events WHERE deal_id = $1 AND status_step = 'buyer_submitted_tx' LIMIT 1`,
+      [dealId],
+    );
+    if ((txRes.rowCount ?? 0) === 0) {
+      throw new AppError('tx_hash_required', 'Paste and save your payment transaction hash before confirming funding.', 422);
+    }
     status = deal.status;
     await client.query('COMMIT');
   } catch (err) {

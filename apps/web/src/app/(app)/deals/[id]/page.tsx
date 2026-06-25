@@ -1455,6 +1455,17 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [confirmingFunding, setConfirmingFunding] = React.useState(false);
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
   const [submittedToMm, setSubmittedToMm] = React.useState(false);
+  // Persist the "submitted to middleman" confirmation across refreshes so the
+  // buyer isn't asked to submit again after reloading.
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage.getItem(`mm-submitted-${dealId}`) === '1') {
+      setSubmittedToMm(true);
+    }
+  }, [dealId]);
+  const markSubmittedToMm = () => {
+    setSubmittedToMm(true);
+    if (typeof window !== 'undefined') window.localStorage.setItem(`mm-submitted-${dealId}`, '1');
+  };
 
   const confirmFunding = async () => {
     if (!window.confirm('Confirm you have sent the payment to the escrow address? This advances the deal to the delivery stage.')) return;
@@ -1672,8 +1683,13 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                     ⚠️ Please fill in and save <strong>Your receiving details</strong> above before continuing — the middleman needs to know where to deliver.
                   </div>
                 )}
+                {!txAlreadySaved && (
+                  <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Paste &amp; save <strong>your transaction hash</strong> above first — it&apos;s required to verify your payment.
+                  </div>
+                )}
                 {confirmFundingErr && <p className="text-xs text-destructive">⚠️ {confirmFundingErr}</p>}
-                <Button onClick={confirmFunding} disabled={confirmingFunding || !buyerDetailsSaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button onClick={confirmFunding} disabled={confirmingFunding || !buyerDetailsSaved || !txAlreadySaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
                   <CheckCircle2 className="h-4 w-4 mr-1.5" />
                   {confirmingFunding ? 'Confirming…' : "✓ I've paid — continue to next step"}
                 </Button>
@@ -1690,7 +1706,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below and submit your details to the middleman.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
           {!submittedToMm ? (
-            <Button onClick={() => setSubmittedToMm(true)} className="w-full mt-3">
+            <Button onClick={markSubmittedToMm} className="w-full mt-3">
               <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
             </Button>
           ) : (
