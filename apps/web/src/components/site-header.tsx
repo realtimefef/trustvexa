@@ -47,12 +47,12 @@ export function SiteHeader() {
           <BrandLogo />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               {link.label}
             </Link>
@@ -93,7 +93,7 @@ export function SiteHeader() {
             aria-label="Toggle menu"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-muted/60 md:hidden"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-muted/60 lg:hidden"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -103,7 +103,7 @@ export function SiteHeader() {
       {/* Mobile menu */}
       <div
         className={cn(
-          'overflow-hidden border-t border-border/60 bg-background/95 backdrop-blur-xl transition-all duration-300 md:hidden',
+          'overflow-hidden border-t border-border/60 bg-background/95 backdrop-blur-xl transition-all duration-300 lg:hidden',
           open ? 'max-h-[28rem]' : 'max-h-0 border-t-0',
         )}
       >
