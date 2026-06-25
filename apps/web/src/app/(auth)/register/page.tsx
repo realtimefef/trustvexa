@@ -55,12 +55,24 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [passwordValue, setPasswordValue] = React.useState('');
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
   });
 
   const watchedPassword = watch('password', '');
   React.useEffect(() => { setPasswordValue(watchedPassword ?? ''); }, [watchedPassword]);
+
+  // "Select all" drives the three consent checkboxes together.
+  const isAdult = watch('isAdult');
+  const acceptTerms = watch('acceptTerms');
+  const acceptPrivacy = watch('acceptPrivacy');
+  const allAccepted = Boolean(isAdult && acceptTerms && acceptPrivacy);
+  const toggleAll = (checked: boolean) => {
+    const v = (checked ? true : false) as unknown as true;
+    setValue('isAdult', v, { shouldValidate: true, shouldDirty: true });
+    setValue('acceptTerms', v, { shouldValidate: true, shouldDirty: true });
+    setValue('acceptPrivacy', v, { shouldValidate: true, shouldDirty: true });
+  };
 
   const strength = getPasswordStrength(passwordValue);
   const strengthWidth = strength.score === 0 ? '0%' : strength.score === 1 ? '20%' : strength.score === 2 ? '40%' : strength.score === 3 ? '65%' : strength.score === 4 ? '85%' : '100%';
@@ -184,6 +196,16 @@ export default function RegisterPage() {
 
             {/* Consent */}
             <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
+              <label className="flex items-start gap-2 text-sm border-b border-border/40 pb-2 mb-1">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4"
+                  checked={allAccepted}
+                  onChange={(e) => toggleAll(e.target.checked)}
+                />
+                <span className="font-medium text-foreground">Select all</span>
+              </label>
+
               <label className="flex items-start gap-2 text-sm">
                 <input type="checkbox" className="mt-0.5 h-4 w-4" {...register('isAdult')} />
                 <span className="text-muted-foreground">I confirm I am <span className="font-medium text-foreground">18 years or older</span>.</span>

@@ -861,28 +861,28 @@ export async function sellerHandover(sellerId, dealId, requestId) {
         requestId,
     });
     let status = result.to;
-    // The seller's handover is the LAST action they take: the deal advances all
-    // the way to Delivered (SellerHandover → MiddlemanVerified → Delivered) so the
-    // buyer immediately sees the "delivered / congratulations" stage. The
-    // middleman then finalises the deal (Delivered → Complete / release). This
-    // applies whether or not a middleman is assigned — there is no separate
-    // "waiting for middleman to verify the handover" stage in the flow.
-    void middlemanId; // retained for logging context; no longer gates advancement
-    try {
-        const v = await applyDealTransition({
-            dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
-            requestId: `${requestId}:auto-verify`,
-        });
-        status = v.to;
-        const d = await applyDealTransition({
-            dealId, event: 'DeliveredToBuyer', actorId: sellerId,
-            requestId: `${requestId}:auto-deliver`,
-        });
-        status = d.to;
-    }
-    catch {
-        // If auto-advance fails, leave the deal at SellerHandover; the middleman
-        // can still verify + deliver manually from the console.
+    // Each step after handover is an INDEPENDENT, accountable action. When a
+    // middleman is assigned (the normal escrow case) the deal stops at
+    // SellerHandover and waits for the middleman to explicitly verify the
+    // handover (→ MiddlemanVerified) and then mark it delivered (→ Delivered) —
+    // it must NOT auto-jump from handover straight to Delivered. Only when NO
+    // middleman is assigned do we auto-advance, so such a deal is not stranded.
+    if (!middlemanId) {
+        try {
+            const v = await applyDealTransition({
+                dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
+                requestId: `${requestId}:auto-verify`,
+            });
+            status = v.to;
+            const d = await applyDealTransition({
+                dealId, event: 'DeliveredToBuyer', actorId: sellerId,
+                requestId: `${requestId}:auto-deliver`,
+            });
+            status = d.to;
+        }
+        catch {
+            // If auto-advance fails, leave the deal at SellerHandover.
+        }
     }
     return { dealId, status };
 }
