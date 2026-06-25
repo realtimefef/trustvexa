@@ -1159,27 +1159,26 @@ export async function sellerHandover(
   });
   let status = result.to;
 
-  // Each step after handover is an INDEPENDENT, accountable action. When a
-  // middleman is assigned (the normal escrow case) the deal stops at
-  // SellerHandover and waits for the middleman to explicitly verify the
-  // handover (→ MiddlemanVerified) and then mark it delivered (→ Delivered) —
-  // it must NOT auto-jump from handover straight to Delivered. Only when NO
-  // middleman is assigned do we auto-advance, so such a deal is not stranded.
-  if (!middlemanId) {
-    try {
-      const v = await applyDealTransition({
-        dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
-        requestId: `${requestId}:auto-verify`,
-      });
-      status = v.to;
-      const d = await applyDealTransition({
-        dealId, event: 'DeliveredToBuyer', actorId: sellerId,
-        requestId: `${requestId}:auto-deliver`,
-      });
-      status = d.to;
-    } catch {
-      // If auto-advance fails, leave the deal at SellerHandover.
-    }
+  // The middleman has NO role between Funded and Delivered. The seller's
+  // delivery is their own action and carries the deal straight to Delivered
+  // (SellerHandover → MiddlemanVerified → Delivered are internal technical
+  // transitions, NOT middleman actions). The middleman only steps in AFTER
+  // Delivered, to finalise the deal (Delivered → Complete / release). This is
+  // independent of whether a middleman is assigned.
+  void middlemanId;
+  try {
+    const v = await applyDealTransition({
+      dealId, event: 'MiddlemanVerifiedTransfer', actorId: sellerId,
+      requestId: `${requestId}:auto-verify`,
+    });
+    status = v.to;
+    const d = await applyDealTransition({
+      dealId, event: 'DeliveredToBuyer', actorId: sellerId,
+      requestId: `${requestId}:auto-deliver`,
+    });
+    status = d.to;
+  } catch {
+    // If a transition fails, leave the deal at its last good state.
   }
 
   return { dealId, status };

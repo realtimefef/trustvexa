@@ -975,7 +975,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   };
 
   const submitHandover = async () => {
-    if (!window.confirm('Confirm you have delivered the item to the buyer as agreed? This submits your handover to the middleman for verification.')) return;
+    if (!window.confirm('Confirm you have delivered the item to the buyer as agreed? This moves the deal to Delivered.')) return;
     setSubmittingHandover(true); setHandoverErr(null);
     try {
       await apiRequest(`/deals/${dealId}/handover`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
@@ -1126,9 +1126,9 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           <NextStep text="Save your payout address and product details below, then continue to In Progress." />
         </ActionCard>
       ) : deal.status === 'Funded' ? (
-        <ActionCard title="Step 4 of 6 — In Progress: Final review & submit handover" icon={Send} variant="warning">
-          <StepLabel step={4} total={6} label="Final review, then hand over to middleman" />
-          <p className="text-sm text-muted-foreground mb-3">Escrow is funded. Review the full deal below, deliver the item to the buyer, then submit your handover to the middleman.</p>
+        <ActionCard title="Step 4 of 6 — In Progress: Deliver to the buyer" icon={Send} variant="warning">
+          <StepLabel step={4} total={6} label="Deliver the item, then mark it delivered" />
+          <p className="text-sm text-muted-foreground mb-3">Escrow is funded. Review the full deal below, deliver the item to the buyer, then mark it as delivered to move the deal forward.</p>
 
           {/* Final review of all deal details */}
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
@@ -1138,26 +1138,26 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               {!sellerDetailsSaved && (
                 <>
                   <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Complete <strong>Your product &amp; delivery details</strong> below before submitting the handover.
+                    ⚠️ Complete <strong>Your product &amp; delivery details</strong> below before marking as delivered.
                   </div>
                   <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
                 </>
               )}
-              <NoRollbackBanner text="Only click below after you have delivered to the buyer. This submits your case to the middleman and moves the deal to Delivered — it cannot be undone." />
+              <NoRollbackBanner text="Only click below after you have actually delivered to the buyer. This moves the deal to Delivered — it cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '✓ Delivered — submit handover to middleman'}
+                {submittingHandover ? 'Submitting…' : '✓ Mark as delivered to the buyer'}
               </Button>
-              <NextStep text="Deal moves to Delivered → the middleman verifies and completes the deal → your payout is released to your wallet." />
+              <NextStep text="Deal moves to Delivered → the middleman then completes the deal and releases your payout to your wallet." />
             </div>
           ) : (
             <>
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-emerald-600">✓ Handover submitted!</p>
-                <p className="text-xs text-muted-foreground mt-1">Your case is now with the middleman, who will verify and complete the deal.</p>
+                <p className="text-sm font-semibold text-emerald-600">✓ Marked as delivered!</p>
+                <p className="text-xs text-muted-foreground mt-1">The deal is now at Delivered. The middleman will complete it and release your payout.</p>
               </div>
-              <NextStep text="Middleman verifies → completes the deal → payout sent to your saved wallet." />
+              <NextStep text="Middleman completes the deal → payout sent to your saved wallet." />
             </>
           )}
 
