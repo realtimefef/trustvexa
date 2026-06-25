@@ -29,6 +29,7 @@ import {
 } from './invite-token.js';
 import {
   attachBuyer,
+  attachSeller,
   consumeInvite,
   getInviteByTokenHash,
   insertInvite,
@@ -226,6 +227,7 @@ export async function previewInvite(args: {
 export interface AcceptedInvite {
   dealId: string;
   status: string;
+  connectionId: string | null;
 }
 
 export async function acceptInvite(args: {
@@ -270,7 +272,7 @@ export async function acceptInvite(args: {
     if (deal === null) {
       throw new AppError('deal_not_found', 'The deal for this invite no longer exists.', 404);
     }
-    if (deal.seller_id === args.userId) {
+    if (deal.seller_id === args.userId || deal.buyer_id === args.userId) {
       throw new AppError('invite_self_join', 'You cannot accept your own invite.', 400);
     }
 
@@ -279,7 +281,12 @@ export async function acceptInvite(args: {
       throw new AppError('invite_used', 'This invite link has already been used.', 409);
     }
 
-    const attached = await attachBuyer(client, invite.deal_id, args.userId);
+    // Attach the invitee to whichever side the creator left open. If the creator
+    // is the seller (buyer slot open) the invitee becomes the buyer; if the
+    // creator is the buyer (seller slot open) the invitee becomes the seller.
+    const attached = deal.seller_id === null
+      ? await attachSeller(client, invite.deal_id, args.userId)
+      : await attachBuyer(client, invite.deal_id, args.userId);
     if (!attached) {
       throw new AppError('deal_already_joined', 'This deal already has a counterparty.', 409);
     }
@@ -309,9 +316,10 @@ export async function acceptInvite(args: {
     // seller can chat immediately (the deal-chats rooms above are a separate
     // system; the /connect UI reads the `connections` table). Best-effort and
     // idempotent — never block a successful accept on this.
+    let connectionId: string | null = null;
     try {
       const { ensureConnectionForDeal } = await import('../connections/connections.repository.js');
-      await ensureConnectionForDeal(invite.deal_id);
+      connectionId = await ensureConnectionForDeal(invite.deal_id);
     } catch {
       /* non-fatal: the connection can also be created later from the chat */
     }
@@ -319,7 +327,7 @@ export async function acceptInvite(args: {
     // The buyer has joined. The deal stays in 'Invited' (or 'Created') status.
     // Both parties must still explicitly click "I agree" to lock the deal.
     // Invite acceptance = "buyer is here", NOT "both parties agreed".
-    return { dealId: deal.id, status: deal.status };
+    return { dealId: deal.id, status: deal.status, connectionId };
   } catch (err) {
     await rollbackQuietly(client);
     throw err;

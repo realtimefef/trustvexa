@@ -1,7 +1,7 @@
 import type { TxClient } from './deal.repository.js';
 import type { FeePayer, NetworkMode } from './deal-creation.service.js';
 export interface InsertDealParams {
-    sellerId: string;
+    sellerId: string | null;
     buyerId?: string | null;
     coin: string;
     network: string;

@@ -32,6 +32,7 @@ export declare function previewInvite(args: {
 export interface AcceptedInvite {
     dealId: string;
     status: string;
+    connectionId: string | null;
 }
 export declare function acceptInvite(args: {
     userId: string;

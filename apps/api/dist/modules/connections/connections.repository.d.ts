@@ -50,7 +50,7 @@ export declare function setConnectionDeal(connectionId: string, dealId: string):
  * nothing when a connection is already linked to the deal. Derives the
  * participants from the deals row. Best-effort — callers ignore failures.
  */
-export declare function ensureConnectionForDeal(dealId: string): Promise<void>;
+export declare function ensureConnectionForDeal(dealId: string): Promise<string | null>;
 export declare function insertConnectionMessage(connectionId: string, senderId: string, body: string, channel?: string): Promise<ConnectionMessageRow>;
 export declare function softDeleteConnectionMessage(messageId: string, senderId: string): Promise<boolean>;
 export declare function listConnectionMessages(connectionId: string, channel?: string, limit?: number): Promise<ConnectionMessageRow[]>;

@@ -58,7 +58,9 @@ export async function createDeal(args) {
     }
     // When created from a connection, resolve buyer/seller from its two
     // participants. The caller's chosen role decides their side; the other
-    // participant takes the opposite role.
+    // participant takes the opposite role. For a STANDALONE deal (no connection)
+    // the creator's chosen role still decides their side — the invitee fills the
+    // opposite (open) slot when they accept the invite.
     let dealSellerId = sellerId;
     let dealBuyerId = null;
     let connectionMiddlemanId = null;
@@ -90,6 +92,14 @@ export async function createDeal(args) {
         // Inherit the connection's middleman so the deal shows it immediately.
         connectionMiddlemanId = conn.middleman_id ?? null;
         connectionCreatorId = conn.creator_id;
+    }
+    else if (input.creatorRole === 'buyer') {
+        // Standalone deal where the creator is the BUYER: store them in the buyer
+        // slot and leave the seller slot open for the invitee (who becomes the
+        // seller on accept). Without this the creator would be wrongly stored as
+        // the seller and the roles would be inverted.
+        dealBuyerId = sellerId;
+        dealSellerId = null;
     }
     // Requirements 9.2, 9.3: screen the item text. Prohibited categories are
     // blocked outright; risky keywords route the new deal to middleman review.

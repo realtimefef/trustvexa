@@ -178,7 +178,7 @@ export default function NewDealPage() {
           confirmLegal: true,
           preferredMiddlemanId: form.preferredMiddlemanId || undefined,
           connectionId: connectionId || undefined,
-          creatorRole: connectionId ? creatorRole : undefined,
+          creatorRole: creatorRole,
         },
       });
       // API returns { dealId } (camelCase). Older fallbacks kept for safety.

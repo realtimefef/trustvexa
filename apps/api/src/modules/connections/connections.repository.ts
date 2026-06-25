@@ -164,31 +164,36 @@ function genConnCode(): string {
  * nothing when a connection is already linked to the deal. Derives the
  * participants from the deals row. Best-effort — callers ignore failures.
  */
-export async function ensureConnectionForDeal(dealId: string): Promise<void> {
-  const existing = await query(`SELECT 1 FROM connections WHERE deal_id = $1 LIMIT 1`, [dealId]);
-  if (existing.rows.length > 0) return;
+export async function ensureConnectionForDeal(dealId: string): Promise<string | null> {
+  const existing = await query<{ id: string }>(
+    `SELECT id FROM connections WHERE deal_id = $1 ORDER BY created_at ASC LIMIT 1`,
+    [dealId],
+  );
+  if (existing.rows[0]) return existing.rows[0].id;
 
   const dealRes = await query<{ buyer_id: string | null; seller_id: string | null; middleman_id: string | null }>(
     `SELECT buyer_id, seller_id, middleman_id FROM deals WHERE id = $1 LIMIT 1`,
     [dealId],
   );
   const d = dealRes.rows[0];
-  if (!d || !d.buyer_id || !d.seller_id) return; // both parties required
+  if (!d || !d.buyer_id || !d.seller_id) return null; // both parties required
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
-      await query(
+      const ins = await query<{ id: string }>(
         `INSERT INTO connections (code, creator_id, creator_role, joiner_id, middleman_id, deal_id, status)
-         VALUES ($1, $2, 'seller', $3, $4, $5, 'open')`,
+         VALUES ($1, $2, 'seller', $3, $4, $5, 'open')
+         RETURNING id`,
         [genConnCode(), d.seller_id, d.buyer_id, d.middleman_id, dealId],
       );
-      return;
+      return ins.rows[0]?.id ?? null;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('duplicate') || msg.includes('unique')) continue; // code clash → retry
       throw err;
     }
   }
+  return null;
 }
 
 export async function insertConnectionMessage(

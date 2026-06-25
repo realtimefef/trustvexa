@@ -45,7 +45,9 @@ export interface InviteDealRow {
     network: string;
     deal_amount: number | null;
 }
-/** Load a deal scoped to its owning seller (null if not found / not owned). */
+/** Load a deal scoped to its creating party (null if not found / not a party).
+ * The creator may be on EITHER side — when they chose to be the buyer the deal
+ * has buyer_id = creator and seller_id NULL, so we match either slot. */
 export declare function loadOwnedDeal(client: TxClient, dealId: string, sellerId: string): Promise<InviteDealRow | null>;
 /** Load minimal deal facts for an invite recipient (no owner scope). */
 export declare function loadDealForRecipient(dealId: string): Promise<InviteDealRow | null>;
@@ -55,6 +57,12 @@ export declare function loadDealForRecipient(dealId: string): Promise<InviteDeal
  * blocks the seller from joining their own deal).
  */
 export declare function attachBuyer(client: TxClient, dealId: string, buyerId: string): Promise<boolean>;
+/**
+ * Atomically attach a SELLER to a deal that has no seller yet (used when the
+ * deal's creator chose to be the buyer, leaving the seller slot open for the
+ * invitee). Returns true only if THIS call set the seller.
+ */
+export declare function attachSeller(client: TxClient, dealId: string, sellerId: string): Promise<boolean>;
 export interface SafetySnapshotInput {
     inviteId: string;
     counterpartyUserId: string | null;

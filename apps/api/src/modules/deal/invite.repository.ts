@@ -123,7 +123,9 @@ export interface InviteDealRow {
   deal_amount: number | null;
 }
 
-/** Load a deal scoped to its owning seller (null if not found / not owned). */
+/** Load a deal scoped to its creating party (null if not found / not a party).
+ * The creator may be on EITHER side — when they chose to be the buyer the deal
+ * has buyer_id = creator and seller_id NULL, so we match either slot. */
 export async function loadOwnedDeal(
   client: TxClient,
   dealId: string,
@@ -131,7 +133,7 @@ export async function loadOwnedDeal(
 ): Promise<InviteDealRow | null> {
   const res = await client.query<InviteDealRow>(
     `SELECT id, status, seller_id, buyer_id, coin, network, deal_amount
-       FROM deals WHERE id = $1 AND seller_id = $2 LIMIT 1`,
+       FROM deals WHERE id = $1 AND (seller_id = $2 OR buyer_id = $2) LIMIT 1`,
     [dealId, sellerId],
   );
   return res.rows[0] ?? null;
@@ -162,6 +164,25 @@ export async function attachBuyer(
         SET buyer_id = $2, updated_at = now()
       WHERE id = $1 AND buyer_id IS NULL AND seller_id <> $2`,
     [dealId, buyerId],
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+/**
+ * Atomically attach a SELLER to a deal that has no seller yet (used when the
+ * deal's creator chose to be the buyer, leaving the seller slot open for the
+ * invitee). Returns true only if THIS call set the seller.
+ */
+export async function attachSeller(
+  client: TxClient,
+  dealId: string,
+  sellerId: string,
+): Promise<boolean> {
+  const res = await client.query(
+    `UPDATE deals
+        SET seller_id = $2, updated_at = now()
+      WHERE id = $1 AND seller_id IS NULL AND buyer_id <> $2`,
+    [dealId, sellerId],
   );
   return (res.rowCount ?? 0) > 0;
 }

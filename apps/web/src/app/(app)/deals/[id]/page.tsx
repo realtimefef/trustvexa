@@ -1493,6 +1493,12 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [agreedResult, setAgreedResult] = React.useState<{ buyerAgreed: boolean; sellerAgreed: boolean; locked: boolean; status?: string } | null>(null);
   const [mmErr, setMmErr] = React.useState<string | null>(null);
   const [requestingMm, setRequestingMm] = React.useState(false);
+  // Invite a seller — used when the buyer CREATED a standalone deal (so the
+  // seller slot is still open) and needs to invite their counterparty.
+  const [inviteUrl, setInviteUrl] = React.useState<string | null>(null);
+  const [inviting, setInviting] = React.useState(false);
+  const [inviteErr, setInviteErr] = React.useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = React.useState(false);
   const [checkedItems, setCheckedItems] = React.useState({ coinNet: false, amount: false, risk: false });
   const [confirmingFunding, setConfirmingFunding] = React.useState(false);
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
@@ -1571,6 +1577,21 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
     } finally { setRequestingMm(false); }
   };
 
+  const generateInvite = async () => {
+    setInviting(true); setInviteErr(null);
+    try {
+      const r = await apiRequest<{ inviteUrl: string }>(`/deals/${dealId}/invites`, { method: 'POST', body: { singleUse: true }, idempotencyKey: newIdempotencyKey() });
+      setInviteUrl(r.inviteUrl);
+    } catch (err) { setInviteErr(err instanceof Error ? err.message : 'Failed to generate link.'); }
+    finally { setInviting(false); }
+  };
+
+  const copyInvite = async () => {
+    if (!inviteUrl) return;
+    await navigator.clipboard.writeText(toPublicUrl(inviteUrl));
+    setInviteCopied(true); setTimeout(() => setInviteCopied(false), 2000);
+  };
+
   const mmName = deal.middlemanId ? 'Middleman assigned' : 'No middleman yet';
 
   return (
@@ -1616,6 +1637,28 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {/* Edit before lock — either party may edit the deal terms until both agree */}
       {!deal.lockedAt && !POST_LOCK_STATES.has(deal.status) && (
         <EditDealCard dealId={dealId} deal={deal} onSaved={() => void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] })} />
+      )}
+
+      {/* Invite the seller — only when the buyer CREATED a standalone deal and
+          the seller slot is still open. */}
+      {(deal.status === 'Created' || deal.status === 'Invited') && !deal.sellerId && (
+        <ActionCard title="Invite your seller" icon={UserPlus}>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">You created this deal as the buyer. Generate a secure invite link and share it with your seller — they join as the seller.</p>
+            {inviteErr && <p className="text-xs text-destructive">{inviteErr}</p>}
+            {inviteUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input readOnly value={toPublicUrl(inviteUrl)} className="flex-1 rounded-md border bg-muted px-3 py-1.5 text-xs font-mono" onClick={e => (e.target as HTMLInputElement).select()} />
+                  <Button size="sm" variant="outline" onClick={copyInvite}>{inviteCopied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}</Button>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setInviteUrl(null)}>Generate new link</Button>
+              </div>
+            ) : (
+              <Button onClick={generateInvite} disabled={inviting} className="w-full">{inviting ? 'Generating…' : 'Generate invite link'}</Button>
+            )}
+          </div>
+        </ActionCard>
       )}
 
       {/* Current action — BUYER */}

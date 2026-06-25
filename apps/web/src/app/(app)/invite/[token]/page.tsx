@@ -49,6 +49,7 @@ export default function InvitePage() {
   const [acceptError, setAcceptError] = React.useState<string | null>(null);
   const [accepted, setAccepted] = React.useState(false);
   const [acceptedDealId, setAcceptedDealId] = React.useState<string | null>(null);
+  const [acceptedConnId, setAcceptedConnId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (status !== 'authenticated') return;
@@ -77,13 +78,14 @@ export default function InvitePage() {
     setIsAccepting(true);
     setAcceptError(null);
     try {
-      const result = await apiRequest<{ dealId: string; status: string }>('/invites/accept', {
+      const result = await apiRequest<{ dealId: string; status: string; connectionId: string | null }>('/invites/accept', {
         method: 'POST',
         body: { token },
         idempotencyKey: newIdempotencyKey(),
       });
       setAccepted(true);
       setAcceptedDealId(result.dealId);
+      setAcceptedConnId(result.connectionId ?? null);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to accept invite. Please try again.';
       setAcceptError(msg);
@@ -120,7 +122,7 @@ export default function InvitePage() {
               View deal
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/connect">Open the deal chat</Link>
+              <Link href={acceptedConnId ? `/connect?open=${acceptedConnId}` : `/deals/${acceptedDealId}`}>Open the deal chat</Link>
             </Button>
           </CardContent>
         </Card>
@@ -156,7 +158,7 @@ export default function InvitePage() {
     <div className="mx-auto max-w-lg py-12 space-y-6">
       <h1 className="text-xl font-bold">Deal Invite</h1>
       <p className="text-sm text-muted-foreground">
-        You have been invited to join an escrow deal as the buyer. Review the details below before
+        You have been invited to join an escrow deal as the counterparty. Review the details below before
         accepting.
       </p>
 
