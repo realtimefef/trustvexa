@@ -959,6 +959,10 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   const [submittingHandover, setSubmittingHandover] = React.useState(false);
   const [handoverErr, setHandoverErr] = React.useState<string | null>(null);
   const [handoverOk, setHandoverOk] = React.useState(false);
+  // Two-phase seller flow: step 3 (enter payout + product details) → step 4
+  // (submit / handover to the middleman). The seller advances with the
+  // "Continue to next step" button once both are saved.
+  const [proceedToSubmit, setProceedToSubmit] = React.useState(false);
   const [payoutAddr, setPayoutAddr] = React.useState('');
   const [paySubmitting, setPaySubmitting] = React.useState(false);
   const [payMsg, setPayMsg] = React.useState<string | null>(null);
@@ -1172,13 +1176,40 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             <DealReviewSummary deal={deal} partyDetails={partyDetails} />
             <NextStep text="Middleman completes the deal → payout sent to your saved wallet. You don't wait on the buyer." />
           </ActionCard>
+        ) : proceedToSubmit && payoutAlreadySaved && sellerDetailsSaved ? (
+          <ActionCard title="Step 4 of 6 — Submit & handover to the middleman" icon={Send} variant="warning">
+            <StepLabel step={4} total={6} label="Submit / handover your details to the middleman" />
+            <p className="text-sm text-muted-foreground mb-3">Your payout address and product details are saved. Submit &amp; handover them to the middleman now — your side completes independently, you don&apos;t wait on the buyer.</p>
+
+            <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+
+            <div className="space-y-3 mt-3">
+              {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
+              <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved || !payoutAlreadySaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Shield className="h-4 w-4 mr-1.5" />
+                {submittingHandover ? 'Submitting…' : '✓ Submit & handover my details to the middleman'}
+              </Button>
+              <Button variant="ghost" size="sm" className="w-full" onClick={() => setProceedToSubmit(false)}>← Back to edit my details</Button>
+              <NextStep text="Your side is submitted independently. The middleman completes the deal once both sides have submitted, and releases your payout." />
+            </div>
+
+            <div className="mt-4 border-t pt-3">
+              <p className="text-xs text-muted-foreground mb-2">Changed your mind? Issue a full voluntary refund:</p>
+              {refundErr && <p className="text-xs text-destructive mb-2">{refundErr}</p>}
+              {refundOk && <p className="text-xs text-emerald-600 mb-2">✓ Refund submitted.</p>}
+              <Button size="sm" variant="outline" className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                disabled={refunding || refundOk} onClick={handleFreeRefund}>
+                {refunding ? 'Processing…' : '↩ Issue free refund to buyer'}
+              </Button>
+            </div>
+          </ActionCard>
         ) : (
-          <ActionCard title="Step 4 of 6 — Submit your details to the middleman" icon={Send} variant="warning">
-            <StepLabel step={4} total={6} label="Save your details, then submit / handover to the middleman" />
+          <ActionCard title="Step 3 of 6 — Add your payout & product details" icon={Wallet} variant="success">
+            <StepLabel step={3} total={6} label="Enter your payout address & product / delivery details" />
             <p className="text-sm text-muted-foreground mb-3">
               {deal.status === 'Funded'
-                ? 'The escrow is funded. Save your payout address and product details below, then submit them to the middleman — your side completes independently, you don\u2019t wait on the buyer.'
-                : 'Both parties agreed and the deal is locked. Save your payout address and product details below, then submit / handover to the middleman now — your side is independent of the buyer (the buyer funds the escrow separately).'}
+                ? 'The escrow is funded. Enter your payout address and product / delivery details below — your side is independent of the buyer. When both are saved, continue to the next step.'
+                : 'Both parties agreed and the deal is locked. Enter your payout address and product / delivery details below — your side is independent of the buyer (the buyer funds the escrow separately). When both are saved, continue to the next step.'}
             </p>
 
             {/* Payout address — always editable; the buyer funding the escrow must never clear it. */}
@@ -1194,32 +1225,24 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               {payErr && <p className="text-xs text-destructive">{payErr}</p>}
             </div>
 
-            {/* Final review of all deal details */}
-            <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-
-            {/* Product & delivery details — required before submitting, so it
-                sits directly above the submit / handover button. */}
-            <div className="mt-3">
-              <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
-            </div>
+            {/* Your product & delivery details — shown ABOVE the continue button. */}
+            <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
 
             <div className="space-y-3 mt-3">
               {!sellerDetailsSaved && (
                 <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Save <strong>your product &amp; delivery details</strong> below before submitting to the middleman.
+                  ⚠️ Save <strong>your product &amp; delivery details</strong> above before continuing.
                 </div>
               )}
               {!payoutAlreadySaved && (
                 <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Save <strong>your payout address</strong> above before submitting to the middleman.
+                  ⚠️ Save <strong>your payout address</strong> above before continuing.
                 </div>
               )}
-              {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
-              <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved || !payoutAlreadySaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                <Shield className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '✓ Submit & handover my details to the middleman'}
+              <Button onClick={() => setProceedToSubmit(true)} disabled={!sellerDetailsSaved || !payoutAlreadySaved} className="w-full">
+                Continue to next step →
               </Button>
-              <NextStep text="Your side is submitted independently. The middleman completes the deal once both sides have submitted, and releases your payout." />
+              <NextStep text="Next: submit & handover your saved details to the middleman (step 4). Your side stays independent of the buyer." />
             </div>
 
             <div className="mt-4 border-t pt-3">
