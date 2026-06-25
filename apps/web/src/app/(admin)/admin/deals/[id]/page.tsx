@@ -63,9 +63,11 @@ function DetailRow({ label, value, mono, always }: { label: string; value: strin
   const empty = value === null || value === undefined || value === '' || value === '—';
   if (empty && !always) return null; // hide blank fields instead of cluttering with "—"
   return (
-    <div className="flex justify-between gap-3 text-xs py-0.5">
-      <span className="text-muted-foreground shrink-0">{label}</span>
-      <span className={`text-right break-words ${mono ? 'font-mono' : ''}`}>{value || '—'}</span>
+    <div className="flex gap-3 text-xs py-1 items-start">
+      <span className="text-muted-foreground shrink-0 w-32">{label}</span>
+      <span className={`flex-1 min-w-0 break-words whitespace-pre-wrap leading-relaxed ${mono ? 'font-mono' : ''} ${empty ? 'text-muted-foreground italic' : 'font-medium'}`}>
+        {value || '—'}
+      </span>
     </div>
   );
 }
