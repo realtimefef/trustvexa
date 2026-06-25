@@ -72,11 +72,6 @@ const POST_LOCK_STATES = new Set([
   'Expired',
 ]);
 
-// Seller product details form shows at the "Funded" stepper stage = statuses
-// Agreed→Confirmed (data entry). At "In Progress" (status Funded) it's review
-// only; the form only reappears there as a fallback if it was never filled.
-const DETAIL_FORM_STATES = new Set(['Agreed', 'Verified', 'Confirmed', 'Amended']);
-
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 interface EscrowAddressView {
@@ -1202,6 +1197,12 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {/* Final review of all deal details */}
             <DealReviewSummary deal={deal} partyDetails={partyDetails} />
 
+            {/* Product & delivery details — required before submitting, so it
+                sits directly above the submit / handover button. */}
+            <div className="mt-3">
+              <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
+            </div>
+
             <div className="space-y-3 mt-3">
               {!sellerDetailsSaved && (
                 <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
@@ -1343,10 +1344,8 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         )
       )}
 
-      {/* Seller product & delivery details — editable from lock through Funded */}
-      {(DETAIL_FORM_STATES.has(deal.status) || deal.status === 'Funded') && (
-        <SellerDetailsForm dealId={dealId} existing={partyDetails?.sellerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
-      )}
+      {/* Seller product & delivery details now render INSIDE the submit card,
+          directly above the submit / handover button (see Step 4 card above). */}
 
       {/* Middleman status */}
       {deal.middlemanId ? (
