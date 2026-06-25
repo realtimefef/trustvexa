@@ -820,8 +820,15 @@ export async function sellerSubmitToMiddleman(sellerId, dealId) {
             throw new AppError('deal_not_found', 'Deal was not found.', 404);
         if (deal.seller_id !== sellerId)
             throw new AppError('forbidden', 'Only the seller can submit the seller side.', 403);
-        if (deal.status !== 'Funded')
-            throw new AppError('invalid_state', 'You can submit to the middleman once the escrow is funded.', 409);
+        // The seller's submit/handover is INDEPENDENT of the buyer — it only records
+        // the seller-side flag and submits their details, it does not move money or
+        // status. So the seller may submit any time after the deal is locked, even
+        // before the buyer funds the escrow (the seller should never be forced to
+        // wait on the buyer). The payout is still gated separately on funding +
+        // both sides submitting at completion time.
+        if (!['Agreed', 'Verified', 'Confirmed', 'Amended', 'Funded'].includes(deal.status)) {
+            throw new AppError('invalid_state', 'You can submit to the middleman once the deal is locked (both parties agreed).', 409);
+        }
         const payout = await client.query(`SELECT new_address_enc FROM wallet_change_requests WHERE deal_id = $1 AND wallet_type = 'payout' ORDER BY created_at DESC LIMIT 1`, [dealId]);
         if (!payout.rows[0]?.new_address_enc)
             throw new AppError('payout_address_required', 'Save your payout address before submitting to the middleman.', 422);
