@@ -11,7 +11,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Copy, FileText, ImagePlus, Link as LinkIcon,
+  Check, Copy, FileText, ImagePlus, Link as LinkIcon,
   Loader2, LogIn, MessageSquare, Plus, Send,
   Shield, Trash2, X, LifeBuoy,
 } from 'lucide-react';
@@ -503,13 +503,19 @@ export default function ConnectPage() {
     } catch { /* ignore */ }
   };
 
+  const [copied, setCopied] = React.useState<'code' | 'link' | null>(null);
+  const flagCopied = (kind: 'code' | 'link') => {
+    setCopied(kind);
+    setTimeout(() => setCopied(null), 1500);
+  };
   const copyCode = (code: string) => {
     void navigator.clipboard?.writeText(code);
-    setTimeout(() => {}, 0);
+    flagCopied('code');
   };
   const copyLink = (code: string) => {
     const base = typeof window !== 'undefined' ? window.location.origin : '';
     void navigator.clipboard?.writeText(`${base}/connect?join=${code}`);
+    flagCopied('link');
   };
 
   // ── Derived state ─────────────────────────────────────────────────────────────
@@ -774,12 +780,16 @@ export default function ConnectPage() {
                     {/* Code copy */}
                     <button type="button" onClick={() => copyCode(a.code)}
                       className="inline-flex items-center gap-1 font-mono text-[10px] bg-muted/60 hover:bg-muted rounded-lg px-2 py-1 transition-colors">
-                      {a.code} <Copy className="h-2.5 w-2.5 text-muted-foreground" />
+                      {copied === 'code'
+                        ? <><Check className="h-2.5 w-2.5 text-emerald-500" /> Copied!</>
+                        : <>{a.code} <Copy className="h-2.5 w-2.5 text-muted-foreground" /></>}
                     </button>
                     {/* Share link */}
                     <button type="button" onClick={() => copyLink(a.code)}
                       className="inline-flex items-center gap-1 text-[10px] border rounded-lg px-2 py-1 hover:bg-muted/40 transition-colors">
-                      <LinkIcon className="h-2.5 w-2.5" /> Copy link
+                      {copied === 'link'
+                        ? <><Check className="h-2.5 w-2.5 text-emerald-500" /> Copied!</>
+                        : <><LinkIcon className="h-2.5 w-2.5" /> Copy link</>}
                     </button>
                     {/* Invite middleman */}
                     {a.joined && !a.middlemanId && myRole !== 'middleman' && (
