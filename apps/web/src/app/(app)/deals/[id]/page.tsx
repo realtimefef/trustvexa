@@ -288,22 +288,48 @@ function SideTrack({ title, subtitle, accent, items }: {
   accent: 'blue' | 'emerald';
   items: TrackItem[];
 }) {
-  const currentIdx = items.findIndex((i) => !i.done);
+  const [collapsed, setCollapsed] = React.useState(false);
+  const firstNotDone = items.findIndex((i) => !i.done);
+  const currentIdx = firstNotDone === -1 ? items.length - 1 : firstNotDone;
+  const allDone = items.length > 0 && firstNotDone === -1;
   const ring = accent === 'blue' ? 'ring-blue-500/30 border-blue-500/30' : 'ring-emerald-500/30 border-emerald-500/30';
   const dot = accent === 'blue' ? 'bg-blue-600' : 'bg-emerald-600';
+  const banner = accent === 'blue' ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300' : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300';
   const doneCount = items.filter((i) => i.done).length;
   return (
     <div className={`rounded-2xl border-2 ${ring} bg-card p-4`}>
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="min-w-0">
           <p className="font-semibold text-sm">{title}</p>
           <p className="text-[11px] text-muted-foreground">{subtitle}</p>
         </div>
-        <span className="text-[11px] font-medium text-muted-foreground">{doneCount}/{items.length} done</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-medium text-muted-foreground">{doneCount}/{items.length} done</span>
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            className="text-[11px] font-medium text-primary hover:underline"
+          >
+            {collapsed ? 'Show all steps' : 'Hide details'}
+          </button>
+        </div>
+      </div>
+      {/* Always-visible "you are here" indicator — shows the current stage. */}
+      <div className={`mb-3 rounded-lg px-3 py-1.5 text-[11px] ${banner}`}>
+        {allDone ? (
+          <span className="font-semibold">✓ Completed — all {items.length} steps done</span>
+        ) : (
+          <span>
+            <span className="font-semibold">You are here:</span> Step {currentIdx + 1} of {items.length} — {items[currentIdx]?.label}
+          </span>
+        )}
       </div>
       <ol className="space-y-2.5">
         {items.map((it, i) => {
           const isCurrent = !it.done && i === currentIdx;
+          // When collapsed, only show the current stage and the next stage.
+          if (collapsed && i !== currentIdx && i !== currentIdx + 1) return null;
+          const isNext = collapsed && i === currentIdx + 1;
           return (
             <li key={it.label} className="flex items-start gap-2.5">
               <span className={`mt-0.5 h-5 w-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${
@@ -312,7 +338,11 @@ function SideTrack({ title, subtitle, accent, items }: {
                 {it.done ? '✓' : i + 1}
               </span>
               <div className="min-w-0">
-                <p className={`text-sm ${it.done ? 'text-muted-foreground line-through' : isCurrent ? 'font-semibold' : 'text-muted-foreground'}`}>{it.label}</p>
+                <p className={`text-sm ${it.done ? 'text-muted-foreground line-through' : isCurrent ? 'font-semibold' : 'text-muted-foreground'}`}>
+                  {it.label}
+                  {isCurrent && <span className="ml-1.5 text-[9px] font-bold uppercase text-primary">• current</span>}
+                  {isNext && <span className="ml-1.5 text-[9px] font-bold uppercase text-muted-foreground">• next</span>}
+                </p>
                 {isCurrent && it.hint && <p className="text-[11px] text-muted-foreground mt-0.5">{it.hint}</p>}
               </div>
             </li>
@@ -611,8 +641,9 @@ function SellerDetailsForm({ dealId, existing, onSaved }: {
       <div className="space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="sd-name">Selling account details</Label>
-          <Input id="sd-name" value={productName} onChange={e => setProductName(e.target.value)}
-            placeholder="What you are selling / account to be transferred" />
+          <textarea id="sd-name" rows={4} value={productName} onChange={e => setProductName(e.target.value)}
+            className="w-full resize-y rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[110px]"
+            placeholder="What you are selling / account to be transferred — include login / username, what's included, profile or item links, and anything the middleman needs to verify and hand over." />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sd-email">Your email <span className="text-muted-foreground text-xs">(for payment confirmation)</span></Label>
@@ -1117,7 +1148,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           { label: 'Save your payout address', done: payoutAlreadySaved, hint: 'The wallet where you receive your payout.' },
           { label: 'Add product / account details', done: sellerDetailsSaved, hint: 'What you are selling + delivery info (required).' },
           { label: 'Submit / handover to the middleman', done: !!deal.sellerSubmittedAt, hint: 'Independent of the buyer — submit as soon as your details are saved.' },
-          { label: 'Delivered to the middleman', done: !!deal.sellerSubmittedAt, hint: 'Your details are with the middleman — they complete the deal.' },
+          { label: 'Delivered to the middleman', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled', hint: 'Your details are with the middleman — they complete the deal. Waiting on the middleman, not the buyer.' },
           { label: 'Payout released to you', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
         ]}
       />
@@ -1447,10 +1478,14 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
   const [submittedToMm, setSubmittedToMm] = React.useState(false);
   const [submitErr, setSubmitErr] = React.useState<string | null>(null);
+  // Two-phase buyer flow at Funded: review/edit receiving details → submit /
+  // handover to the middleman (with a "back to edit" option).
+  const [proceedToSubmitBuyer, setProceedToSubmitBuyer] = React.useState(false);
   // The submission is persisted server-side (deal.buyerSubmittedAt), so refresh
   // keeps the submitted state — no local-only flag needed.
   const buyerSubmitted = submittedToMm || !!deal.buyerSubmittedAt;
   const markSubmittedToMm = async () => {
+    if (!window.confirm('Submit & handover your details to the middleman? Your side completes independently — the middleman finalises the deal once both sides have submitted.')) return;
     setSubmitErr(null);
     try {
       await apiRequest(`/deals/${dealId}/buyer-submit`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
@@ -1554,7 +1589,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           { label: 'Fund the escrow', done: reached(deal.status, 'Funded'), hint: 'Send the exact amount to the escrow address.' },
           { label: 'Add your receiving details', done: buyerDetailsSaved, hint: 'Where you want to receive the item (required).' },
           { label: 'Submit your details to the middleman', done: !!deal.buyerSubmittedAt, hint: 'Independent of the seller — submit when funded + details saved.' },
-          { label: 'Delivered to the middleman', done: !!deal.buyerSubmittedAt, hint: 'Your details are with the middleman — they complete the deal.' },
+          { label: 'Delivered to the middleman', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled', hint: 'Your details are with the middleman — they complete the deal. Waiting on the middleman, not the seller.' },
           { label: 'Deal complete', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
         ]}
       />
@@ -1698,29 +1733,51 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {deal.status === 'Funded' && (
         <ActionCard title={buyerSubmitted ? '🎉 Step 5 of 6 — Delivered to the middleman' : 'Step 4 of 6 — Final review: submit to middleman'} icon={buyerSubmitted ? CheckCircle2 : Shield} variant="success">
           <StepLabel step={buyerSubmitted ? 5 : 4} total={6} label={buyerSubmitted ? 'Delivered to the middleman — being completed' : 'Final review — submit to middleman'} />
-          <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below and submit your details to the middleman.</p>
-          <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          {!buyerSubmitted ? (
+          {buyerSubmitted ? (
             <>
+              <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+              <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-4 text-center space-y-1.5">
+                <p className="font-semibold text-emerald-600 text-base">🎉 Submitted — congratulations!</p>
+                <p className="text-sm text-muted-foreground">
+                  Your details have been submitted to the middleman. You will receive your account / product
+                  details by <strong>chat and email</strong> shortly. You can contact the middleman anytime via
+                  the deal chat, or wait for their reply. The middleman will complete the deal.
+                </p>
+                <Button asChild variant="outline" size="sm" className="mt-1">
+                  <Link href={dealChatHref(deal.connectionId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+                </Button>
+              </div>
+              <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
+            </>
+          ) : proceedToSubmitBuyer && buyerDetailsSaved ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Submit &amp; handover them to the middleman now — your side completes independently, no waiting on the seller.</p>
+              <DealReviewSummary deal={deal} partyDetails={partyDetails} />
               {submitErr && <p className="text-xs text-destructive mt-2">⚠️ {submitErr}</p>}
-              <Button onClick={() => void markSubmittedToMm()} className="w-full mt-3">
-                <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
+              <Button onClick={() => void markSubmittedToMm()} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Shield className="h-4 w-4 mr-1.5" /> Submit &amp; handover my details to the middleman
               </Button>
+              <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setProceedToSubmitBuyer(false)}>← Back to edit my details</Button>
+              <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
             </>
           ) : (
-            <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-4 text-center space-y-1.5">
-              <p className="font-semibold text-emerald-600 text-base">🎉 Submitted — congratulations!</p>
-              <p className="text-sm text-muted-foreground">
-                Your details have been submitted to the middleman. You will receive your account / product
-                details by <strong>chat and email</strong> shortly. You can contact the middleman anytime via
-                the deal chat, or wait for their reply. The middleman will complete the deal.
-              </p>
-              <Button asChild variant="outline" size="sm" className="mt-1">
-                <Link href={dealChatHref(deal.connectionId, 'buyer_mm')}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Contact the middleman</Link>
+            <>
+              <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow. Review and edit your receiving details below, then continue to submit / handover to the middleman.</p>
+              <DealReviewSummary deal={deal} partyDetails={partyDetails} />
+              <div className="mt-3">
+                <BuyerDetailsForm dealId={dealId} existing={partyDetails?.buyerDetails ?? null} onSaved={() => qc.invalidateQueries({ queryKey: ['party-details', dealId] })} />
+              </div>
+              {!buyerDetailsSaved && (
+                <div className="mt-3 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                  ⚠️ Save <strong>your receiving details</strong> above before continuing.
+                </div>
+              )}
+              <Button onClick={() => setProceedToSubmitBuyer(true)} disabled={!buyerDetailsSaved} className="w-full mt-3">
+                Continue to next step →
               </Button>
-            </div>
+              <NextStep text="Next: submit & handover your saved details to the middleman (step 4). Your side stays independent of the seller." />
+            </>
           )}
-          <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
         </ActionCard>
       )}
 
