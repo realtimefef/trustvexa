@@ -10,6 +10,7 @@ import { query } from '@trustvexa/shared';
 import { notFound } from '../../errors/app-error.js';
 import type { DealRole } from '../chat/chat-types.js';
 import type { DealStatus } from '../deal/state-machine.js';
+import { ensureConnectionForDeal } from '../connections/connections.repository.js';
 import { isWaitingOn, nextActionsFor, orderTimeline } from './action-center.js';
 import type { NextAction, TimelineEntry } from './action-center.js';
 import {
@@ -171,6 +172,30 @@ export async function getDealDetail(userId: string, dealId: string): Promise<Dea
     throw notFound('Deal was not found.');
   }
 
+  // Self-heal the deal's /connect conversation so the "Open chat" / "Deal chat"
+  // deep-links resolve to the EXACT chat for this deal instead of dropping the
+  // user on the generic inbox. A deal that was invited/joined may have no linked
+  // connection if the best-effort creation at accept-time didn't run; here we
+  // ensure it (idempotent) and re-read its id/code. Only runs when both parties
+  // exist and no connection is linked yet, so it's cheap and safe.
+  let connectionId = row.connection_id ?? null;
+  let connectionCode = row.connection_code ?? null;
+  if (!connectionId && row.buyer_id && row.seller_id) {
+    try {
+      await ensureConnectionForDeal(dealId);
+      const c = await query<{ id: string; code: string }>(
+        `SELECT id, code FROM connections WHERE deal_id = $1 ORDER BY created_at ASC LIMIT 1`,
+        [dealId],
+      );
+      if (c.rows[0]) {
+        connectionId = c.rows[0].id;
+        connectionCode = c.rows[0].code;
+      }
+    } catch {
+      /* non-fatal: links fall back to the connect inbox if this ever fails */
+    }
+  }
+
   const timelineRows = await loadTimeline(dealId, role === 'middleman');
   const entries: TimelineEntry[] = timelineRows.map((t) => ({
     at: toIso(t.created_at) ?? '',
@@ -209,7 +234,7 @@ export async function getDealDetail(userId: string, dealId: string): Promise<Dea
     sellerAgreedAt: row.seller_agreed_at ? new Date(row.seller_agreed_at as string).toISOString() : null,
     buyerSubmittedAt: row.buyer_submitted_at ? new Date(row.buyer_submitted_at as string).toISOString() : null,
     sellerSubmittedAt: row.seller_submitted_at ? new Date(row.seller_submitted_at as string).toISOString() : null,
-    connectionId: row.connection_id ?? null,
-    connectionCode: row.connection_code ?? null,
+    connectionId: connectionId,
+    connectionCode: connectionCode,
   };
 }

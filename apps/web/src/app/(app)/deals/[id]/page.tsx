@@ -288,7 +288,9 @@ function SideTrack({ title, subtitle, accent, items }: {
   accent: 'blue' | 'emerald';
   items: TrackItem[];
 }) {
-  const [collapsed, setCollapsed] = React.useState(false);
+  // Tracks are collapsed by default — they show only the current + next stage
+  // until the user expands them with "Show all steps".
+  const [collapsed, setCollapsed] = React.useState(true);
   const firstNotDone = items.findIndex((i) => !i.done);
   const currentIdx = firstNotDone === -1 ? items.length - 1 : firstNotDone;
   const allDone = items.length > 0 && firstNotDone === -1;
@@ -521,7 +523,7 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
           <Row label="Deal ID" value={<span className="font-mono text-xs">{deal.id}</span>} />
           {deal.connectionCode && (
             <Row label="Deal chat" value={
-              <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="font-mono text-xs text-primary hover:underline">
+              <Link href={dealChatHref(deal.connectionId)} className="font-mono text-xs text-primary hover:underline">
                 {deal.connectionCode} →
               </Link>
             } />
@@ -1110,6 +1112,14 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   // The seller's submit/handover is persisted server-side (deal.sellerSubmittedAt)
   // and is independent of the buyer — once submitted the seller's track is done.
   const sellerSubmitted = handoverOk || !!deal.sellerSubmittedAt;
+  // Current step (1-6) for the seller — mirrors the SideTrack so the action
+  // card always shows the same step number as the track ("you are here").
+  const sellerCurrentStep = !payoutAlreadySaved ? 2 : !sellerDetailsSaved ? 3 : 4;
+  const sellerStepLabel = !payoutAlreadySaved
+    ? 'Save your payout address'
+    : !sellerDetailsSaved
+      ? 'Add your product / account details'
+      : 'Review & continue to submit';
   const counterparty = deal.buyerId ? 'Buyer connected' : 'Waiting for buyer';
   const mmName = deal.middlemanId ? `⚖️ Middleman: ${deal.middlemanId.slice(0,8)}` : 'No middleman yet';
 
@@ -1122,7 +1132,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
           {deal.connectionCode && (
-            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+            <Link href={dealChatHref(deal.connectionId)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
               <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
             </Link>
           )}
@@ -1235,8 +1245,8 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
             </div>
           </ActionCard>
         ) : (
-          <ActionCard title="Step 3 of 6 — Add your payout & product details" icon={Wallet} variant="success">
-            <StepLabel step={3} total={6} label="Enter your payout address & product / delivery details" />
+          <ActionCard title={`Step ${sellerCurrentStep} of 6 — ${sellerStepLabel}`} icon={Wallet} variant="success">
+            <StepLabel step={sellerCurrentStep} total={6} label={sellerStepLabel} />
             <p className="text-sm text-muted-foreground mb-3">
               {deal.status === 'Funded'
                 ? 'The escrow is funded. Enter your payout address and product / delivery details below — your side is independent of the buyer. When both are saved, continue to the next step.'
@@ -1497,7 +1507,6 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   };
 
   const confirmFunding = async () => {
-    if (!window.confirm('Confirm you have sent the payment to the escrow address? This advances the deal to the delivery stage.')) return;
     setConfirmingFunding(true); setConfirmFundingErr(null);
     try {
       await apiRequest(`/deals/${dealId}/confirm-funding`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
@@ -1563,7 +1572,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
           {deal.connectionCode && (
-            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+            <Link href={dealChatHref(deal.connectionId)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
               <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
             </Link>
           )}
@@ -1669,7 +1678,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       {(deal.status === 'Agreed' || deal.status === 'Verified' || deal.status === 'Confirmed' || deal.status === 'Amended') && (
         <ActionCard title="Fund the escrow — send exactly this amount" icon={Wallet}
           description={`Send exact ${deal.coin} amount. Wrong amount or wrong network = permanent loss.`}>
-          <StepLabel step={3} total={6} label="Buyer funds the escrow" />
+          <StepLabel step={2} total={6} label="Buyer funds the escrow" />
           <NoRollbackBanner text="Once you send crypto to the escrow address it cannot be recalled. Only proceed after verifying all deal details." />
           {/* Exact amount box — prominent */}
           <div className="rounded-xl border-2 border-primary/40 bg-primary/5 px-4 py-3 mb-4 text-center">
@@ -1960,7 +1969,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
             {deal.itemDescription ? `"${deal.itemDescription}"` : `Deal ${dealId.slice(0, 8)}`}
           </h1>
           {deal.connectionCode && (
-            <Link href={`/connect?open=${deal.connectionId ?? ''}`} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
+            <Link href={dealChatHref(deal.connectionId)} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors mt-0.5">
               <MessageCircle className="h-3 w-3" /> Deal chat: <span className="font-mono font-semibold">{deal.connectionCode}</span>
             </Link>
           )}
