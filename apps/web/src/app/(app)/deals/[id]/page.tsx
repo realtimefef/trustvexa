@@ -267,7 +267,68 @@ function DealStepper({ status, agreedInProgress, role }: { status: string; agree
   );
 }
 
-// ─── Shared UI components ─────────────────────────────────────────────────────
+// ─── Per-side progress track ──────────────────────────────────────────────────
+// Each party (buyer, seller) gets their OWN independent checklist driven only by
+// THAT side's completed actions — one side acting never moves the other side's
+// track. Every item is derived from data stored in the database for that side.
+
+const STATUS_ORDER = [
+  'Created', 'Invited', 'Agreed', 'Verified', 'Confirmed', 'Amended',
+  'Funded', 'SellerHandover', 'MiddlemanVerified', 'Delivered',
+  'Approved', 'PayoutQueued', 'MilestoneReleased', 'Released',
+] as const;
+
+/** True when `status` has reached `target` or beyond in the escrow order. */
+function reached(status: string, target: string): boolean {
+  const s = STATUS_ORDER.indexOf(status as typeof STATUS_ORDER[number]);
+  const t = STATUS_ORDER.indexOf(target as typeof STATUS_ORDER[number]);
+  return s >= 0 && t >= 0 && s >= t;
+}
+
+export interface TrackItem { label: string; done: boolean; hint?: string }
+
+function SideTrack({ title, subtitle, accent, items }: {
+  title: string;
+  subtitle: string;
+  accent: 'blue' | 'emerald';
+  items: TrackItem[];
+}) {
+  const currentIdx = items.findIndex((i) => !i.done);
+  const ring = accent === 'blue' ? 'ring-blue-500/30 border-blue-500/30' : 'ring-emerald-500/30 border-emerald-500/30';
+  const dot = accent === 'blue' ? 'bg-blue-600' : 'bg-emerald-600';
+  const doneCount = items.filter((i) => i.done).length;
+  return (
+    <div className={`rounded-2xl border-2 ${ring} bg-card p-4`}>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <p className="font-semibold text-sm">{title}</p>
+          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+        </div>
+        <span className="text-[11px] font-medium text-muted-foreground">{doneCount}/{items.length} done</span>
+      </div>
+      <ol className="space-y-2.5">
+        {items.map((it, i) => {
+          const isCurrent = !it.done && i === currentIdx;
+          return (
+            <li key={it.label} className="flex items-start gap-2.5">
+              <span className={`mt-0.5 h-5 w-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                it.done ? `${dot} text-white` : isCurrent ? `${dot} text-white ring-4 ring-current/15` : 'bg-muted text-muted-foreground border'
+              }`}>
+                {it.done ? '✓' : i + 1}
+              </span>
+              <div className="min-w-0">
+                <p className={`text-sm ${it.done ? 'text-muted-foreground line-through' : isCurrent ? 'font-semibold' : 'text-muted-foreground'}`}>{it.label}</p>
+                {isCurrent && it.hint && <p className="text-[11px] text-muted-foreground mt-0.5">{it.hint}</p>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -1057,7 +1118,18 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
+      <SideTrack
+        title="📦 Your seller track"
+        subtitle="Your own steps — independent of the buyer"
+        accent="emerald"
+        items={[
+          { label: 'Agree & lock the deal', done: !!deal.sellerAgreedAt || reached(deal.status, 'Confirmed'), hint: 'Confirm the terms to lock the deal.' },
+          { label: 'Save your payout address', done: payoutAlreadySaved, hint: 'The wallet where you receive your payout.' },
+          { label: 'Add product / account details', done: sellerDetailsSaved, hint: 'What you are selling + delivery info (required).' },
+          { label: 'Mark delivered to the buyer', done: reached(deal.status, 'Delivered'), hint: 'Once the buyer has funded and you have delivered.' },
+          { label: 'Payout released to you', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
+        ]}
+      />
 
       {/* Edit before lock — show as long as the deal isn't locked yet */}
       {!deal.lockedAt && !isPostLock && (
@@ -1468,7 +1540,18 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
         <Button asChild variant="outline" size="sm"><Link href="/deals"><ArrowLeft className="h-3.5 w-3.5 mr-1" /> Deals</Link></Button>
       </div>
 
-      <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
+      <SideTrack
+        title="🛒 Your buyer track"
+        subtitle="Your own steps — independent of the seller"
+        accent="blue"
+        items={[
+          { label: 'Agree & lock the deal', done: !!deal.buyerAgreedAt || reached(deal.status, 'Confirmed'), hint: 'Confirm the terms to lock the deal.' },
+          { label: 'Fund the escrow', done: reached(deal.status, 'Funded'), hint: 'Send the exact amount to the escrow address.' },
+          { label: 'Add your receiving details', done: buyerDetailsSaved, hint: 'Where you want to receive the item (required).' },
+          { label: 'Receive & approve', done: reached(deal.status, 'Approved'), hint: 'Confirm once the seller delivers.' },
+          { label: 'Deal complete', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
+        ]}
+      />
 
       {/* Edit before lock — either party may edit the deal terms until both agree */}
       {!deal.lockedAt && !POST_LOCK_STATES.has(deal.status) && (
