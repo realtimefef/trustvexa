@@ -78,7 +78,7 @@ export function chatRouter() {
         schemas: { params: chatIdParamSchema, body: postMessageSchema },
         roles: ['user', 'middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 60, max: 30 },
+        rateLimit: { windowSeconds: 60, max: 120 },
     }), asyncHandler(controller.postMessage));
     // Edit own message (keeps middleman-visible edit history).
     router.patch('/:id/messages/:messageId', ...apiChain({
@@ -117,7 +117,7 @@ export function chatRouter() {
         schemas: { params: reactionParamSchema, body: reactionBodySchema },
         roles: ['user', 'middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 60, max: 60 },
+        rateLimit: { windowSeconds: 60, max: 120 },
     }), asyncHandler(controller.addReaction));
     router.delete('/:id/react/:messageId', ...apiChain({
         schemas: { params: reactionParamSchema, body: reactionBodySchema },

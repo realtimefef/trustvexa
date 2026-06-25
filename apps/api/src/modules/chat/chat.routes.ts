@@ -100,7 +100,7 @@ export function chatRouter(): Router {
       schemas: { params: chatIdParamSchema, body: postMessageSchema },
       roles: ['user', 'middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 60, max: 30 },
+      rateLimit: { windowSeconds: 60, max: 120 },
     }),
     asyncHandler(controller.postMessage),
   );
@@ -173,7 +173,7 @@ export function chatRouter(): Router {
       schemas: { params: reactionParamSchema, body: reactionBodySchema },
       roles: ['user', 'middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 60, max: 60 },
+      rateLimit: { windowSeconds: 60, max: 120 },
     }),
     asyncHandler(controller.addReaction),
   );

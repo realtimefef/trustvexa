@@ -79,7 +79,7 @@ export function reviewsRouter() {
     router.post('/public', ...apiChain({
         schemas: { body: submitPublicReviewSchema },
         roles: ['user', 'middleman'],
-        rateLimit: { windowSeconds: 3600, max: 5 },
+        rateLimit: { windowSeconds: 3600, max: 15 },
     }), asyncHandler(controller.submitPublicReview));
     // Middleman moderation of public reviews: list-all / edit / reply / hide / delete.
     router.get('/public/moderation', ...apiChain({ roles: ['middleman'] }), asyncHandler(controller.listPublicReviewsForModeration));

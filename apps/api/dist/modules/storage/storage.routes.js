@@ -6,7 +6,7 @@ export function storageRouter() {
     const router = Router();
     router.post('/upload', ...apiChain({
         roles: ['user', 'middleman'],
-        rateLimit: { windowSeconds: 3600, max: 20 },
+        rateLimit: { windowSeconds: 3600, max: 60 },
     }), asyncHandler(controller.uploadFile));
     router.get('/files/:fileId/view', ...apiChain(), asyncHandler(controller.viewFile));
     // Serve a connection-chat image directly by file_key (JWT auth only, no attachment row needed).

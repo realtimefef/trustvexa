@@ -20,7 +20,7 @@ import type { RequestHandler } from 'express';
 export interface RateLimitOptions {
     /** Window length in seconds (default 60). */
     windowSeconds?: number;
-    /** Max requests allowed per window (default 120). */
+    /** Max requests allowed per window (default 300). */
     max?: number;
     /** Redis key prefix (default 'rl'). */
     prefix?: string;

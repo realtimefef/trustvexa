@@ -25,12 +25,12 @@ export function recoveryRouter() {
     router.post('/verify-email', ...apiChain({ schemas: { body: verifyEmailSchema } }), asyncHandler(recovery.verifyEmail));
     router.post('/forgot-password', ...apiChain({
         schemas: { body: forgotPasswordSchema },
-        rateLimit: { windowSeconds: 3600, max: 3 },
+        rateLimit: { windowSeconds: 3600, max: 10 },
     }), asyncHandler(recovery.forgotPassword));
     // Alias used by the web client's forgot-password page.
     router.post('/password-reset/request', ...apiChain({
         schemas: { body: forgotPasswordSchema },
-        rateLimit: { windowSeconds: 3600, max: 3 },
+        rateLimit: { windowSeconds: 3600, max: 10 },
     }), asyncHandler(recovery.forgotPassword));
     router.post('/reset-password', ...apiChain({ schemas: { body: resetPasswordSchema } }), asyncHandler(recovery.resetPassword));
     // Authenticated.

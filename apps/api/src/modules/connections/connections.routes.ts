@@ -35,7 +35,7 @@ export function connectionsRouter(): Router {
 
   router.post(
     '/',
-    ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 100 } }),
+    ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 200 } }),
     asyncHandler(controller.createConnection),
   );
 
@@ -44,7 +44,7 @@ export function connectionsRouter(): Router {
     ...apiChain({
       schemas: { body: joinSchema },
       roles: ['user', 'middleman'],
-      rateLimit: { windowSeconds: 600, max: 30 },
+      rateLimit: { windowSeconds: 600, max: 60 },
     }),
     asyncHandler(controller.joinConnection),
   );
@@ -53,7 +53,7 @@ export function connectionsRouter(): Router {
   // (no code needed; an available middleman is auto-assigned).
   router.post(
     '/contact-middleman',
-    ...apiChain({ roles: ['user'], rateLimit: { windowSeconds: 3600, max: 10 } }),
+    ...apiChain({ roles: ['user'], rateLimit: { windowSeconds: 3600, max: 30 } }),
     asyncHandler(controller.contactMiddleman),
   );
 
@@ -79,7 +79,7 @@ export function connectionsRouter(): Router {
     ...apiChain({
       schemas: { params: idParamSchema, body: messageSchema },
       roles: ['user', 'middleman'],
-      rateLimit: { windowSeconds: 60, max: 30 },
+      rateLimit: { windowSeconds: 60, max: 120 },
     }),
     asyncHandler(controller.postMessage),
   );
@@ -99,7 +99,7 @@ export function connectionsRouter(): Router {
       schemas: { params: idParamSchema },
       roles: ['user', 'middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 3600, max: 5 },
+      rateLimit: { windowSeconds: 3600, max: 20 },
     }),
     asyncHandler(controller.inviteMiddleman),
   );

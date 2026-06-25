@@ -50,7 +50,7 @@ export function dealRouter(): Router {
       schemas: { body: createDealSchema },
       roles: [...ACCOUNT_ROLES],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 86400, max: 10 },
+      rateLimit: { windowSeconds: 3600, max: 60 },
     }),
     asyncHandler(controller.createDeal),
   );

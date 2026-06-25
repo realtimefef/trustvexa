@@ -29,7 +29,7 @@ export function dealRouter() {
         schemas: { body: createDealSchema },
         roles: [...ACCOUNT_ROLES],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 86400, max: 10 },
+        rateLimit: { windowSeconds: 3600, max: 60 },
     }), asyncHandler(controller.createDeal));
     router.post('/drafts', ...apiChain({ schemas: { body: saveDraftSchema }, roles: [...ACCOUNT_ROLES] }), asyncHandler(controller.saveDraft));
     router.get('/drafts', ...apiChain({ roles: [...ACCOUNT_ROLES] }), asyncHandler(controller.listDrafts));

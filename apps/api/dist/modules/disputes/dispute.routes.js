@@ -23,7 +23,7 @@ export function disputeRouter() {
         schemas: { params: dealIdParamSchema, body: openDisputeSchema },
         roles: [...ACCOUNT_ROLES],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 3600, max: 5 },
+        rateLimit: { windowSeconds: 3600, max: 20 },
     }), asyncHandler(controller.open));
     // POST /api/v1/disputes/by-deal/:id/resolve — middleman resolves the dispute
     // (full refund / full release / partial split). Money-moving: requires an
@@ -32,7 +32,7 @@ export function disputeRouter() {
         schemas: { params: dealIdParamSchema, body: resolveDisputeSchema },
         roles: ['middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 60, max: 10 },
+        rateLimit: { windowSeconds: 60, max: 30 },
     }), asyncHandler(controller.resolve));
     // GET /api/v1/disputes/:disputeId/messages — the dispute thread statements,
     // for a party to the deal or the assigned middleman.

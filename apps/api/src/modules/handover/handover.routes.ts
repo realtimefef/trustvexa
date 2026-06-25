@@ -61,7 +61,7 @@ export function handoverRouter(): Router {
       schemas: { params: milestoneParamSchema },
       roles: ['middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 60, max: 10 },
+      rateLimit: { windowSeconds: 60, max: 30 },
     }),
     asyncHandler(controller.releaseMilestone),
   );

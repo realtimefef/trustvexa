@@ -10,7 +10,7 @@ export function storageRouter(): Router {
     '/upload',
     ...apiChain({
       roles: ['user', 'middleman'],
-      rateLimit: { windowSeconds: 3600, max: 20 },
+      rateLimit: { windowSeconds: 3600, max: 60 },
     }),
     asyncHandler(controller.uploadFile),
   );

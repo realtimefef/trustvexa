@@ -119,7 +119,7 @@ export function reviewsRouter(): Router {
     ...apiChain({
       schemas: { body: submitPublicReviewSchema },
       roles: ['user', 'middleman'],
-      rateLimit: { windowSeconds: 3600, max: 5 },
+      rateLimit: { windowSeconds: 3600, max: 15 },
     }),
     asyncHandler(controller.submitPublicReview),
   );

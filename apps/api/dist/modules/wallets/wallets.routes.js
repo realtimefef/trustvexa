@@ -19,7 +19,7 @@ export function walletsRouter() {
         schemas: { body: withdrawSchema },
         roles: ['user', 'middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 3600, max: 3, failClosed: true },
+        rateLimit: { windowSeconds: 3600, max: 10, failClosed: true },
     }), asyncHandler(controller.withdraw));
     router.get('/address-book', ...apiChain({ roles: ['user', 'middleman'] }), asyncHandler(controller.listAddressBook));
     router.post('/address-book', ...apiChain({
@@ -39,7 +39,7 @@ export function walletsRouter() {
         schemas: { body: changeRequestSchema },
         roles: ['user', 'middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 3600, max: 5 },
+        rateLimit: { windowSeconds: 3600, max: 20 },
     }), asyncHandler(controller.createChangeRequest));
     router.get('/change-requests', ...apiChain({ roles: ['user', 'middleman'] }), asyncHandler(controller.listChangeRequests));
     return router;

@@ -1,7 +1,7 @@
 import { getRedis } from '@trustvexa/shared';
 import { AppError } from '../errors/app-error.js';
 const DEFAULT_WINDOW_SECONDS = 60;
-const DEFAULT_MAX = 120;
+const DEFAULT_MAX = 300;
 const DEFAULT_PREFIX = 'rl';
 // In-process fallback: Map<key, { count: number; resetAt: number }>
 const inMemoryCounters = new Map();

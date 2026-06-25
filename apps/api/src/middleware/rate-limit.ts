@@ -25,7 +25,7 @@ import { AppError } from '../errors/app-error.js';
 export interface RateLimitOptions {
   /** Window length in seconds (default 60). */
   windowSeconds?: number;
-  /** Max requests allowed per window (default 120). */
+  /** Max requests allowed per window (default 300). */
   max?: number;
   /** Redis key prefix (default 'rl'). */
   prefix?: string;
@@ -39,7 +39,7 @@ export interface RateLimitOptions {
 }
 
 const DEFAULT_WINDOW_SECONDS = 60;
-const DEFAULT_MAX = 120;
+const DEFAULT_MAX = 300;
 const DEFAULT_PREFIX = 'rl';
 
 // In-process fallback: Map<key, { count: number; resetAt: number }>

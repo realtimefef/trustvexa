@@ -40,7 +40,7 @@ export function disputeRouter(): Router {
       schemas: { params: dealIdParamSchema, body: openDisputeSchema },
       roles: [...ACCOUNT_ROLES],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 3600, max: 5 },
+      rateLimit: { windowSeconds: 3600, max: 20 },
     }),
     asyncHandler(controller.open),
   );
@@ -54,7 +54,7 @@ export function disputeRouter(): Router {
       schemas: { params: dealIdParamSchema, body: resolveDisputeSchema },
       roles: ['middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 60, max: 10 },
+      rateLimit: { windowSeconds: 60, max: 30 },
     }),
     asyncHandler(controller.resolve),
   );

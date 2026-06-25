@@ -29,15 +29,15 @@ const messagesQuerySchema = z.object({
 });
 export function connectionsRouter() {
     const router = Router();
-    router.post('/', ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 100 } }), asyncHandler(controller.createConnection));
+    router.post('/', ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 200 } }), asyncHandler(controller.createConnection));
     router.post('/join', ...apiChain({
         schemas: { body: joinSchema },
         roles: ['user', 'middleman'],
-        rateLimit: { windowSeconds: 600, max: 30 },
+        rateLimit: { windowSeconds: 600, max: 60 },
     }), asyncHandler(controller.joinConnection));
     // POST /connections/contact-middleman — one-click chat with a middleman
     // (no code needed; an available middleman is auto-assigned).
-    router.post('/contact-middleman', ...apiChain({ roles: ['user'], rateLimit: { windowSeconds: 3600, max: 10 } }), asyncHandler(controller.contactMiddleman));
+    router.post('/contact-middleman', ...apiChain({ roles: ['user'], rateLimit: { windowSeconds: 3600, max: 30 } }), asyncHandler(controller.contactMiddleman));
     router.get('/', ...apiChain({ roles: ['user', 'middleman'] }), asyncHandler(controller.listConnections));
     router.get('/:id', ...apiChain({ schemas: { params: idParamSchema }, roles: ['user', 'middleman'] }), asyncHandler(controller.getConnection));
     router.get('/:id/messages', ...apiChain({
@@ -47,7 +47,7 @@ export function connectionsRouter() {
     router.post('/:id/messages', ...apiChain({
         schemas: { params: idParamSchema, body: messageSchema },
         roles: ['user', 'middleman'],
-        rateLimit: { windowSeconds: 60, max: 30 },
+        rateLimit: { windowSeconds: 60, max: 120 },
     }), asyncHandler(controller.postMessage));
     // DELETE /connections/:id — close/archive a connection.
     router.delete('/:id', ...apiChain({ schemas: { params: idParamSchema }, roles: ['user', 'middleman'] }), asyncHandler(controller.closeConnection));
@@ -57,7 +57,7 @@ export function connectionsRouter() {
         schemas: { params: idParamSchema },
         roles: ['user', 'middleman'],
         enforceIdempotency: true,
-        rateLimit: { windowSeconds: 3600, max: 5 },
+        rateLimit: { windowSeconds: 3600, max: 20 },
     }), asyncHandler(controller.inviteMiddleman));
     // DELETE /connections/:id/messages/:msgId — soft-delete a single message (sender only).
     router.delete('/:id/messages/:msgId', ...apiChain({

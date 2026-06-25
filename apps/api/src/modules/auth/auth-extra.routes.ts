@@ -46,7 +46,7 @@ export function recoveryRouter(): Router {
     '/forgot-password',
     ...apiChain({
       schemas: { body: forgotPasswordSchema },
-      rateLimit: { windowSeconds: 3600, max: 3 },
+      rateLimit: { windowSeconds: 3600, max: 10 },
     }),
     asyncHandler(recovery.forgotPassword),
   );
@@ -55,7 +55,7 @@ export function recoveryRouter(): Router {
     '/password-reset/request',
     ...apiChain({
       schemas: { body: forgotPasswordSchema },
-      rateLimit: { windowSeconds: 3600, max: 3 },
+      rateLimit: { windowSeconds: 3600, max: 10 },
     }),
     asyncHandler(recovery.forgotPassword),
   );

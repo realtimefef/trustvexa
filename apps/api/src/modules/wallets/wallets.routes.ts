@@ -35,7 +35,7 @@ export function walletsRouter(): Router {
       schemas: { body: withdrawSchema },
       roles: ['user', 'middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 3600, max: 3, failClosed: true },
+      rateLimit: { windowSeconds: 3600, max: 10, failClosed: true },
     }),
     asyncHandler(controller.withdraw),
   );
@@ -80,7 +80,7 @@ export function walletsRouter(): Router {
       schemas: { body: changeRequestSchema },
       roles: ['user', 'middleman'],
       enforceIdempotency: true,
-      rateLimit: { windowSeconds: 3600, max: 5 },
+      rateLimit: { windowSeconds: 3600, max: 20 },
     }),
     asyncHandler(controller.createChangeRequest),
   );

@@ -19,15 +19,15 @@ export function authRouter() {
         schemas: { body: registerSchema },
         // SEC-HIGH-1 FIX: failClosed:true keeps brute-force protection active
         // even during a Redis outage by falling back to in-process counters.
-        rateLimit: { windowSeconds: 3600, max: 20, failClosed: true },
+        rateLimit: { windowSeconds: 3600, max: 40, failClosed: true },
     }), asyncHandler(controller.register));
     router.post('/login', ...apiChain({
         schemas: { body: loginSchema },
-        rateLimit: { windowSeconds: 900, max: 15, failClosed: true },
+        rateLimit: { windowSeconds: 900, max: 30, failClosed: true },
     }), asyncHandler(controller.login));
     router.post('/refresh', ...apiChain({
         schemas: { body: refreshSchema },
-        rateLimit: { windowSeconds: 60, max: 20, failClosed: true },
+        rateLimit: { windowSeconds: 60, max: 60, failClosed: true },
     }), asyncHandler(controller.refresh));
     router.post('/verify-session', ...apiChain(), asyncHandler(controller.verifySession));
     router.post('/logout', ...apiChain(), asyncHandler(controller.logout));
