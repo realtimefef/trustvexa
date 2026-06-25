@@ -18,7 +18,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, CheckCircle2, Layers, MessageSquare, RefreshCw, Send,
-  Shield, ShieldCheck, AlertTriangle, X, Eye,
+  Shield, ShieldCheck, AlertTriangle, X, Eye, Copy, Check, Wallet, Hash,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,7 @@ interface BuyerSide {
   confirmedByBuyer: boolean; confirmedAt: string | null;
 }
 interface PartyResult { sellerDetails: SellerSide | null; buyerDetails: BuyerSide | null }
+interface PaymentStatus { payoutAddress: string | null; submittedTxHash: string | null }
 
 const TERMINAL = new Set(['Released', 'Refunded', 'PartiallySettled', 'Cancelled', 'Expired']);
 
@@ -65,6 +66,49 @@ function DetailRow({ label, value, mono, always }: { label: string; value: strin
     <div className="flex justify-between gap-3 text-xs py-0.5">
       <span className="text-muted-foreground shrink-0">{label}</span>
       <span className={`text-right break-words ${mono ? 'font-mono' : ''}`}>{value || '—'}</span>
+    </div>
+  );
+}
+
+/**
+ * A prominent, bordered, copy-on-click box for the operator's most-used values
+ * (the seller's payout address and the buyer's funding tx hash). Big, mono, and
+ * easy to grab — these are what the operator needs at a glance to settle a deal.
+ */
+function CopyHighlight({
+  label, value, icon: Icon, accent,
+}: {
+  label: string;
+  value: string | null | undefined;
+  icon: typeof Wallet;
+  accent: 'blue' | 'emerald';
+}) {
+  const [copied, setCopied] = React.useState(false);
+  const has = !!value && value.trim() !== '';
+  const tone = accent === 'blue'
+    ? 'border-blue-500/40 bg-blue-500/5'
+    : 'border-emerald-500/40 bg-emerald-500/5';
+  const copy = () => {
+    if (!has) return;
+    void navigator.clipboard?.writeText(value!.trim());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <div className={`rounded-xl border-2 ${tone} p-3`}>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5" /> {label}
+        </p>
+        <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]" disabled={!has} onClick={copy}>
+          {copied ? <><Check className="h-3 w-3 mr-1" /> Copied</> : <><Copy className="h-3 w-3 mr-1" /> Copy</>}
+        </Button>
+      </div>
+      {has ? (
+        <p className="font-mono text-sm font-semibold break-all leading-snug select-all">{value}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground italic">Not provided yet.</p>
+      )}
     </div>
   );
 }
@@ -91,6 +135,14 @@ export default function AdminDealDetailPage() {
     queryFn: async () => {
       try { return await apiRequest<PartyResult>(`/deals/${dealId}/party-details`); }
       catch { return { sellerDetails: null, buyerDetails: null } as PartyResult; }
+    },
+  });
+  const payQ = useQuery({
+    queryKey: ['admin-payment-status', dealId],
+    enabled: status === 'authenticated' && !!dealId,
+    queryFn: async () => {
+      try { return await apiRequest<PaymentStatus>(`/deals/${dealId}/payment/status`); }
+      catch { return { payoutAddress: null, submittedTxHash: null } as PaymentStatus; }
     },
   });
 
@@ -160,6 +212,21 @@ export default function AdminDealDetailPage() {
   const buyerChatHref = connId ? `/admin/connect?open=${connId}&channel=buyer_mm` : '/admin/connect';
   const sellerChatHref = connId ? `/admin/connect?open=${connId}&channel=seller_mm` : '/admin/connect';
 
+  // Operator's two most-used values for settling a deal.
+  const buyerTxHash = payQ.data?.submittedTxHash ?? null;
+  const sellerPayoutAddr = payQ.data?.payoutAddress ?? null;
+  const [copiedBoth, setCopiedBoth] = React.useState(false);
+  const copyBoth = () => {
+    const text = [
+      buyerTxHash ? `Buyer tx hash: ${buyerTxHash}` : null,
+      sellerPayoutAddr ? `Seller payout address (${deal?.coin ?? ''}/${deal?.network ?? ''}): ${sellerPayoutAddr}` : null,
+    ].filter(Boolean).join('\n');
+    if (!text) return;
+    void navigator.clipboard?.writeText(text);
+    setCopiedBoth(true);
+    setTimeout(() => setCopiedBoth(false), 1500);
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       {/* Header / breadcrumb */}
@@ -171,8 +238,8 @@ export default function AdminDealDetailPage() {
           <span className="text-muted-foreground">/</span>
           <span className="font-mono text-sm text-muted-foreground">{dealId.slice(0, 8)}</span>
         </div>
-        <Button size="sm" variant="outline" onClick={() => { void dealQ.refetch(); void partyQ.refetch(); }}>
-          <RefreshCw className={`h-3.5 w-3.5 ${dealQ.isFetching || partyQ.isFetching ? 'animate-spin' : ''}`} />
+        <Button size="sm" variant="outline" onClick={() => { void dealQ.refetch(); void partyQ.refetch(); void payQ.refetch(); }}>
+          <RefreshCw className={`h-3.5 w-3.5 ${dealQ.isFetching || partyQ.isFetching || payQ.isFetching ? 'animate-spin' : ''}`} />
         </Button>
       </div>
 
@@ -215,9 +282,15 @@ export default function AdminDealDetailPage() {
 
       {/* Two independent sides */}
       <div>
-        <p className="text-sm font-medium flex items-center gap-1.5 mb-2">
-          <Layers className="h-4 w-4 text-primary" /> Both sides — handled independently
-        </p>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Layers className="h-4 w-4 text-primary" /> Both sides — handled independently
+          </p>
+          <Button type="button" size="sm" variant="outline" className="h-7 text-xs"
+            disabled={!buyerTxHash && !sellerPayoutAddr} onClick={copyBoth}>
+            {copiedBoth ? <><Check className="h-3.5 w-3.5 mr-1.5" /> Copied both</> : <><Copy className="h-3.5 w-3.5 mr-1.5" /> Copy tx hash + payout</>}
+          </Button>
+        </div>
         {status !== 'authenticated' || dealQ.isLoading || partyQ.isLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
             <Skeleton className="h-72 w-full rounded-2xl" />
@@ -244,6 +317,9 @@ export default function AdminDealDetailPage() {
                   <DetailRow label="Deal amount" value={fmtCents(moneyDealAmount)} always />
                   <DetailRow label="Coin / network" value={deal ? `${deal.coin} · ${deal.network}` : null} always />
                 </div>
+
+                {/* Highlighted: buyer's funding transaction hash */}
+                <CopyHighlight label="Buyer's transaction hash" value={buyerTxHash} icon={Hash} accent="blue" />
 
                 {/* Submitted details */}
                 <div className="rounded-xl border bg-background/60 p-3">
@@ -301,6 +377,9 @@ export default function AdminDealDetailPage() {
                   <DetailRow label="Deal amount" value={fmtCents(moneyDealAmount)} always />
                   <DetailRow label="Settlement fee (0.5%)" value={fmtCents(moneySettlementFee)} always />
                 </div>
+
+                {/* Highlighted: seller's payout wallet address */}
+                <CopyHighlight label={`Seller's payout address${deal ? ` (${deal.coin}/${deal.network})` : ''}`} value={sellerPayoutAddr} icon={Wallet} accent="emerald" />
 
                 {/* Submitted details */}
                 <div className="rounded-xl border bg-background/60 p-3">
