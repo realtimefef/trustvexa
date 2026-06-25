@@ -1794,8 +1794,22 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
       )}
 
       {deal.status === 'Funded' && (
-        <ActionCard title={buyerSubmitted ? '🎉 Step 5 of 6 — Delivered to the middleman' : 'Step 4 of 6 — Final review: submit to middleman'} icon={buyerSubmitted ? CheckCircle2 : Shield} variant="success">
-          <StepLabel step={buyerSubmitted ? 5 : 4} total={6} label={buyerSubmitted ? 'Delivered to the middleman — being completed' : 'Final review — submit to middleman'} />
+        <ActionCard
+          title={buyerSubmitted
+            ? '🎉 Step 5 of 6 — Delivered to the middleman'
+            : (buyerEditMode || !buyerDetailsSaved)
+              ? 'Step 3 of 6 — Edit your receiving details'
+              : 'Step 4 of 6 — Final review: submit to middleman'}
+          icon={buyerSubmitted ? CheckCircle2 : (buyerEditMode || !buyerDetailsSaved) ? Wallet : Shield}
+          variant="success">
+          <StepLabel
+            step={buyerSubmitted ? 5 : (buyerEditMode || !buyerDetailsSaved) ? 3 : 4}
+            total={6}
+            label={buyerSubmitted
+              ? 'Delivered to the middleman — being completed'
+              : (buyerEditMode || !buyerDetailsSaved)
+                ? 'Edit your receiving details'
+                : 'Final review — submit to middleman'} />
           {buyerSubmitted ? (
             <>
               <DealReviewSummary deal={deal} partyDetails={partyDetails} />
