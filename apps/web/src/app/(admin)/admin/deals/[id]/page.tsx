@@ -312,6 +312,9 @@ export default function AdminDealDetailPage() {
                 <Badge variant={deal?.buyerAgreedAt ? 'success' : 'secondary'} className="text-[10px]">
                   {deal?.buyerAgreedAt ? `agreed ${fmtDate(deal.buyerAgreedAt)}` : 'not agreed yet'}
                 </Badge>
+                <Badge variant={deal?.buyerSubmittedAt ? 'success' : 'secondary'} className="text-[10px] ml-1.5">
+                  {deal?.buyerSubmittedAt ? '✓ submitted to MM' : 'not submitted yet'}
+                </Badge>
 
                 {/* Money */}
                 <div className="rounded-xl border bg-blue-500/5 p-3">
@@ -371,6 +374,9 @@ export default function AdminDealDetailPage() {
                 </div>
                 <Badge variant={deal?.sellerAgreedAt ? 'success' : 'secondary'} className="text-[10px]">
                   {deal?.sellerAgreedAt ? `agreed ${fmtDate(deal.sellerAgreedAt)}` : 'not agreed yet'}
+                </Badge>
+                <Badge variant={deal?.sellerSubmittedAt ? 'success' : 'secondary'} className="text-[10px] ml-1.5">
+                  {deal?.sellerSubmittedAt ? '✓ submitted to MM' : 'not submitted yet'}
                 </Badge>
 
                 {/* Money */}
@@ -471,6 +477,8 @@ export default function AdminDealDetailPage() {
                     <DetailRow label="Created" value={fmtDate(deal.createdAt)} />
                     <DetailRow label="Buyer agreed" value={fmtDate(deal.buyerAgreedAt)} />
                     <DetailRow label="Seller agreed" value={fmtDate(deal.sellerAgreedAt)} />
+                    <DetailRow label="Buyer submitted" value={fmtDate(deal.buyerSubmittedAt)} />
+                    <DetailRow label="Seller submitted" value={fmtDate(deal.sellerSubmittedAt)} />
                     <DetailRow label="Locked" value={fmtDate(deal.lockedAt)} />
                   </div>
                   <div>
@@ -508,8 +516,8 @@ export default function AdminDealDetailPage() {
             <ShieldCheck className="h-4 w-4 text-primary" /> Whole-deal controls
           </p>
           <div className="flex flex-wrap gap-2">
-            {(st === 'Delivered' || st === 'Approved' || st === 'PayoutQueued') && (
-              <Button size="sm" disabled={busy === 'complete'} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {(st === 'Funded' || st === 'SellerHandover' || st === 'MiddlemanVerified' || st === 'Delivered' || st === 'Approved' || st === 'PayoutQueued') && (
+              <Button size="sm" disabled={busy === 'complete' || (st === 'Funded' && !(deal?.buyerSubmittedAt && deal?.sellerSubmittedAt))} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />{busy === 'complete' ? '…' : 'Complete & release'}
               </Button>
             )}
@@ -529,6 +537,13 @@ export default function AdminDealDetailPage() {
             )}
           </div>
           {msg && <p className={`text-xs ${msg.kind === 'ok' ? 'text-emerald-600' : 'text-destructive'}`}>{msg.kind === 'ok' ? '✓ ' : '⚠ '}{msg.text}</p>}
+          {st === 'Funded' && (
+            <p className="text-xs text-muted-foreground">
+              {deal?.buyerSubmittedAt && deal?.sellerSubmittedAt
+                ? 'Both sides have submitted — you can complete & release.'
+                : `Waiting on ${[!deal?.buyerSubmittedAt ? 'buyer' : null, !deal?.sellerSubmittedAt ? 'seller' : null].filter(Boolean).join(' & ')} to submit before you can complete.`}
+            </p>
+          )}
           {isTerminal && <p className="text-xs text-muted-foreground">This deal is in a final state — no further actions.</p>}
         </CardContent>
       </Card>

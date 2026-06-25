@@ -306,6 +306,28 @@ export function dealRouter(): Router {
     asyncHandler(controller.confirmFunding),
   );
 
+  // Buyer submits their case to the middleman (independent; no status change).
+  router.post(
+    '/:id/buyer-submit',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema },
+      roles: [...ACCOUNT_ROLES],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(controller.buyerSubmitToMiddleman),
+  );
+
+  // Seller submits their case to the middleman (independent; no status change).
+  router.post(
+    '/:id/seller-submit',
+    ...apiChain({
+      schemas: { params: dealIdParamSchema },
+      roles: [...ACCOUNT_ROLES],
+      enforceIdempotency: true,
+    }),
+    asyncHandler(controller.sellerSubmitToMiddleman),
+  );
+
   // Seller submits handover after delivery — Funded → SellerHandover.
   router.post(
     '/:id/handover',

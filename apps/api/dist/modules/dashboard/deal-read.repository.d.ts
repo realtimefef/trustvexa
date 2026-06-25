@@ -39,6 +39,9 @@ export interface DealRow {
     locked_at: Date | string | null;
     /** Free-text item label (added by migration 1700002800000_deal_item_description). */
     item_description: string | null;
+    /** Independent per-side submission timestamps (migration 1700003700000). */
+    buyer_submitted_at: Date | string | null;
+    seller_submitted_at: Date | string | null;
     /** The connection this deal was created from (detail read only). */
     connection_id?: string | null;
     connection_code?: string | null;

@@ -988,14 +988,24 @@ export async function markDealComplete(
   let status: string;
   try {
     await client.query('BEGIN');
-    const dealRes = await client.query<{ middleman_id: string | null; status: string }>(
-      `SELECT middleman_id, status FROM deals WHERE id = $1 FOR UPDATE`,
+    const dealRes = await client.query<{ middleman_id: string | null; status: string; buyer_submitted_at: string | null; seller_submitted_at: string | null }>(
+      `SELECT middleman_id, status, buyer_submitted_at, seller_submitted_at FROM deals WHERE id = $1 FOR UPDATE`,
       [dealId],
     );
     const deal = dealRes.rows[0];
     if (!deal) throw new AppError('deal_not_found', 'Deal was not found.', 404);
     if (deal.middleman_id !== middlemanId) {
       throw new AppError('forbidden', 'Only the assigned middleman can complete this deal.', 403);
+    }
+    // When completing from the Funded stage, BOTH sides must have independently
+    // submitted their details first. (Once past Delivered the gate no longer
+    // applies — the deal is already mid-completion.)
+    if (deal.status === 'Funded' && (!deal.buyer_submitted_at || !deal.seller_submitted_at)) {
+      throw new AppError(
+        'sides_not_submitted',
+        'Both the buyer and the seller must submit their details before the deal can be completed.',
+        409,
+      );
     }
     status = deal.status;
     await client.query('COMMIT');
@@ -1010,9 +1020,15 @@ export async function markDealComplete(
     return { dealId, status: 'Released' };
   }
 
-  // Chain the lifecycle events from the current state to Released.
-  // Each step is guarded by the state machine; we stop if a step is invalid.
+  // Chain the lifecycle events from the current state to Released. Each step is
+  // guarded by the state machine; we stop if a step is invalid. The chain now
+  // starts at Funded so the middleman can complete the whole deal in one action
+  // after BOTH sides have independently submitted (the seller no longer
+  // advances the status themselves).
   const chain: Array<{ from: string[]; event: DealEvent }> = [
+    { from: ['Funded'], event: 'SellerHandoverSent' },
+    { from: ['SellerHandover'], event: 'MiddlemanVerifiedTransfer' },
+    { from: ['MiddlemanVerified'], event: 'DeliveredToBuyer' },
     { from: ['Delivered'], event: 'BuyerApproved' },
     { from: ['Approved'], event: 'PayoutEnteredReview' },
     { from: ['PayoutQueued'], event: 'PayoutReleased' },
@@ -1039,10 +1055,86 @@ export async function markDealComplete(
 }
 
 /**
- * Manually advance a deal from Confirmed → Funded. Used when the buyer has
- * sent payment and wants to proceed without waiting for the automatic
- * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock
- * the flow). Either the buyer or the assigned middleman may trigger it.
+ * Buyer independently submits their case to the middleman. Sets only the
+ * buyer-side flag — it does NOT change the escrow status or touch the seller's
+ * side. Requires the deal to be funded and the buyer's receiving details saved.
+ */
+export async function buyerSubmitToMiddleman(
+  buyerId: string,
+  dealId: string,
+): Promise<{ dealId: string; buyerSubmittedAt: string }> {
+  const client = await acquireClient();
+  try {
+    await client.query('BEGIN');
+    const dealRes = await client.query<{ buyer_id: string | null; status: string; buyer_submitted_at: string | null }>(
+      `SELECT buyer_id, status, buyer_submitted_at FROM deals WHERE id = $1 FOR UPDATE`,
+      [dealId],
+    );
+    const deal = dealRes.rows[0];
+    if (!deal) throw new AppError('deal_not_found', 'Deal was not found.', 404);
+    if (deal.buyer_id !== buyerId) throw new AppError('forbidden', 'Only the buyer can submit the buyer side.', 403);
+    if (deal.status !== 'Funded') throw new AppError('invalid_state', 'You can submit to the middleman once the escrow is funded.', 409);
+    const bd = await client.query(`SELECT 1 FROM deal_buyer_details WHERE deal_id = $1 AND receiving_address_enc IS NOT NULL LIMIT 1`, [dealId]);
+    if ((bd.rowCount ?? 0) === 0) throw new AppError('buyer_details_required', 'Save your receiving details before submitting to the middleman.', 422);
+    const upd = await client.query<{ buyer_submitted_at: string }>(
+      `UPDATE deals SET buyer_submitted_at = COALESCE(buyer_submitted_at, now()), updated_at = now() WHERE id = $1 RETURNING buyer_submitted_at`,
+      [dealId],
+    );
+    await client.query('COMMIT');
+    return { dealId, buyerSubmittedAt: upd.rows[0]!.buyer_submitted_at };
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Seller independently submits their case to the middleman. Sets only the
+ * seller-side flag — it does NOT change the escrow status or touch the buyer's
+ * side (the seller no longer advances the deal to Delivered themselves).
+ * Requires the deal funded, a saved payout address and product/account details.
+ */
+export async function sellerSubmitToMiddleman(
+  sellerId: string,
+  dealId: string,
+): Promise<{ dealId: string; sellerSubmittedAt: string }> {
+  const client = await acquireClient();
+  try {
+    await client.query('BEGIN');
+    const dealRes = await client.query<{ seller_id: string | null; status: string }>(
+      `SELECT seller_id, status FROM deals WHERE id = $1 FOR UPDATE`,
+      [dealId],
+    );
+    const deal = dealRes.rows[0];
+    if (!deal) throw new AppError('deal_not_found', 'Deal was not found.', 404);
+    if (deal.seller_id !== sellerId) throw new AppError('forbidden', 'Only the seller can submit the seller side.', 403);
+    if (deal.status !== 'Funded') throw new AppError('invalid_state', 'You can submit to the middleman once the escrow is funded.', 409);
+    const payout = await client.query<{ new_address_enc: string | null }>(
+      `SELECT new_address_enc FROM wallet_change_requests WHERE deal_id = $1 AND wallet_type = 'payout' ORDER BY created_at DESC LIMIT 1`,
+      [dealId],
+    );
+    if (!payout.rows[0]?.new_address_enc) throw new AppError('payout_address_required', 'Save your payout address before submitting to the middleman.', 422);
+    const sd = await client.query<{ product_name: string | null }>(`SELECT product_name FROM deal_seller_details WHERE deal_id = $1 LIMIT 1`, [dealId]);
+    if (!sd.rows[0] || !(sd.rows[0].product_name ?? '').trim()) throw new AppError('seller_details_required', 'Fill in your product / account details before submitting to the middleman.', 422);
+    const upd = await client.query<{ seller_submitted_at: string }>(
+      `UPDATE deals SET seller_submitted_at = COALESCE(seller_submitted_at, now()), updated_at = now() WHERE id = $1 RETURNING seller_submitted_at`,
+      [dealId],
+    );
+    await client.query('COMMIT');
+    return { dealId, sellerSubmittedAt: upd.rows[0]!.seller_submitted_at };
+  } catch (err) {
+    try { await client.query('ROLLBACK'); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Manually advance a deal from Confirmed → Funded once the buyer has paid and
+ * submitted their transaction hash. Buyer-only.
  */
 export async function confirmFunding(
   userId: string,

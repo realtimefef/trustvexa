@@ -50,6 +50,9 @@ export interface DealRow {
   locked_at: Date | string | null;
   /** Free-text item label (added by migration 1700002800000_deal_item_description). */
   item_description: string | null;
+  /** Independent per-side submission timestamps (migration 1700003700000). */
+  buyer_submitted_at: Date | string | null;
+  seller_submitted_at: Date | string | null;
   /** The connection this deal was created from (detail read only). */
   connection_id?: string | null;
   connection_code?: string | null;
@@ -64,6 +67,7 @@ const DEAL_COLUMNS = `
   attempt_no, risk_score, fund_by, complete_by, inspection_until,
   last_activity_at, version_no, created_at, updated_at,
   buyer_agreed_at, seller_agreed_at, locked_at,
+  buyer_submitted_at, seller_submitted_at,
   item_description`;
 
 /** All deals the user is a party to, most-recently-active first. */

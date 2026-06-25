@@ -120,6 +120,8 @@ export interface DealDetail extends DealSummary {
   lockedAt?: string | null;
   buyerAgreedAt?: string | null;
   sellerAgreedAt?: string | null;
+  buyerSubmittedAt?: string | null;
+  sellerSubmittedAt?: string | null;
   /** The connection (chat) this deal was created from. */
   connectionId?: string | null;
   connectionCode?: string | null;

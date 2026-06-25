@@ -125,6 +125,22 @@ export async function confirmFunding(req: Request, res: Response): Promise<void>
   res.status(200).json(result);
 }
 
+/** Buyer independently submits their case to the middleman (no status change). */
+export async function buyerSubmitToMiddleman(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const dealId = req.params.id!;
+  const result = await service.buyerSubmitToMiddleman(userId, dealId);
+  res.status(200).json(result);
+}
+
+/** Seller independently submits their case to the middleman (no status change). */
+export async function sellerSubmitToMiddleman(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const dealId = req.params.id!;
+  const result = await service.sellerSubmitToMiddleman(userId, dealId);
+  res.status(200).json(result);
+}
+
 /** Seller submits handover — transitions Funded → SellerHandover. */
 export async function sellerHandover(req: Request, res: Response): Promise<void> {
   const sellerId = requireUserId(req);

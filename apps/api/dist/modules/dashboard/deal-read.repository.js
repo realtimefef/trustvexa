@@ -16,6 +16,7 @@ const DEAL_COLUMNS = `
   attempt_no, risk_score, fund_by, complete_by, inspection_until,
   last_activity_at, version_no, created_at, updated_at,
   buyer_agreed_at, seller_agreed_at, locked_at,
+  buyer_submitted_at, seller_submitted_at,
   item_description`;
 /** All deals the user is a party to, most-recently-active first. */
 export async function listDealsForUser(userId) {

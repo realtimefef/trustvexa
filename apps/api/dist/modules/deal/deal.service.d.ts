@@ -131,10 +131,27 @@ export declare function markDealComplete(middlemanId: string, dealId: string, re
     status: string;
 }>;
 /**
- * Manually advance a deal from Confirmed → Funded. Used when the buyer has
- * sent payment and wants to proceed without waiting for the automatic
- * on-chain deposit-watcher (e.g. manual/off-chain settlement, or to unblock
- * the flow). Either the buyer or the assigned middleman may trigger it.
+ * Buyer independently submits their case to the middleman. Sets only the
+ * buyer-side flag — it does NOT change the escrow status or touch the seller's
+ * side. Requires the deal to be funded and the buyer's receiving details saved.
+ */
+export declare function buyerSubmitToMiddleman(buyerId: string, dealId: string): Promise<{
+    dealId: string;
+    buyerSubmittedAt: string;
+}>;
+/**
+ * Seller independently submits their case to the middleman. Sets only the
+ * seller-side flag — it does NOT change the escrow status or touch the buyer's
+ * side (the seller no longer advances the deal to Delivered themselves).
+ * Requires the deal funded, a saved payout address and product/account details.
+ */
+export declare function sellerSubmitToMiddleman(sellerId: string, dealId: string): Promise<{
+    dealId: string;
+    sellerSubmittedAt: string;
+}>;
+/**
+ * Manually advance a deal from Confirmed → Funded once the buyer has paid and
+ * submitted their transaction hash. Buyer-only.
  */
 export declare function confirmFunding(userId: string, dealId: string, requestId: string): Promise<{
     dealId: string;

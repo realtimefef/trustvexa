@@ -50,6 +50,10 @@ export interface DealDetail extends DealSummary {
     lockedAt: string | null;
     buyerAgreedAt: string | null;
     sellerAgreedAt: string | null;
+    /** Independent per-side submission timestamps (each side submits to the
+     * middleman on its own; neither changes the deal status). */
+    buyerSubmittedAt: string | null;
+    sellerSubmittedAt: string | null;
     /** The connection (chat) this deal was created from — shown in the header and
      * used to deep-link into the deal's chat on /connect. */
     connectionId: string | null;

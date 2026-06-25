@@ -28,6 +28,10 @@ export declare function advanceDeliveryNoMiddleman(req: Request, res: Response):
 export declare function markDealComplete(req: Request, res: Response): Promise<void>;
 /** Buyer/middleman manually confirms funding — transitions Confirmed → Funded. */
 export declare function confirmFunding(req: Request, res: Response): Promise<void>;
+/** Buyer independently submits their case to the middleman (no status change). */
+export declare function buyerSubmitToMiddleman(req: Request, res: Response): Promise<void>;
+/** Seller independently submits their case to the middleman (no status change). */
+export declare function sellerSubmitToMiddleman(req: Request, res: Response): Promise<void>;
 /** Seller submits handover — transitions Funded → SellerHandover. */
 export declare function sellerHandover(req: Request, res: Response): Promise<void>;
 /** Middleman confirms delivery to buyer — transitions MiddlemanVerified → Delivered. */

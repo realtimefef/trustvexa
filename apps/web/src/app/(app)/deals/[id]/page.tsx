@@ -1027,14 +1027,14 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
   };
 
   const submitHandover = async () => {
-    if (!window.confirm('Confirm the buyer has received everything as agreed? This marks the deal Delivered and cannot be undone.')) return;
+    if (!window.confirm('Submit your details to the middleman? The middleman will verify and complete the deal.')) return;
     setSubmittingHandover(true); setHandoverErr(null);
     try {
-      await apiRequest(`/deals/${dealId}/handover`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
+      await apiRequest(`/deals/${dealId}/seller-submit`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       setHandoverOk(true);
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
     } catch (err) {
-      setHandoverErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to submit handover.');
+      setHandoverErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to submit to the middleman.');
     } finally { setSubmittingHandover(false); }
   };
 
@@ -1126,7 +1126,7 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           { label: 'Agree & lock the deal', done: !!deal.sellerAgreedAt || reached(deal.status, 'Confirmed'), hint: 'Confirm the terms to lock the deal.' },
           { label: 'Save your payout address', done: payoutAlreadySaved, hint: 'The wallet where you receive your payout.' },
           { label: 'Add product / account details', done: sellerDetailsSaved, hint: 'What you are selling + delivery info (required).' },
-          { label: 'Mark delivered to the buyer', done: reached(deal.status, 'Delivered'), hint: 'Once the buyer has funded and you have delivered.' },
+          { label: 'Submit your details to the middleman', done: !!deal.sellerSubmittedAt, hint: 'Independent of the buyer — submit when your details are saved.' },
           { label: 'Payout released to you', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
         ]}
       />
@@ -1209,31 +1209,30 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
           {/* Final review of all deal details */}
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
 
-          {!handoverOk ? (
+          {!(handoverOk || deal.sellerSubmittedAt) ? (
             <div className="space-y-3">
               {!sellerDetailsSaved && (
                 <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Save <strong>Your product &amp; delivery details</strong> below before marking as delivered.
+                  ⚠️ Save <strong>Your product &amp; delivery details</strong> below before submitting to the middleman.
                 </div>
               )}
               {!payoutAlreadySaved && (
                 <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                  ⚠️ Save <strong>your payout address</strong> above before marking as delivered.
+                  ⚠️ Save <strong>your payout address</strong> above before submitting to the middleman.
                 </div>
               )}
-              <NoRollbackBanner text="Only click below after the buyer has actually received everything as agreed. This moves the deal to Delivered — it cannot be undone." />
               {handoverErr && <p className="text-xs text-destructive">⚠️ {handoverErr}</p>}
               <Button onClick={submitHandover} disabled={submittingHandover || !sellerDetailsSaved || !payoutAlreadySaved} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                {submittingHandover ? 'Submitting…' : '✓ Mark as delivered to the buyer'}
+                <Shield className="h-4 w-4 mr-1.5" />
+                {submittingHandover ? 'Submitting…' : '✓ Submit my details to the middleman'}
               </Button>
-              <NextStep text="Deal moves to Delivered → the middleman then completes the deal and releases your payout." />
+              <NextStep text="Your side is submitted independently. The middleman completes the deal once both sides have submitted, and releases your payout." />
             </div>
           ) : (
             <>
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-emerald-600">✓ Marked as delivered!</p>
-                <p className="text-xs text-muted-foreground mt-1">The deal is now Delivered. The middleman will complete it and release your payout.</p>
+                <p className="text-sm font-semibold text-emerald-600">🎉 Submitted to the middleman!</p>
+                <p className="text-xs text-muted-foreground mt-1">Your side is done. The middleman will complete the deal and release your payout — independent of the buyer.</p>
               </div>
               <NextStep text="Middleman completes the deal → payout sent to your saved wallet." />
             </>
@@ -1455,16 +1454,19 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
   const [confirmingFunding, setConfirmingFunding] = React.useState(false);
   const [confirmFundingErr, setConfirmFundingErr] = React.useState<string | null>(null);
   const [submittedToMm, setSubmittedToMm] = React.useState(false);
-  // Persist the "submitted to middleman" confirmation across refreshes so the
-  // buyer isn't asked to submit again after reloading.
-  React.useEffect(() => {
-    if (typeof window !== 'undefined' && window.localStorage.getItem(`mm-submitted-${dealId}`) === '1') {
+  const [submitErr, setSubmitErr] = React.useState<string | null>(null);
+  // The submission is persisted server-side (deal.buyerSubmittedAt), so refresh
+  // keeps the submitted state — no local-only flag needed.
+  const buyerSubmitted = submittedToMm || !!deal.buyerSubmittedAt;
+  const markSubmittedToMm = async () => {
+    setSubmitErr(null);
+    try {
+      await apiRequest(`/deals/${dealId}/buyer-submit`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
       setSubmittedToMm(true);
+      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
+    } catch (err) {
+      setSubmitErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to submit to the middleman.');
     }
-  }, [dealId]);
-  const markSubmittedToMm = () => {
-    setSubmittedToMm(true);
-    if (typeof window !== 'undefined') window.localStorage.setItem(`mm-submitted-${dealId}`, '1');
   };
 
   const confirmFunding = async () => {
@@ -1559,7 +1561,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           { label: 'Agree & lock the deal', done: !!deal.buyerAgreedAt || reached(deal.status, 'Confirmed'), hint: 'Confirm the terms to lock the deal.' },
           { label: 'Fund the escrow', done: reached(deal.status, 'Funded'), hint: 'Send the exact amount to the escrow address.' },
           { label: 'Add your receiving details', done: buyerDetailsSaved, hint: 'Where you want to receive the item (required).' },
-          { label: 'Receive & approve', done: reached(deal.status, 'Approved'), hint: 'Confirm once the seller delivers.' },
+          { label: 'Submit your details to the middleman', done: !!deal.buyerSubmittedAt, hint: 'Independent of the seller — submit when funded + details saved.' },
           { label: 'Deal complete', done: reached(deal.status, 'Released') || deal.status === 'PartiallySettled' },
         ]}
       />
@@ -1705,10 +1707,13 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
           <StepLabel step={4} total={6} label="Final review — submit to middleman" />
           <p className="text-sm text-muted-foreground mb-3">Your funds are locked in escrow and your details are saved. Review the full deal below and submit your details to the middleman.</p>
           <DealReviewSummary deal={deal} partyDetails={partyDetails} />
-          {!submittedToMm ? (
-            <Button onClick={markSubmittedToMm} className="w-full mt-3">
-              <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
-            </Button>
+          {!buyerSubmitted ? (
+            <>
+              {submitErr && <p className="text-xs text-destructive mt-2">⚠️ {submitErr}</p>}
+              <Button onClick={() => void markSubmittedToMm()} className="w-full mt-3">
+                <Shield className="h-4 w-4 mr-1.5" /> Submit my details to the middleman
+              </Button>
+            </>
           ) : (
             <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-4 text-center space-y-1.5">
               <p className="font-semibold text-emerald-600 text-base">🎉 Submitted — congratulations!</p>
