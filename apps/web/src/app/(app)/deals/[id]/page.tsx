@@ -1845,14 +1845,20 @@ interface MiddlemanViewProps {
 
 function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
   const disputeQuery = useDealDispute(dealId, deal.status === 'Disputed');
-  const mmPaymentStatus = usePaymentStatus(dealId, ['Funded', 'SellerHandover'].includes(deal.status)).data;
-  const [verifying, setVerifying] = React.useState(false);
-  const [verifyErr, setVerifyErr] = React.useState<string | null>(null);
-  const [delivering, setDelivering] = React.useState(false);
-  const [deliverErr, setDeliverErr] = React.useState<string | null>(null);
+  const mmPaymentStatus = usePaymentStatus(dealId, deal.status === 'Funded').data;
   const [verifyingParty, setVerifyingParty] = React.useState<'seller' | 'buyer' | null>(null);
   const [completing, setCompleting] = React.useState(false);
   const [completeErr, setCompleteErr] = React.useState<string | null>(null);
+
+  // After both sides agree + lock the deal completes their own track
+  // independently (buyer: fund → submit; seller: payout/details → submit). The
+  // middleman finalises only once BOTH have independently submitted — the deal
+  // sits at "Funded" until then. These drive the completion gate + hint.
+  const bothSubmitted = !!(deal.buyerSubmittedAt && deal.sellerSubmittedAt);
+  const pendingSubmitters = [
+    !deal.buyerSubmittedAt ? 'buyer' : null,
+    !deal.sellerSubmittedAt ? 'seller' : null,
+  ].filter(Boolean).join(' & ');
   // Extended middleman powers
   const [mmBusy, setMmBusy] = React.useState<string | null>(null);
   const [mmActionErr, setMmActionErr] = React.useState<string | null>(null);
@@ -1881,24 +1887,6 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
       void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
     } catch (err) { setCompleteErr(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to complete deal.'); }
     finally { setCompleting(false); }
-  };
-
-  const verifyHandover = async () => {
-    setVerifying(true); setVerifyErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/handover/verify`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setVerifyErr(err instanceof Error ? err.message : 'Failed to verify.'); }
-    finally { setVerifying(false); }
-  };
-
-  const deliverToBuyer = async () => {
-    setDelivering(true); setDeliverErr(null);
-    try {
-      await apiRequest(`/deals/${dealId}/deliver`, { method: 'POST', idempotencyKey: newIdempotencyKey() });
-      void qc.invalidateQueries({ queryKey: ['deal-detail', dealId] });
-    } catch (err) { setDeliverErr(err instanceof Error ? err.message : 'Failed to deliver.'); }
-    finally { setDelivering(false); }
   };
 
   const verifyPartyDetails = async (role: 'seller' | 'buyer') => {
@@ -1944,8 +1932,8 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
       <DealStepper status={deal.status} agreedInProgress={!!(deal.buyerAgreedAt || deal.sellerAgreedAt)} role={deal.role} />
 
       {/* Middleman: verify the buyer's deposit transaction (Funded onward) */}
-      {(deal.status === 'Funded' || deal.status === 'SellerHandover') && (
-        <ActionCard title="Verify buyer's deposit" icon={Wallet} description="Confirm the buyer's payment has arrived on-chain before the seller's delivery is released.">
+      {deal.status === 'Funded' && (
+        <ActionCard title="Verify buyer's deposit" icon={Wallet} description="Confirm the buyer's payment has arrived on-chain before you release the seller's payout.">
           <ConfirmationCounter dealId={dealId} requiredConfirmations={getRequiredConfirmations(deal.network)} />
           {mmPaymentStatus?.submittedTxHash && (
             <div className="mt-3 rounded-lg border bg-muted/30 px-3 py-2">
@@ -1959,28 +1947,34 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         </ActionCard>
       )}
 
-      {/* Middleman action */}
-      {deal.status === 'SellerHandover' && (
-        <ActionCard title="Verify seller handover" icon={Shield} description="Confirm that the seller has completed the handover as agreed. This advances the deal to the delivery stage." variant="warning">
-          {verifyErr && <p className="text-xs text-destructive mb-2">{verifyErr}</p>}
-          <Button onClick={verifyHandover} disabled={verifying} className="w-full">{verifying ? 'Verifying…' : 'Confirm — seller handover verified ✓'}</Button>
-        </ActionCard>
-      )}
-
-      {deal.status === 'MiddlemanVerified' && (
-        <ActionCard title="Confirm delivery to buyer" icon={CheckCircle2} description="After confirming, the deal moves to Delivered and the buyer's inspection window starts." variant="warning">
-          {deliverErr && <p className="text-xs text-destructive mb-2">{deliverErr}</p>}
-          <Button onClick={deliverToBuyer} disabled={delivering} className="w-full">{delivering ? 'Confirming…' : 'Confirm delivery to buyer ✓'}</Button>
-        </ActionCard>
-      )}
-
-      {(deal.status === 'Delivered' || deal.status === 'Approved') && (
-        <ActionCard title="Complete the deal" icon={CheckCircle2} description="Confirm the buyer has received everything as agreed, then mark the deal complete and release the payout to the seller." variant="warning">
-          <NoRollbackBanner text="Marking complete releases the seller's payout. This cannot be undone — confirm both parties are satisfied first." />
+      {/* Complete the deal — independent per-side tracks.
+          After both parties agree + lock, each side completes its own track
+          (buyer: fund → submit; seller: payout/details → submit) without
+          affecting the other. The deal stays "Funded" until BOTH have
+          independently submitted; then the middleman finalises and releases.
+          The Delivered/Approved branches remain for any legacy in-flight deals. */}
+      {(deal.status === 'Funded' || deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' || deal.status === 'Delivered' || deal.status === 'Approved') && (
+        <ActionCard title="Complete the deal" icon={CheckCircle2} description="Each side completes its track independently. Once both the buyer and the seller have submitted, finalise the deal and release the payout to the seller." variant="warning">
+          <div className="flex flex-wrap gap-2 mb-3">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${deal.buyerSubmittedAt ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
+              {deal.buyerSubmittedAt ? '✓ Buyer submitted' : 'Buyer not submitted yet'}
+            </span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${deal.sellerSubmittedAt ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
+              {deal.sellerSubmittedAt ? '✓ Seller submitted' : 'Seller not submitted yet'}
+            </span>
+          </div>
+          <NoRollbackBanner text="Completing releases the seller's payout. This cannot be undone — confirm both parties are satisfied first." />
           {completeErr && <p className="text-xs text-destructive mt-2">⚠️ {completeErr}</p>}
-          <Button onClick={markComplete} disabled={completing} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <CheckCircle2 className="h-4 w-4 mr-1.5" />{completing ? 'Completing…' : 'Mark complete & release payout ✓'}
+          <Button onClick={markComplete} disabled={completing || (deal.status === 'Funded' && !bothSubmitted)} className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <CheckCircle2 className="h-4 w-4 mr-1.5" />{completing ? 'Completing…' : 'Complete & release payout ✓'}
           </Button>
+          {deal.status === 'Funded' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {bothSubmitted
+                ? 'Both sides have submitted — you can complete & release.'
+                : `Waiting on ${pendingSubmitters} to submit before you can complete.`}
+            </p>
+          )}
         </ActionCard>
       )}
 
@@ -2001,7 +1995,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
         <ActionCard title="⚖️ Middleman controls" icon={Shield} description="Full control over this deal. Use with care — these actions are audited.">
           <div className="grid gap-2 sm:grid-cols-2">
             {(deal.status === 'Funded' || deal.status === 'SellerHandover' || deal.status === 'MiddlemanVerified' || deal.status === 'Delivered' || deal.status === 'Approved') && (
-              <Button size="sm" disabled={!!mmBusy || completing} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              <Button size="sm" disabled={!!mmBusy || completing || (deal.status === 'Funded' && !bothSubmitted)} onClick={markComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />{completing ? 'Completing…' : 'Mark complete & release'}
               </Button>
             )}
@@ -2022,6 +2016,13 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
               <Link href="/messages"><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open all chats</Link>
             </Button>
           </div>
+          {deal.status === 'Funded' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {bothSubmitted
+                ? 'Both sides have submitted — you can complete & release.'
+                : `Waiting on ${pendingSubmitters} to submit before you can complete.`}
+            </p>
+          )}
           {mmActionErr && <p className="text-xs text-destructive mt-2">⚠️ {mmActionErr}</p>}
           {mmActionOk && <p className="text-xs text-emerald-600 mt-2">✓ {mmActionOk}</p>}
         </ActionCard>
