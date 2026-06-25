@@ -1215,12 +1215,13 @@ function SellerView({ deal, dealId, partyDetails, qc }: SellerViewProps) {
               </Button>
             </div>
             {partyDetails?.sellerDetails?.verifiedByMiddleman && (
-              <div className="mt-3 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
-                <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Your payout will be released to your saved wallet once the deal is completed — you&apos;ll be notified by chat and email.</p>
-                </div>
+              <div className="mt-3 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/15 px-4 py-4 text-center space-y-2 shadow-sm">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1">
+                  <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Middleman update</span>
+                </span>
+                <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">✓ The middleman has received your details and is now working on your deal.</p>
+                <p className="text-xs text-muted-foreground">Your payout will be released to your saved wallet once the deal is completed — you&apos;ll be notified by chat and email.</p>
               </div>
             )}
             <DealReviewSummary deal={deal} partyDetails={partyDetails} />
@@ -1766,12 +1767,13 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
                 </Button>
               </div>
               {partyDetails?.buyerDetails?.confirmedByBuyer && (
-                <div className="mt-3 rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3 flex items-start gap-2.5">
-                  <Shield className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">✓ The middleman has received your details and is now working on your deal.</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">You&apos;ll receive your purchase / account details by chat and email once the middleman completes the deal.</p>
-                  </div>
+                <div className="mt-3 rounded-xl border-2 border-emerald-500/50 bg-emerald-500/15 px-4 py-4 text-center space-y-2 shadow-sm">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1">
+                    <Shield className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Middleman update</span>
+                  </span>
+                  <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">✓ The middleman has received your details and is now working on your deal.</p>
+                  <p className="text-xs text-muted-foreground">You&apos;ll receive your purchase / account details by chat and email once the middleman completes the deal.</p>
                 </div>
               )}
               <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
