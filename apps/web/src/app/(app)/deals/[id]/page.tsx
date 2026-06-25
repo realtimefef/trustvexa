@@ -1698,7 +1698,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               </div>
             </div>
           ) : <Skeleton className="h-32 w-full rounded-xl" />}
-          <NextStep text="Seller delivers the item & submits the case → Delivered → the middleman verifies and completes the deal. You'll receive your details by chat / email." />
+          <NextStep text="After you confirm payment, you'll submit your details to the middleman — your side completes independently, no waiting on the seller. The middleman finalises once both sides have submitted." />
         </ActionCard>
       )}
 
@@ -1727,7 +1727,7 @@ function BuyerView({ deal, dealId, partyDetails, qc }: BuyerViewProps) {
               </Button>
             </div>
           )}
-          <NextStep text="Seller submits the case → Delivered → the middleman verifies and completes the deal." />
+          <NextStep text="Your part is complete the moment you submit — you don't wait for the seller. The middleman finalises and releases once both sides have independently submitted." />
         </ActionCard>
       )}
 
