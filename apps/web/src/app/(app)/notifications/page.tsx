@@ -274,7 +274,7 @@ export default function NotificationsPage() {
                   >
                     <Icon className="h-5 w-5" aria-hidden="true" />
                   </span>
-                  <div className="flex-1">
+                  <div className="min-w-0 flex-1 break-words">
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{title}</p>
                       {!n.read ? <span className="h-2 w-2 rounded-full bg-primary" /> : null}

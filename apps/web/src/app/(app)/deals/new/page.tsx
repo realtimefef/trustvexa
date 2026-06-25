@@ -534,7 +534,7 @@ export default function NewDealPage() {
       {/* Heading + step indicator */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
             {step === 1 ? 'New Deal' : 'Step 2 of 2 — Review'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">

@@ -340,7 +340,7 @@ export default function ProfilePage() {
 
       {/* REAL reviews from the API — no fake hardcoded data */}
       <Reveal className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <SectionHeading align="left" eyebrow="Reputation" title="Reviews from counterparties"
             subtitle="Real ratings left by verified traders after completed deals. Reviewer identities are always kept private." />
           <Button asChild variant="outline" size="sm">

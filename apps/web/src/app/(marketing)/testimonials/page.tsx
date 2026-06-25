@@ -97,7 +97,7 @@ function WritePublicReviewCard({ onSubmitted }: { onSubmitted: () => void }) {
           <p className="font-semibold text-base">Share your experience</p>
           <p className="text-sm text-muted-foreground mt-1">Sign in to leave a review about TrustVexa.</p>
         </div>
-        <div className="flex gap-3 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           <Button asChild variant="gradient">
             <Link href="/login?next=/testimonials">Sign in to write a review</Link>
           </Button>

@@ -148,7 +148,7 @@ function AppealsCard() {
                   <Badge variant={a.status === 'approved' ? 'success' : a.status === 'rejected' ? 'destructive' : 'warning'}>{a.status ?? 'pending'}</Badge>
                 </div>
                 {(!a.status || a.status === 'pending') && (
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <Button size="sm" className="h-7 text-xs" onClick={() => void decide(a.id, 'approved')}><CheckCircle2 className="h-3 w-3 mr-1" />Approve & reinstate</Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs border-destructive/40 text-destructive" onClick={() => void decide(a.id, 'rejected')}><XCircle className="h-3 w-3 mr-1" />Reject</Button>
                   </div>
@@ -202,7 +202,7 @@ function AmlAlertsCard() {
                   </div>
                   <Badge variant={al.status === 'cleared' ? 'success' : al.status === 'escalated' ? 'destructive' : 'warning'}>{al.status ?? 'open'}</Badge>
                 </div>
-                <div className="flex gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-2">
                   {al.status && AML_NEXT[al.status] && (
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => void setStatus(al.id, AML_NEXT[al.status as string] as string)}>
                       Mark {AML_NEXT[al.status]}

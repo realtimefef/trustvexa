@@ -161,7 +161,7 @@ export default function AdminChatsPage() {
                 >
                   <div className="space-y-3 flex-1 min-w-0 w-full">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-foreground truncate block">
+                      <span className="font-mono text-xs font-bold text-foreground break-all min-w-0">
                         Chat: {chat.id}
                       </span>
                       <Badge variant={chat.status === 'deleted_by_admin' ? 'destructive' : 'success'} className="text-[10px]">
@@ -173,15 +173,15 @@ export default function AdminChatsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1.5 truncate">
+                      <div className="flex items-center gap-1.5 truncate min-w-0">
                         <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                         <span className="font-mono truncate">Deal ID: {chat.dealId}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 truncate">
+                      <div className="flex items-center gap-1.5 truncate min-w-0">
                         <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                         <span>Created: {new Date(chat.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 truncate">
+                      <div className="flex items-center gap-1.5 truncate min-w-0">
                         <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
                         <span className="truncate">
                           Parties: B({chat.buyerId?.slice(0, 4) || '—'}) / S({chat.sellerId?.slice(0, 4) || '—'})

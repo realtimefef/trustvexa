@@ -127,7 +127,7 @@ export default function AdminDealsPage() {
             </div>
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 text-xs w-40"><SelectValue placeholder="All statuses" /></SelectTrigger>
+            <SelectTrigger className="h-8 text-xs w-full sm:w-40"><SelectValue placeholder="All statuses" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="" className="text-xs">All statuses</SelectItem>
               <SelectItem value="Funded" className="text-xs">Funded</SelectItem>

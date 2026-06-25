@@ -11,7 +11,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Check, Copy, FileText, ImagePlus, Link as LinkIcon,
+  ArrowLeft, Check, Copy, FileText, ImagePlus, Link as LinkIcon,
   Loader2, LogIn, MessageSquare, Plus, Send,
   Shield, Trash2, X, LifeBuoy,
 } from 'lucide-react';
@@ -630,7 +630,8 @@ export default function ConnectPage() {
       <div className="flex h-[calc(100vh-5rem)] overflow-hidden rounded-2xl border border-border/40 shadow-soft bg-background">
 
         {/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */}
-        <div className="w-72 shrink-0 flex flex-col border-r border-border/40 bg-muted/20">
+        {/* Mobile: full-width list, hidden once a conversation is open. lg+: fixed 18rem rail. */}
+        <div className={`${activeId ? 'hidden lg:flex' : 'flex'} w-full lg:w-72 lg:shrink-0 flex-col border-r border-border/40 bg-muted/20`}>
 
           {/* Sidebar header */}
           <div className="px-4 py-3 border-b border-border/40 shrink-0">
@@ -709,10 +710,16 @@ export default function ConnectPage() {
         </div>
 
         {/* ── MAIN CHAT AREA ────────────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile: full-width chat, hidden until a conversation is opened. lg+: fills the rest. */}
+        <div className={`${activeId ? 'flex' : 'hidden lg:flex'} flex-1 flex-col min-w-0`}>
           {!a ? (
             /* Empty state */
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+            <div className="relative flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
+              {/* Mobile-only: return to the conversation list */}
+              <button type="button" onClick={() => setActiveId(null)}
+                className="lg:hidden absolute left-3 top-3 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
               <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <MessageSquare className="h-7 w-7 text-primary" />
               </div>
@@ -734,10 +741,15 @@ export default function ConnectPage() {
           ) : (
             <>
               {/* ── Connection header ── */}
-              <div className="shrink-0 border-b border-border/40 px-4 py-2.5 bg-background/80 backdrop-blur-sm">
-                <div className="flex items-center justify-between gap-3">
+              <div className="shrink-0 border-b border-border/40 px-3 sm:px-4 py-2.5 bg-background/80 backdrop-blur-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+                  {/* Mobile-only: return to the conversation list */}
+                  <button type="button" onClick={() => setActiveId(null)}
+                    className="lg:hidden shrink-0 -ml-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors">
+                    <ArrowLeft className="h-4 w-4" /> Back
+                  </button>
                   {/* Participants */}
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {a.buyerId && (
                         <div className={`flex items-center gap-1 rounded-md px-1 ${user?.id === a.buyerId ? 'ring-2 ring-blue-500/60 bg-blue-500/10' : ''}`}>
@@ -824,10 +836,10 @@ export default function ConnectPage() {
 
               {/* ── Channel tabs ── */}
               {availableTabs.length > 1 && (
-                <div className="shrink-0 border-b border-border/40 px-4 flex gap-0 bg-background/60">
+                <div className="shrink-0 border-b border-border/40 px-2 sm:px-4 flex gap-0 bg-background/60 overflow-x-auto">
                   {availableTabs.map((ch) => (
                     <button key={ch} type="button" onClick={() => setActiveChannel(ch)}
-                      className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
+                      className={`px-3 sm:px-4 py-2 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap shrink-0 ${
                         activeChannel === ch
                           ? CHANNEL_META[ch].tabColor + ' bg-transparent'
                           : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -863,7 +875,7 @@ export default function ConnectPage() {
                     buyer/seller, never the middleman) shows "Create escrow deal".
                   • Support chats (user↔middleman) show nothing here. */}
               {(a.dealId || showDealSection) && (
-                <div className="shrink-0 border-t border-border/40 bg-background/60 px-4 py-2.5 flex items-center justify-between gap-3">
+                <div className="shrink-0 border-t border-border/40 bg-background/60 px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                   <div className="flex items-center gap-2">
                     <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
                     {a.dealId ? (

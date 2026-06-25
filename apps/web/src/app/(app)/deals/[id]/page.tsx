@@ -360,8 +360,8 @@ function SideTrack({ title, subtitle, accent, items }: {
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4 py-1.5 text-sm border-b border-border/30 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="text-right font-medium min-w-0 break-words">{value}</span>
     </div>
   );
 }
@@ -434,7 +434,7 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
           Fee summary
           {isEstimate && <span className="ml-1.5 font-normal text-muted-foreground/60 normal-case">(~ estimated · locked at funding)</span>}
         </p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
           <div className="flex justify-between gap-2">
             <span className="text-muted-foreground">Deal amount</span>
             <span className="font-semibold">{cents(deal.dealAmountCents)}</span>
@@ -453,7 +453,7 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
               <span>~{formatUsdCents(gasCents)}</span>
             </div>
           )}
-          <div className="col-span-2 border-t border-border/40 pt-1.5 grid grid-cols-2 gap-x-6">
+          <div className="col-span-2 border-t border-border/40 pt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
             <div className="flex justify-between gap-2">
               <span className="text-blue-600 dark:text-blue-400 font-semibold">💳 Buyer sends</span>
               <span className="font-bold text-blue-600 dark:text-blue-400">{buyerSendsDisplay}</span>
@@ -473,7 +473,7 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
                 <p className="text-xs font-semibold text-muted-foreground">
                   Platform fee is split — total {isEstimate ? '~' : ''}{formatUsdCents(estimate.platformFeeCents)}
                 </p>
-                <div className="grid grid-cols-2 gap-x-6 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                   <div className="flex justify-between gap-2">
                     <span className="text-blue-600 dark:text-blue-400">Buyer pays ({formatBps(splitBuyerBps)})</span>
                     <span className="font-medium">{isEstimate ? '~' : ''}{formatUsdCents(estimate.buyerPlatformShareCents)}</span>
@@ -520,7 +520,7 @@ function DealInfoCollapsible({ deal }: { deal: DealDetail }) {
 
       {open && (
         <div className="border-t px-4 py-3 space-y-1">
-          <Row label="Deal ID" value={<span className="font-mono text-xs">{deal.id}</span>} />
+          <Row label="Deal ID" value={<span className="font-mono text-xs break-all">{deal.id}</span>} />
           {deal.connectionCode && (
             <Row label="Deal chat" value={
               <Link href={dealChatHref(deal.connectionId)} className="font-mono text-xs text-primary hover:underline">
@@ -584,13 +584,13 @@ function dealChatHref(connectionId: string | null | undefined, channel?: string)
 
 function ChatLink({ connectionId }: { connectionId: string | null }) {
   return (
-    <div className="rounded-xl border bg-muted/20 px-4 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+    <div className="rounded-xl border bg-muted/20 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-2 min-w-0">
         <MessageCircle className="h-4 w-4 text-primary shrink-0" />
         <span className="text-sm font-medium">Chat</span>
         <span className="text-xs text-muted-foreground">with your counterparty and middleman</span>
       </div>
-      <Button asChild variant="outline" size="sm">
+      <Button asChild variant="outline" size="sm" className="shrink-0">
         <Link href={dealChatHref(connectionId)}><MessageCircle className="h-3.5 w-3.5 mr-1.5" /> Open chat</Link>
       </Button>
     </div>
@@ -924,8 +924,8 @@ function DealReviewSummary({ deal, partyDetails }: { deal: DealDetail; partyDeta
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Deal review — all details</p>
 
       {/* Money summary */}
-      <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Item</span><span className="font-medium truncate">{deal.itemDescription ?? '—'}</span></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+        <div className="flex justify-between gap-2"><span className="text-muted-foreground">Item</span><span className="font-medium truncate min-w-0">{deal.itemDescription ?? '—'}</span></div>
         <div className="flex justify-between gap-2"><span className="text-muted-foreground">Coin / Network</span><span className="font-medium">{deal.coin} · {deal.network}</span></div>
         <div className="flex justify-between gap-2"><span className="text-muted-foreground">Deal amount</span><span className="font-semibold">{cents(deal.dealAmountCents)}</span></div>
         <div className="flex justify-between gap-2"><span className="text-muted-foreground">Fee payer</span><span className="capitalize">{deal.feePayer ?? '—'}</span></div>
@@ -2057,7 +2057,7 @@ function MiddlemanView({ deal, dealId, partyDetails, qc }: MiddlemanViewProps) {
             <span className="text-xs text-muted-foreground">{deal.coin} · {deal.network}</span>
             <span className="text-xs font-semibold">{cents(deal.dealAmountCents)}</span>
           </div>
-          <div className="flex gap-3 mt-0.5 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-3 mt-0.5 text-xs text-muted-foreground">
             <span className="font-mono text-foreground">Deal ID: {dealId.slice(0,8).toUpperCase()}</span>
             <span>Buyer: {deal.buyerId ? deal.buyerId.slice(0,8) : '—'}</span>
             <span>Seller: {deal.sellerId ? deal.sellerId.slice(0,8) : '—'}</span>

@@ -135,7 +135,7 @@ export default function CoinsPage() {
           </Reveal>
           <Reveal delay={120} className="mt-10">
             <div className="overflow-hidden rounded-2xl border bg-card">
-              <Table>
+              <Table className="min-w-[560px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Network</TableHead>

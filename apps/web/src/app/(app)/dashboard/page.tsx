@@ -261,7 +261,7 @@ export default function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       {/* Welcome banner */}
-      <div className="relative overflow-hidden rounded-3xl border bg-brand-gradient p-8 text-white shadow-glow-lg md:p-10">
+      <div className="relative overflow-hidden rounded-3xl border bg-brand-gradient p-6 text-white shadow-glow-lg sm:p-8 md:p-10">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-grid opacity-20 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_70%)]"
@@ -337,15 +337,15 @@ export default function DashboardPage() {
           <CardContent>
             <ul className="divide-y">
               {connections.slice(0, 5).map((c) => (
-                <li key={c.id} className="flex items-center justify-between gap-4 py-3">
-                  <div>
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
                     <span className="font-mono text-xs text-muted-foreground">{c.code}</span>
                     <p className="text-sm">
                       {c.creatorUsername}
                       {c.joinerUsername ? ` ↔ ${c.joinerUsername}` : ' — waiting for other party'}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/connect?open=${c.id}`}>Chat</Link>
                     </Button>

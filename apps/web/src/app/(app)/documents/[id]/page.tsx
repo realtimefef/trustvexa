@@ -59,7 +59,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+      <span className="min-w-0 text-right font-medium">{value}</span>
     </div>
   );
 }
@@ -153,7 +153,7 @@ export default function DocumentDetailPage() {
             <CardContent className="divide-y">
               <InfoRow
                 label="Deal ID"
-                value={<span className="font-mono text-xs">{dealId}</span>}
+                value={<span className="font-mono text-xs break-all">{dealId}</span>}
               />
               <InfoRow label="Status" value={dealStatusLabel(deal.status)} />
               <InfoRow label="Your role" value={roleLabel(deal.role)} />

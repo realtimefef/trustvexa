@@ -127,7 +127,7 @@ export default function TreasuryPage() {
               No treasury snapshots yet.
             </p>
           ) : (
-            <Table>
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Asset</TableHead>

@@ -177,10 +177,10 @@ export default function AdminUsersPage() {
               />
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="w-full sm:w-auto space-y-1">
             <Label className="text-xs">Status</Label>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-8 text-xs w-32">
+              <SelectTrigger className="h-8 text-xs w-full sm:w-32">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +212,7 @@ export default function AdminUsersPage() {
               <p className="text-sm text-muted-foreground">No users match the search.</p>
             </div>
           ) : (
-            <Table>
+            <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>

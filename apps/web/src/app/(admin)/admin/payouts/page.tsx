@@ -152,7 +152,7 @@ function PayoutCard({ item }: { item: PayoutItem }) {
           </Button>
         )}
         {item.status === 'approved' && confirmBroadcast && (
-          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
             <span className="text-xs text-destructive font-medium">Irreversible — send funds now?</span>
             <Button size="sm" variant="destructive" disabled={busy} onClick={() => void act('broadcast')}>
               {busy ? 'Broadcasting…' : 'Confirm & send'}
@@ -198,7 +198,7 @@ export default function PayoutQueuePage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'In queue', value: items.length, icon: DollarSign, color: 'text-primary' },
           { label: 'Awaiting approval', value: pending, icon: Clock, color: 'text-amber-500' },

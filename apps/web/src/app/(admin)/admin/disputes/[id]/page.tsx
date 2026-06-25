@@ -244,7 +244,7 @@ export default function AdminDisputeDetailPage() {
             <Scale className="h-7 w-7 text-primary" /> Dispute Mediation
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant={isOpen ? 'warning' : 'secondary'} className="text-sm px-3 py-1">
             Status: {dispute.status.replace(/_/g, ' ').toUpperCase()}
           </Badge>
@@ -271,7 +271,7 @@ export default function AdminDisputeDetailPage() {
             <CardContent className="p-6 grid gap-4 sm:grid-cols-2">
               <div>
                 <span className="text-xs text-muted-foreground block font-medium">Dispute ID</span>
-                <span className="font-mono text-xs font-semibold">{dispute.id}</span>
+                <span className="font-mono text-xs font-semibold break-all">{dispute.id}</span>
               </div>
               <div>
                 <span className="text-xs text-muted-foreground block font-medium">Category / Reason</span>
@@ -318,13 +318,13 @@ export default function AdminDisputeDetailPage() {
                   <span className="text-sm font-semibold uppercase">{deal.coin} ({deal.network})</span>
                 </div>
                 <div className="sm:col-span-3 border-t pt-3 grid gap-2 text-xs text-muted-foreground font-mono">
-                  <div className="flex justify-between">
-                    <span>Buyer ID:</span>
-                    <span className="text-foreground select-all">{deal.buyerId}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="shrink-0">Buyer ID:</span>
+                    <span className="text-foreground select-all break-all text-right">{deal.buyerId}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Seller ID:</span>
-                    <span className="text-foreground select-all">{deal.sellerId}</span>
+                  <div className="flex justify-between gap-2">
+                    <span className="shrink-0">Seller ID:</span>
+                    <span className="text-foreground select-all break-all text-right">{deal.sellerId}</span>
                   </div>
                 </div>
                 {deal.description && (

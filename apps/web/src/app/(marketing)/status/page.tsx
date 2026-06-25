@@ -75,17 +75,17 @@ function StatusRow({ row, paused }: { row: ComponentRow; paused: PausedScope[] }
   const hit = matchPause(row.key, paused);
   const isPaused = hit !== null;
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border bg-card/60 px-4 py-3 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <row.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+    <div className="flex items-center justify-between gap-3 rounded-xl border bg-card/60 px-4 py-3 backdrop-blur sm:gap-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <row.icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         <span className="text-sm font-medium">{row.label}</span>
       </div>
       {isPaused ? (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" /> Paused
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Operational
         </span>
       )}

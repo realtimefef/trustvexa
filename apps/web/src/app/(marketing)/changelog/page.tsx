@@ -128,7 +128,7 @@ export default function ChangelogPage() {
                     </CardHeader>
                     {entry.body ? (
                       <CardContent>
-                        <p className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
+                        <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground leading-relaxed">
                           {entry.body}
                         </p>
                       </CardContent>

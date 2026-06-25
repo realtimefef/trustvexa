@@ -172,7 +172,7 @@ export default function FeesPage() {
                 subtitle="The seller's payout also covers the real on-chain gas — a live pass-through, never marked up. On the recommended chains it is a rounding error next to the deal."
               />
               <div className="overflow-hidden rounded-2xl border bg-card">
-                <Table>
+                <Table className="min-w-[480px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Coin / network</TableHead>
@@ -206,7 +206,7 @@ export default function FeesPage() {
                 subtitle="Platform fee shown as buyer-paid; the 0.5% seller fee comes from the payout. Gas is separate and tiny on the recommended chains."
               />
               <div className="overflow-hidden rounded-2xl border bg-card">
-                <Table>
+                <Table className="min-w-[640px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Deal</TableHead>

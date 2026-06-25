@@ -277,7 +277,7 @@ export default function TransactionsPage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : (
-            <Table>
+            <Table className="min-w-[720px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Type</TableHead>

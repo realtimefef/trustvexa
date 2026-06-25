@@ -284,8 +284,8 @@ export default function AdminDealDetailPage() {
 
       {/* Two independent sides */}
       <div>
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <p className="text-sm font-medium flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <p className="text-sm font-medium flex items-center gap-1.5 min-w-0">
             <Layers className="h-4 w-4 text-primary" /> Both sides — handled independently
           </p>
           <Button type="button" size="sm" variant="outline" className="h-7 text-xs"

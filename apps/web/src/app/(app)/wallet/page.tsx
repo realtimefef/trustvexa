@@ -431,7 +431,7 @@ export default function WalletPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
+              <table className="w-full min-w-[720px] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b bg-muted/40">
                     <th className="p-4 font-semibold">Label</th>

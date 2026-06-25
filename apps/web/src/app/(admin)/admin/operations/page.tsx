@@ -617,7 +617,7 @@ export default function AdminOperationsPage() {
           ) : auditEntries.length === 0 ? (
             <p className="text-sm text-muted-foreground">No admin actions recorded yet.</p>
           ) : (
-            <Table>
+            <Table className="min-w-[680px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Action</TableHead>

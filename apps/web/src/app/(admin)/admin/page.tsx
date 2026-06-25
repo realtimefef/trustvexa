@@ -380,10 +380,10 @@ export function ExpandedDealPanel({ item, allChats }: { item: { id: string }; al
   return (
     <div className="border-t bg-muted/5 px-4 py-4 space-y-4">
       {/* Tab nav */}
-      <div className="flex gap-1 rounded-lg bg-muted/30 p-0.5 w-fit">
+      <div className="flex gap-1 rounded-lg bg-muted/30 p-0.5 w-fit max-w-full overflow-x-auto">
         {([['details','Deal Details'],['chats','All Chats'],['parties','Party Details'],['risk','Risk & Notes']] as const).map(([k,label]) => (
           <button key={k} type="button" onClick={() => setTab(k)}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${tab === k ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+            className={`shrink-0 whitespace-nowrap rounded-md px-3 py-1 text-xs font-medium transition-colors ${tab === k ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {label}
           </button>
         ))}
@@ -641,7 +641,7 @@ export default function AdminConsolePage() {
 
       {/* Work queue */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-semibold">Work queue</h2>
             <p className="text-xs text-muted-foreground">Click any deal to see full details, chats, and actions.</p>
