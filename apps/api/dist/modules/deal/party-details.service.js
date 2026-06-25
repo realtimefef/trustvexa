@@ -21,6 +21,16 @@ async function loadDealParticipants(dealId) {
     const res = await query(`SELECT buyer_id, seller_id, middleman_id FROM deals WHERE id = $1`, [dealId]);
     return res.rows[0] ?? null;
 }
+/**
+ * True when the caller is a platform operator (middleman-type account). The
+ * operator console lets the operator open ANY deal, so an operator can read
+ * both sides of a deal even when they are not the deal's formally-assigned
+ * middleman. Regular buyer/seller accounts only ever see their own side.
+ */
+async function callerIsOperator(userId) {
+    const res = await query(`SELECT account_type FROM users WHERE id = $1 LIMIT 1`, [userId]);
+    return res.rows[0]?.account_type === 'middleman';
+}
 async function decryptSellerRow(row) {
     const [productDescription, requirements, deliveryInstructions, additionalNotes,] = await Promise.all([
         openPii(row.product_description_enc),
@@ -234,7 +244,7 @@ export async function getPartyDetails(userId, dealId) {
     }
     const isSeller = deal.seller_id === userId;
     const isBuyer = deal.buyer_id === userId;
-    const isMiddleman = deal.middleman_id === userId;
+    const isMiddleman = deal.middleman_id === userId || (await callerIsOperator(userId));
     if (!isSeller && !isBuyer && !isMiddleman) {
         throw new AppError('forbidden', 'You are not a party to this deal.', 403);
     }

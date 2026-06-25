@@ -14,6 +14,7 @@
  * recording on retries.
  */
 import { notFound, AppError } from '../../errors/app-error.js';
+import { query } from '@trustvexa/shared';
 import { sealPii, openPii } from '../crypto/key-provider.js';
 import {
   explorerAddressUrl,
@@ -52,6 +53,19 @@ async function requireDealParty(
     throw notFound('Deal was not found.');
   }
   return { deal, role };
+}
+
+/**
+ * True when the caller is a platform operator (middleman-type account). Used to
+ * let the operator console read a deal's payment status (payout address + buyer
+ * tx hash) for ANY deal, not only deals where they are the assigned middleman.
+ */
+async function callerIsOperator(userId: string): Promise<boolean> {
+  const res = await query<{ account_type: string }>(
+    `SELECT account_type FROM users WHERE id = $1 LIMIT 1`,
+    [userId],
+  );
+  return res.rows[0]?.account_type === 'middleman';
 }
 
 function asNetwork(value: string): Network | null {
@@ -131,7 +145,13 @@ export async function getPaymentStatusForUser(
   userId: string,
   dealId: string,
 ): Promise<PaymentStatusView> {
-  await requireDealParty(dealId, userId);
+  // Parties always see their own deal; a platform operator can read any deal's
+  // payment status from the operator console even if not the assigned middleman.
+  const deal = await getDealForPayment(dealId);
+  const role = deal ? roleForUser(deal, userId) : null;
+  if (!deal || (role === null && !(await callerIsOperator(userId)))) {
+    throw notFound('Deal was not found.');
+  }
   const rows = await listPaymentStatusEvents(dealId);
 
   // Decrypt the seller's saved payout wallet so the form can pre-fill on reload.
