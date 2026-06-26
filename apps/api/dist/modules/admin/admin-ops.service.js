@@ -13,6 +13,7 @@
  */
 import { getClient } from '@trustvexa/shared';
 import { AppError, notFound } from '../../errors/app-error.js';
+import { openPii } from '../crypto/key-provider.js';
 import { appendAdminAction } from './enforcement.repository.js';
 import {} from '../launch/emergency-pause.js';
 import * as repo from './admin-ops.repository.js';
@@ -75,7 +76,7 @@ export async function searchUsers(filters) {
     if (filters.label !== undefined)
         repoFilters.label = filters.label;
     const rows = await repo.searchUsers(repoFilters);
-    const users = rows.map((row) => ({
+    const users = await Promise.all(rows.map(async (row) => ({
         id: row.id,
         username: row.username,
         accountType: row.account_type,
@@ -84,8 +85,9 @@ export async function searchUsers(filters) {
         trustLevel: row.trust_level,
         legalHold: row.legal_hold,
         dealsCount: row.deals_count,
+        email: row.email_enc ? await openPii(row.email_enc).catch(() => null) : null,
         createdAt: toIso(row.created_at),
-    }));
+    })));
     return { users, total: users.length };
 }
 // ── Analytics ─────────────────────────────────────────────────────────────────

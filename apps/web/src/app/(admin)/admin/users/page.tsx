@@ -64,6 +64,7 @@ interface UserSearchResult {
   accountLabel: string;
   trustLevel: number;
   dealsCount: number;
+  email: string | null;
   createdAt: string;
 }
 
@@ -230,6 +231,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <div>
                         <p className="text-sm font-medium">{user.username}</p>
+                        <p className="text-xs text-muted-foreground">{user.email ?? '—'}</p>
                         <p className="font-mono text-[10px] text-muted-foreground">{user.id.slice(0, 12)}</p>
                       </div>
                     </TableCell>

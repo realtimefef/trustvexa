@@ -34,6 +34,7 @@ export interface UserSearchItem {
     trustLevel: number;
     legalHold: boolean;
     dealsCount: number;
+    email: string | null;
     createdAt: string | null;
 }
 export declare function searchUsers(filters: {

@@ -97,6 +97,7 @@ export interface UserSearchRow {
   trust_level: number;
   legal_hold: boolean;
   deals_count: number;
+  email_enc: string | null;
   created_at: Date | string;
 }
 
@@ -134,7 +135,7 @@ export async function searchUsers(filters: UserSearchFilters): Promise<UserSearc
   params.push(filters.limit);
   const res = await query<UserSearchRow>(
     `SELECT id, username, account_type, account_status, account_label,
-            trust_level, legal_hold, created_at,
+            trust_level, legal_hold, created_at, email_enc,
             (SELECT COUNT(*)::int FROM deals d
               WHERE d.buyer_id = users.id OR d.seller_id = users.id OR d.middleman_id = users.id) AS deals_count
        FROM users

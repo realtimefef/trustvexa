@@ -38,6 +38,7 @@ export interface UserSearchRow {
     trust_level: number;
     legal_hold: boolean;
     deals_count: number;
+    email_enc: string | null;
     created_at: Date | string;
 }
 export interface UserSearchFilters {
