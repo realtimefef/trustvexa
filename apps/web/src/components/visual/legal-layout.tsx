@@ -38,8 +38,8 @@ export function LegalLayout({
         {badge}
       </PageHero>
       <section className="section">
-        <div className="container max-w-3xl">
-          <div className="rounded-2xl border bg-card/60 p-8 shadow-soft backdrop-blur md:p-10">
+        <div className="container max-w-4xl">
+          <div className="rounded-2xl border bg-card/60 p-5 shadow-soft backdrop-blur sm:p-8 md:p-10">
             {children}
           </div>
         </div>
