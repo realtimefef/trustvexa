@@ -76,4 +76,21 @@ export declare function contactMiddleman(userId: string): Promise<ConnectionView
  * same thread so both sides can talk to them in-context.
  */
 export declare function inviteMiddlemanToConnection(userId: string, connectionId: string): Promise<ConnectionView>;
+/**
+ * Operator (admin == middleman account) assigns THEMSELVES as the middleman of
+ * an existing connection so they can talk to the buyer and seller directly via
+ * the buyer↔MM and seller↔MM channels. Unlike `inviteMiddlemanToConnection`
+ * (which picks a random available middleman and excludes the caller), this puts
+ * the acting operator into the middleman slot. Operator-only; no-op if they are
+ * already the middleman; rejected if a different middleman is already present or
+ * the operator is one of the two buyer/seller participants.
+ */
+export declare function assignSelfAsMiddleman(userId: string, connectionId: string): Promise<ConnectionView>;
+/**
+ * Operator starts a direct support chat with ANY user, found by username,
+ * email, or user id. Operator-only. Reuses an existing open direct (non-deal)
+ * chat between the two if one exists; otherwise creates one with the operator
+ * as creator and the target user as the joiner so both can chat immediately.
+ */
+export declare function startDirectChatWithUser(userId: string, identifierRaw: string): Promise<ConnectionView>;
 //# sourceMappingURL=connections.service.d.ts.map

@@ -7,8 +7,9 @@
  */
 import { randomInt } from 'node:crypto';
 
-import { query } from '@trustvexa/shared';
+import { query, hashLookup } from '@trustvexa/shared';
 import { AppError, notFound } from '../../errors/app-error.js';
+import { getAuthConfig } from '../auth/auth.config.js';
 import {
   claimJoiner,
   claimMiddleman,
@@ -501,4 +502,187 @@ export async function inviteMiddlemanToConnection(
 
   const full = await getConnectionById(connectionId);
   return toView(full ?? updated);
+}
+
+/**
+ * Operator (admin == middleman account) assigns THEMSELVES as the middleman of
+ * an existing connection so they can talk to the buyer and seller directly via
+ * the buyer↔MM and seller↔MM channels. Unlike `inviteMiddlemanToConnection`
+ * (which picks a random available middleman and excludes the caller), this puts
+ * the acting operator into the middleman slot. Operator-only; no-op if they are
+ * already the middleman; rejected if a different middleman is already present or
+ * the operator is one of the two buyer/seller participants.
+ */
+export async function assignSelfAsMiddleman(
+  userId: string,
+  connectionId: string,
+): Promise<ConnectionView> {
+  if (!(await callerIsOperator(userId))) {
+    throw new AppError('forbidden', 'Only an operator can join a chat as the middleman.', 403);
+  }
+  const row = await getConnectionById(connectionId);
+  if (!row) {
+    throw notFound('Connection not found.');
+  }
+  if (row.status === 'closed') {
+    throw new AppError('connection_closed', 'This connection is closed.', 409);
+  }
+  if (row.middleman_id === userId) {
+    return toView(row); // already the middleman — idempotent
+  }
+  if (row.middleman_id) {
+    throw new AppError('middleman_present', 'This chat already has a middleman.', 409);
+  }
+  if (row.creator_id === userId || row.joiner_id === userId) {
+    throw new AppError('already_participant', 'You are already a buyer/seller participant in this chat.', 409);
+  }
+
+  // Claim the empty middleman slot for this operator. Done directly (rather than
+  // via claimMiddleman) so it also works when the joiner slot is still empty.
+  const claimed = await query<ConnectionRow>(
+    `UPDATE connections
+        SET middleman_id = $2, updated_at = now()
+      WHERE id = $1 AND middleman_id IS NULL AND creator_id <> $2
+      RETURNING id`,
+    [connectionId, userId],
+  );
+  if (claimed.rowCount === 0) {
+    // Race: someone else just took the slot — return current state.
+    const current = await getConnectionById(connectionId);
+    if (!current) throw notFound('Connection not found.');
+    return toView(current);
+  }
+
+  // Keep the linked deal in sync so the deal page reflects the assigned operator.
+  if (row.deal_id) {
+    await query(
+      `UPDATE deals SET middleman_id = $2, updated_at = now() WHERE id = $1 AND middleman_id IS NULL`,
+      [row.deal_id, userId],
+    );
+  }
+
+  // Best-effort realtime: tell the participants a middleman joined.
+  try {
+    const { getRedis } = await import('@trustvexa/shared');
+    const redis = getRedis();
+    const systemMsg = JSON.stringify({
+      connectionId,
+      senderId: 'system',
+      body: '🤝 A middleman has joined this conversation.',
+      createdAt: new Date().toISOString(),
+    });
+    const recipients = [row.creator_id, row.joiner_id, userId].filter(Boolean) as string[];
+    for (const uid of recipients) {
+      await redis.publish(`realtime:connection:${uid}`, systemMsg);
+    }
+  } catch {
+    // Non-fatal
+  }
+
+  const full = await getConnectionById(connectionId);
+  return toView(full ?? row);
+}
+
+/**
+ * Resolve a user by a free-form identifier the operator types: a full UUID, the
+ * short 8-char id shown in the UI (de-hyphenated, e.g. `63FF8856`), an email
+ * (matched via the keyed lookup hash), or a username (case-insensitive).
+ * Returns the user id or null when nothing unambiguous matches.
+ */
+async function resolveUserIdByIdentifier(identifier: string): Promise<string | null> {
+  const value = identifier.trim();
+  if (!value) return null;
+
+  // Full UUID → direct id match.
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+    const res = await query<{ id: string }>(`SELECT id FROM users WHERE id = $1 LIMIT 1`, [value]);
+    if (res.rows[0]) return res.rows[0].id;
+  }
+
+  // Email → keyed lookup hash.
+  if (value.includes('@')) {
+    const cfg = getAuthConfig();
+    const emailHash = hashLookup(value.toLowerCase(), cfg.lookupHashKey);
+    const res = await query<{ id: string }>(`SELECT id FROM users WHERE email_hash = $1 LIMIT 1`, [emailHash]);
+    if (res.rows[0]) return res.rows[0].id;
+  }
+
+  // Short id as displayed in the UI: hex prefix of the de-hyphenated uuid.
+  if (/^[0-9a-f]{6,32}$/i.test(value)) {
+    const res = await query<{ id: string }>(
+      `SELECT id FROM users WHERE upper(replace(id::text, '-', '')) LIKE upper($1) || '%' LIMIT 2`,
+      [value],
+    );
+    if (res.rows.length === 1) return res.rows[0]!.id;
+  }
+
+  // Username (case-insensitive, exact).
+  const byName = await query<{ id: string }>(
+    `SELECT id FROM users WHERE lower(username) = lower($1) LIMIT 1`,
+    [value],
+  );
+  if (byName.rows[0]) return byName.rows[0].id;
+
+  return null;
+}
+
+/**
+ * Operator starts a direct support chat with ANY user, found by username,
+ * email, or user id. Operator-only. Reuses an existing open direct (non-deal)
+ * chat between the two if one exists; otherwise creates one with the operator
+ * as creator and the target user as the joiner so both can chat immediately.
+ */
+export async function startDirectChatWithUser(
+  userId: string,
+  identifierRaw: string,
+): Promise<ConnectionView> {
+  if (!(await callerIsOperator(userId))) {
+    throw new AppError('forbidden', 'Only an operator can start a direct chat.', 403);
+  }
+  const identifier = (identifierRaw ?? '').trim();
+  if (!identifier) {
+    throw new AppError('invalid_identifier', 'Enter a username, email, or user ID.', 422);
+  }
+  const targetId = await resolveUserIdByIdentifier(identifier);
+  if (!targetId) {
+    throw notFound('No user found for that username, email, or ID.');
+  }
+  if (targetId === userId) {
+    throw new AppError('cannot_chat_self', 'You cannot start a chat with yourself.', 422);
+  }
+
+  // Reuse an existing open direct (non-deal) chat between these two users.
+  const existing = await query<{ id: string }>(
+    `SELECT id FROM connections
+      WHERE deal_id IS NULL AND status = 'open'
+        AND ((creator_id = $1 AND joiner_id = $2) OR (creator_id = $2 AND joiner_id = $1))
+      ORDER BY created_at DESC LIMIT 1`,
+    [userId, targetId],
+  );
+  if (existing.rows[0]) {
+    const full = await getConnectionById(existing.rows[0].id);
+    if (full) return toView(full);
+  }
+
+  // Create a fresh direct chat: operator is the creator, the target joins.
+  let row: ConnectionRow | null = null;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      row = await insertConnection(userId, generateCode());
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('duplicate') || msg.includes('unique')) continue;
+      throw err;
+    }
+  }
+  if (!row) {
+    throw new AppError('connection_code_unavailable', 'Could not allocate a connection code.', 500);
+  }
+  const claimed = await claimJoiner(row.id, targetId);
+  if (!claimed) {
+    throw new AppError('connection_full', 'Could not start the direct chat.', 409);
+  }
+  const full = await getConnectionById(row.id);
+  return toView(full ?? claimed);
 }

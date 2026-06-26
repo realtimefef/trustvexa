@@ -74,6 +74,22 @@ export async function inviteMiddleman(req: Request, res: Response): Promise<void
   res.status(200).json(result);
 }
 
+/** POST /connections/:id/claim-middleman — operator assigns THEMSELVES as the chat's middleman. */
+export async function claimMiddlemanSelf(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const id = requireParam(req, 'id');
+  const result = await service.assignSelfAsMiddleman(userId, id);
+  res.status(200).json(result);
+}
+
+/** POST /connections/start-direct — operator opens a direct chat with any user by username/email/id. */
+export async function startDirectChat(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const body = req.body as { identifier: string };
+  const result = await service.startDirectChatWithUser(userId, body.identifier);
+  res.status(201).json(result);
+}
+
 /** DELETE /connections/:id/messages/:msgId — soft-delete a single message (sender only). */
 export async function deleteMessage(req: Request, res: Response): Promise<void> {
   const userId = requireUserId(req);

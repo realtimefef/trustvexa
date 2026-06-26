@@ -27,6 +27,9 @@ const messageSchema = z.object({
 const messagesQuerySchema = z.object({
     channel: z.enum(['buyer_seller', 'buyer_mm', 'seller_mm']).optional(),
 });
+const startDirectSchema = z.object({
+    identifier: z.string().trim().min(1).max(320),
+});
 export function connectionsRouter() {
     const router = Router();
     router.post('/', ...apiChain({ schemas: { body: createSchema }, roles: ['user', 'middleman'], rateLimit: { windowSeconds: 3600, max: 200 } }), asyncHandler(controller.createConnection));
@@ -59,6 +62,21 @@ export function connectionsRouter() {
         enforceIdempotency: true,
         rateLimit: { windowSeconds: 3600, max: 20 },
     }), asyncHandler(controller.inviteMiddleman));
+    // POST /connections/:id/claim-middleman — the acting operator assigns THEMSELVES
+    // as this chat's middleman so they can talk to the buyer and seller directly.
+    router.post('/:id/claim-middleman', ...apiChain({
+        schemas: { params: idParamSchema },
+        roles: ['middleman'],
+        enforceIdempotency: true,
+        rateLimit: { windowSeconds: 3600, max: 60 },
+    }), asyncHandler(controller.claimMiddlemanSelf));
+    // POST /connections/start-direct — operator opens a direct chat with any user,
+    // resolved by username, email, or user id.
+    router.post('/start-direct', ...apiChain({
+        schemas: { body: startDirectSchema },
+        roles: ['middleman'],
+        rateLimit: { windowSeconds: 3600, max: 100 },
+    }), asyncHandler(controller.startDirectChat));
     // DELETE /connections/:id/messages/:msgId — soft-delete a single message (sender only).
     router.delete('/:id/messages/:msgId', ...apiChain({
         schemas: { params: msgParamSchema },

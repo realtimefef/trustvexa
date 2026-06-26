@@ -347,6 +347,9 @@ export default function ConnectPage() {
   const [uploading, setUploading] = React.useState(false);
   const [showRolePicker, setShowRolePicker] = React.useState(false);
   const [showArchive, setShowArchive] = React.useState(false);
+  // Operator-only direct-message composer (start a chat with any user).
+  const [showDirectModal, setShowDirectModal] = React.useState(false);
+  const [directIdentifier, setDirectIdentifier] = React.useState('');
   // Desired channel tab from a deep link (?channel=buyer_mm); applied once the
   // connection loads. Lets deal-page "Contact the middleman" open the right tab.
   const [pendingChannel, setPendingChannel] = React.useState<Channel | null>(null);
@@ -468,6 +471,33 @@ export default function ConnectPage() {
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not close.'),
   });
 
+  // Operator-only: assign MYSELF as this chat's middleman so I can talk to the
+  // buyer and seller directly (opens the buyer↔MM / seller↔MM channels).
+  const claimMm = useMutation({
+    mutationFn: async (id: string) => apiRequest<ConnectionView>(`/connections/${id}/claim-middleman`, { method: 'POST', body: {}, idempotencyKey: newIdempotencyKey() }),
+    onSuccess: (c) => {
+      setError(null);
+      void queryClient.setQueryData(['connection', c.id], c);
+      void queryClient.invalidateQueries({ queryKey: ['connections'] });
+      void queryClient.invalidateQueries({ queryKey: ['connection-messages', c.id] });
+      setPendingChannel('buyer_mm');
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not join as middleman.'),
+  });
+
+  // Operator-only: open a direct chat with any user by username/email/user id.
+  const startDirect = useMutation({
+    mutationFn: async (identifier: string) => apiRequest<ConnectionView>('/connections/start-direct', { method: 'POST', body: { identifier } }),
+    onSuccess: (c) => {
+      setError(null);
+      setShowDirectModal(false);
+      setDirectIdentifier('');
+      setActiveId(c.id);
+      void queryClient.invalidateQueries({ queryKey: ['connections'] });
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not start the chat.'),
+  });
+
   // ── Handlers ──────────────────────────────────────────────────────────────────
 
   const handleSend = async (body: string, channel: Channel) => {
@@ -563,6 +593,14 @@ export default function ConnectPage() {
 
   const hasMiddleman = !!(a?.middlemanId);
 
+  // The acting account is the platform operator (admin == middleman account).
+  const isOperator = user?.role === 'middleman';
+  // Operator is viewing a chat they could step into as the middleman.
+  const canClaimAsMiddleman = !!(
+    isOperator && a && !a.middlemanId &&
+    a.creatorId !== user?.id && a.joinerId !== user?.id
+  );
+
   // Channel visibility per role
   const canSeeBuyerMm = hasMiddleman && (myRole === 'creator' || myRole === 'middleman');
   const canSeeSellerMm = hasMiddleman && (myRole === 'joiner' || myRole === 'middleman');
@@ -655,6 +693,15 @@ export default function ConnectPage() {
                 <span className="text-[10px] font-medium leading-tight">{contactMm.isPending ? 'Connecting…' : 'Middleman'}</span>
               </button>
             </div>
+            {/* Operator-only: start a direct chat with any user by name/email/id. */}
+            {isOperator && (
+              <button type="button"
+                onClick={() => { setError(null); setDirectIdentifier(''); setShowDirectModal(true); }}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary/5 p-2 hover:bg-primary/10 transition-colors text-center">
+                <Send className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-primary leading-tight">Message a user directly</span>
+              </button>
+            )}
             {/* Join with code */}
             <form className="flex gap-1.5" onSubmit={(e) => { e.preventDefault(); const t = joinCode.trim(); if (t) { setError(null); join.mutate(t); } }}>
               <Input value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} placeholder="Join code…" className="h-7 text-xs font-mono tracking-widest flex-1" maxLength={8} />
@@ -804,13 +851,23 @@ export default function ConnectPage() {
                         : <><LinkIcon className="h-2.5 w-2.5" /> Copy link</>}
                     </button>
                     {/* Invite middleman */}
-                    {a.joined && !a.middlemanId && myRole !== 'middleman' && (
+                    {a.joined && !a.middlemanId && myRole !== 'middleman' && !isOperator && (
                       <Button size="sm" variant="outline"
                         className="h-6 text-[10px] border-amber-400/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 px-2"
                         disabled={inviteMm.isPending}
                         onClick={() => { setError(null); inviteMm.mutate(a.id); }}>
                         <Shield className="h-2.5 w-2.5 mr-1" />
                         {inviteMm.isPending ? '…' : 'Add Middleman'}
+                      </Button>
+                    )}
+                    {/* Operator: step into this chat as the middleman to talk to both sides directly. */}
+                    {canClaimAsMiddleman && (
+                      <Button size="sm" variant="outline"
+                        className="h-6 text-[10px] border-amber-400/50 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20 px-2"
+                        disabled={claimMm.isPending}
+                        onClick={() => { setError(null); claimMm.mutate(a.id); }}>
+                        <Shield className="h-2.5 w-2.5 mr-1" />
+                        {claimMm.isPending ? '…' : 'Join as middleman'}
                       </Button>
                     )}
                     {/* Close */}
@@ -933,6 +990,31 @@ export default function ConnectPage() {
               className="mt-3 w-full text-xs text-muted-foreground hover:text-foreground transition-colors">
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Operator-only: direct-message composer — start a chat with any user by
+          username, email, or user ID. */}
+      {showDirectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !startDirect.isPending && setShowDirectModal(false)}>
+          <div className="w-full max-w-sm rounded-2xl border bg-background p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-semibold text-base">Message a user directly</h2>
+            <p className="text-sm text-muted-foreground mt-1">Enter the user&apos;s username, email, or user ID. A private chat opens between you and them.</p>
+            <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); const t = directIdentifier.trim(); if (t) { setError(null); startDirect.mutate(t); } }}>
+              <Input autoFocus value={directIdentifier} onChange={(e) => setDirectIdentifier(e.target.value)}
+                placeholder="username, email, or user ID" className="h-9 text-sm" />
+              {error && <p className="text-xs text-destructive">{error}</p>}
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" className="flex-1" disabled={startDirect.isPending || !directIdentifier.trim()}>
+                  {startDirect.isPending ? 'Opening…' : 'Open chat'}
+                </Button>
+                <Button type="button" size="sm" variant="outline" disabled={startDirect.isPending}
+                  onClick={() => setShowDirectModal(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -15,6 +15,10 @@ export declare function contactMiddleman(req: Request, res: Response): Promise<v
 export declare function closeConnection(req: Request, res: Response): Promise<void>;
 /** POST /connections/:id/invite-middleman — bring a middleman into an existing buyer↔seller chat. */
 export declare function inviteMiddleman(req: Request, res: Response): Promise<void>;
+/** POST /connections/:id/claim-middleman — operator assigns THEMSELVES as the chat's middleman. */
+export declare function claimMiddlemanSelf(req: Request, res: Response): Promise<void>;
+/** POST /connections/start-direct — operator opens a direct chat with any user by username/email/id. */
+export declare function startDirectChat(req: Request, res: Response): Promise<void>;
 /** DELETE /connections/:id/messages/:msgId — soft-delete a single message (sender only). */
 export declare function deleteMessage(req: Request, res: Response): Promise<void>;
 //# sourceMappingURL=connections.controller.d.ts.map
