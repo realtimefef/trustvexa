@@ -16,6 +16,7 @@ import { query } from '@trustvexa/shared';
 import { AppError } from '../../errors/app-error.js';
 import { sealPii, openPii } from '../crypto/key-provider.js';
 import { acquireClient } from './deal.repository.js';
+import { claimDealForOperator } from './operator-claim.js';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 async function loadDealParticipants(dealId) {
     const res = await query(`SELECT buyer_id, seller_id, middleman_id FROM deals WHERE id = $1`, [dealId]);
@@ -280,6 +281,8 @@ export async function getPartyDetails(userId, dealId) {
  * Only the deal's assigned middleman may call this.
  */
 export async function verifyPartyDetails(middlemanId, dealId, role) {
+    // Operator taking control of a no-middleman deal becomes its middleman.
+    await claimDealForOperator(middlemanId, dealId);
     const deal = await loadDealParticipants(dealId);
     if (!deal) {
         throw new AppError('deal_not_found', 'Deal was not found.', 404);

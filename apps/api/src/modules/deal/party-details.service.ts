@@ -17,6 +17,7 @@ import { query } from '@trustvexa/shared';
 import { AppError } from '../../errors/app-error.js';
 import { sealPii, openPii } from '../crypto/key-provider.js';
 import { acquireClient, type TxClient } from './deal.repository.js';
+import { claimDealForOperator } from './operator-claim.js';
 
 // ── Input types ──────────────────────────────────────────────────────────────
 
@@ -461,6 +462,8 @@ export async function verifyPartyDetails(
   dealId: string,
   role: 'seller' | 'buyer',
 ): Promise<{ dealId: string; role: 'seller' | 'buyer'; verifiedAt: string }> {
+  // Operator taking control of a no-middleman deal becomes its middleman.
+  await claimDealForOperator(middlemanId, dealId);
   const deal = await loadDealParticipants(dealId);
   if (!deal) {
     throw new AppError('deal_not_found', 'Deal was not found.', 404);

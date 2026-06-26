@@ -20,6 +20,7 @@ import { getRedis } from '@trustvexa/shared';
 import { logger } from '../../logger.js';
 import { openDispute as openDisputeRow } from '../disputes/dispute.repository.js';
 import { appendEntry } from './audit-chain.js';
+import { claimDealForOperator } from './operator-claim.js';
 import { acquireClient, applyDealStatus, insertEscrowLog, loadDealVersion, loadLastEntryHash, } from './deal.repository.js';
 import { DEAL_EVENTS } from './state-machine.js';
 import { InvalidTransitionError, planTransition } from './transition.js';
@@ -544,6 +545,8 @@ const MIDDLEMAN_ALLOWED_STATUS_OVERRIDES = new Set([
  * Runs in a single transaction so partial updates are never committed.
  */
 export async function middlemanUpdateDeal(middlemanId, dealId, input) {
+    // Operator taking control of a no-middleman deal becomes its middleman.
+    await claimDealForOperator(middlemanId, dealId);
     const client = await acquireClient();
     try {
         await client.query('BEGIN');
@@ -728,6 +731,8 @@ export async function advanceDeliveryNoMiddleman(userId, dealId, requestId) {
  * separately by the payout service; this advances the deal lifecycle status.
  */
 export async function markDealComplete(middlemanId, dealId, requestId) {
+    // Operator taking control of a no-middleman deal becomes its middleman.
+    await claimDealForOperator(middlemanId, dealId);
     const client = await acquireClient();
     let status;
     try {
@@ -1003,6 +1008,8 @@ export async function sellerHandover(sellerId, dealId, requestId) {
  * Only the deal's assigned middleman account may call this.
  */
 export async function verifyHandover(middlemanId, dealId, requestId) {
+    // Operator taking control of a no-middleman deal becomes its middleman.
+    await claimDealForOperator(middlemanId, dealId);
     // Verify the caller is the assigned middleman on this deal.
     const client = await acquireClient();
     try {
@@ -1044,6 +1051,8 @@ export async function verifyHandover(middlemanId, dealId, requestId) {
  * Only the deal's assigned middleman account may call this.
  */
 export async function deliverToBuyer(middlemanId, dealId, requestId) {
+    // Operator taking control of a no-middleman deal becomes its middleman.
+    await claimDealForOperator(middlemanId, dealId);
     const client = await acquireClient();
     try {
         await client.query('BEGIN');

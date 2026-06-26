@@ -22,6 +22,7 @@ import { openDispute as openDisputeRow } from '../disputes/dispute.repository.js
 
 import { appendEntry } from './audit-chain.js';
 import type { EscrowLogVisibility, TxClient } from './deal.repository.js';
+import { claimDealForOperator } from './operator-claim.js';
 import {
   acquireClient,
   applyDealStatus,
@@ -767,6 +768,8 @@ export async function middlemanUpdateDeal(
   dealId: string,
   input: MiddlemanUpdateDealInput,
 ): Promise<MiddlemanUpdateDealResult> {
+  // Operator taking control of a no-middleman deal becomes its middleman.
+  await claimDealForOperator(middlemanId, dealId);
   const client = await acquireClient();
   try {
     await client.query('BEGIN');
@@ -1015,6 +1018,8 @@ export async function markDealComplete(
   dealId: string,
   requestId: string,
 ): Promise<{ dealId: string; status: string }> {
+  // Operator taking control of a no-middleman deal becomes its middleman.
+  await claimDealForOperator(middlemanId, dealId);
   const client = await acquireClient();
   let status: string;
   try {
@@ -1335,6 +1340,8 @@ export async function verifyHandover(
   dealId: string,
   requestId: string,
 ): Promise<{ dealId: string; status: string }> {
+  // Operator taking control of a no-middleman deal becomes its middleman.
+  await claimDealForOperator(middlemanId, dealId);
   // Verify the caller is the assigned middleman on this deal.
   const client = await acquireClient();
   try {
@@ -1384,6 +1391,8 @@ export async function deliverToBuyer(
   dealId: string,
   requestId: string,
 ): Promise<{ dealId: string; status: string }> {
+  // Operator taking control of a no-middleman deal becomes its middleman.
+  await claimDealForOperator(middlemanId, dealId);
   const client = await acquireClient();
   try {
     await client.query('BEGIN');
