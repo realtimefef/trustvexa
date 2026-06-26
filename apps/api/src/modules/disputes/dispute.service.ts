@@ -6,7 +6,7 @@
  * never confirms the existence of someone else's dispute. (Requirements 24.x)
  */
 import { AppError, notFound } from '../../errors/app-error.js';
-import { getRedis } from '@trustvexa/shared';
+import { getRedis, query } from '@trustvexa/shared';
 import { generateDocumentNumber } from '../deal/agreement.js';
 import { appendEntry } from '../deal/audit-chain.js';
 import { applyDealStatus, insertEscrowLog, loadLastEntryHash } from '../deal/deal.repository.js';
@@ -100,7 +100,57 @@ export async function getDisputeForUser(userId: string, dealId: string): Promise
 
   const dispute = await getDisputeByDeal(dealId);
   if (dispute === null) {
-    throw notFound('Dispute was not found.');
+    // Self-heal: if the deal is in Disputed state but has no disputes row
+    // (e.g. the admin opened the dispute via middleman-update before the
+    // auto-create fix was deployed), create the row now so the resolve form
+    // can find it.
+    if (access.status === 'Disputed') {
+      const raisedBy = access.middleman_id ?? access.buyer_id ?? access.seller_id;
+      if (raisedBy) {
+        await query(
+          `INSERT INTO disputes (deal_id, raised_by, reason, status)
+           VALUES ($1, $2, $3, 'open')
+           ON CONFLICT DO NOTHING`,
+          [dealId, raisedBy, 'Dispute opened by middleman (auto-created).'],
+        );
+        // Fall through — re-fetch below will pick up the new row.
+      }
+    }
+    const healed = await getDisputeByDeal(dealId);
+    if (!healed) throw notFound('Dispute was not found.');
+    const [healedEvidence, healedThreads] = await Promise.all([
+      listEvidence(healed.id),
+      listThreads(healed.id),
+    ]);
+    return {
+      role,
+      id: healed.id,
+      dealId: healed.deal_id,
+      reason: healed.reason,
+      status: healed.status,
+      resolution: healed.resolution,
+      decisionNote: healed.final_decision_note,
+      resolvedAt: toIso(healed.resolved_at),
+      createdAt: toIso(healed.created_at),
+      evidence: healedEvidence.map((e) => {
+        const { url } = generateSignedLink(e.id, userId);
+        return {
+          id: e.id,
+          fileHash: e.file_hash,
+          mimeType: e.mime_type,
+          reviewStatus: e.review_status,
+          locked: e.locked_at !== null,
+          url,
+          createdAt: toIso(e.created_at),
+        };
+      }),
+      threads: healedThreads.map((t) => ({
+        id: t.id,
+        status: t.status,
+        locked: t.status === 'locked' || t.locked_at !== null,
+        createdAt: toIso(t.created_at),
+      })),
+    };
   }
 
   const [evidence, threads] = await Promise.all([
