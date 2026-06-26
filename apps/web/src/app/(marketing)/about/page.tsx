@@ -251,7 +251,7 @@ export default function AboutPage() {
       <section className="section border-t">
         <div className="container max-w-5xl">
           <Reveal>
-            <div className="rounded-3xl bg-brand-gradient p-10 text-white shadow-glow">
+            <div className="rounded-3xl bg-brand-gradient p-6 text-white shadow-glow sm:p-8 md:p-10">
               <p className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
                 We have no stake in the outcome of any deal
               </p>
@@ -337,7 +337,7 @@ export default function AboutPage() {
       <section className="section border-t">
         <div className="container max-w-5xl">
           <Reveal>
-            <div className="rounded-2xl border bg-card p-8 shadow-soft">
+            <div className="rounded-2xl border bg-card p-6 shadow-soft sm:p-8">
               <p className="font-display text-xl font-bold tracking-tight">Open positions</p>
               <p className="mt-3 text-muted-foreground">
                 TrustVexa is a lean team — we keep it that way on purpose. Small teams ship faster,

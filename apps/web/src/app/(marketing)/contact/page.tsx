@@ -134,7 +134,7 @@ export default function ContactPage() {
       <section className="section border-t bg-muted/20">
         <div className="container max-w-3xl">
           <Reveal>
-            <div className="flex flex-col items-center gap-5 rounded-3xl border bg-card/60 p-10 text-center backdrop-blur md:p-14">
+            <div className="flex flex-col items-center gap-5 rounded-3xl border bg-card/60 p-6 text-center backdrop-blur sm:p-10 md:p-14">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-glow">
                 <HelpCircle className="h-7 w-7" aria-hidden="true" />
               </span>

@@ -239,7 +239,7 @@ export default function SecurityPage() {
       <section className="section">
         <div className="container">
           <Reveal>
-            <div className="grid grid-cols-2 gap-8 rounded-3xl border bg-card/60 p-10 backdrop-blur md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-6 rounded-3xl border bg-card/60 p-6 backdrop-blur sm:gap-8 sm:p-8 md:grid-cols-4 md:p-10">
               {ACCOUNTABILITY.map((a) => (
                 <div key={a.label} className="text-center">
                   <p className="font-display text-2xl font-bold tracking-tight">
@@ -285,7 +285,7 @@ export default function SecurityPage() {
           </div>
 
           <Reveal>
-            <div className="space-y-3 rounded-2xl border bg-card/60 p-8 backdrop-blur">
+            <div className="space-y-3 rounded-2xl border bg-card/60 p-6 backdrop-blur sm:p-8">
               <h2 className="font-display text-lg font-semibold">Responsible disclosure</h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Found a vulnerability? We appreciate your help. Please report it privately so we can
