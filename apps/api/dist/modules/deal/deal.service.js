@@ -533,6 +533,10 @@ export async function updateDeal(sellerId, dealId, input) {
 const MIDDLEMAN_ALLOWED_STATUS_OVERRIDES = new Set([
     'Cancelled',
     'Disputed',
+    // Allow returning a Disputed deal to Funded ("remove dispute") so the parties
+    // can continue once the issue is resolved over chat. Any open dispute row is
+    // closed when this happens (see below).
+    'Funded',
 ]);
 /**
  * Allow the assigned middleman to modify a deal after it has been locked.
@@ -615,6 +619,14 @@ export async function middlemanUpdateDeal(middlemanId, dealId, input) {
                         reason: (input.note ?? '').trim() || 'Dispute opened by middleman.',
                     });
                 }
+            }
+            else if (deal.status === 'Disputed') {
+                // Moving a Disputed deal to another status ("remove dispute") — close
+                // any open dispute row so it no longer shows as active.
+                await client.query(`UPDATE disputes
+              SET status = 'resolved', resolved_at = now(),
+                  final_decision_note = COALESCE(final_decision_note, $2)
+            WHERE deal_id = $1 AND status IN ('open','under_review')`, [dealId, (input.note ?? '').trim() || 'Dispute removed by middleman.']);
             }
             await client.query(`INSERT INTO escrow_logs
            (deal_id, action, actor_id, visibility, request_id, metadata, prev_hash, entry_hash, created_at)

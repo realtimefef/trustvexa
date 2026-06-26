@@ -9,12 +9,9 @@ import {
   Gavel,
   FileText,
   MessageSquare,
-  Send,
   AlertTriangle,
   Scale,
   CheckCircle2,
-  FileCode,
-  Download,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -59,21 +56,6 @@ interface DisputeView {
   threads: DisputeThread[];
 }
 
-interface DisputeMessage {
-  id: string;
-  threadId: string;
-  senderId: string | null;
-  role: string;
-  body: string;
-  createdAt: string;
-}
-
-interface DisputeMessagesResponse {
-  disputeId: string;
-  role: string;
-  messages: DisputeMessage[];
-}
-
 interface DealDetail {
   id: string;
   status: string;
@@ -96,20 +78,15 @@ export default function AdminDisputeDetailPage() {
   const queryClient = useQueryClient();
 
   const dealId = params.id as string;
-  const [messageVal, setMessageVal] = React.useState('');
   const [outcome, setOutcome] = React.useState<'full_refund' | 'full_release' | 'partial_split'>('full_refund');
   const [resolveReason, setResolveReason] = React.useState('');
   const [buyerShareVal, setBuyerShareVal] = React.useState('');
   const [isResolving, setIsResolving] = React.useState(false);
-  const [isSending, setIsSending] = React.useState(false);
 
   // Generate a random idempotency key on component mount to prevent duplicate submissions
   const idempotencyKey = React.useMemo(() => {
     return `dispute-resolve-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }, []);
-
-  const messageIdempotencyPrefix = React.useRef(Date.now());
-  const [messageCounter, setMessageCounter] = React.useState(0);
 
   React.useEffect(() => {
     if (status === 'anonymous') {
@@ -135,34 +112,23 @@ export default function AdminDisputeDetailPage() {
 
   const deal = dealQuery.data;
 
-  // Fetch dispute messages (once dispute ID is available)
-  const messagesQuery = useQuery({
-    queryKey: ['admin-dispute-messages', dispute?.id],
-    enabled: status === 'authenticated' && !!dispute?.id,
-    queryFn: async () => apiRequest<DisputeMessagesResponse>(`/disputes/${dispute!.id}/messages`),
-  });
-
-  const handlePostMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!messageVal.trim() || !dispute?.id || isSending) return;
-
-    setIsSending(true);
-    const counter = messageCounter + 1;
-    setMessageCounter(counter);
-    const key = `dispute-msg-${messageIdempotencyPrefix.current}-${counter}`;
-
+  const handleRemoveDispute = async () => {
+    if (!confirm('Remove this dispute and return the deal to its normal flow? The deal will move back to Funded so it can be completed.')) return;
+    setIsResolving(true);
     try {
-      await apiRequest(`/disputes/${dispute.id}/messages`, {
-        method: 'POST',
-        idempotencyKey: key,
-        body: { body: messageVal },
+      await apiRequest(`/deals/${dealId}/middleman-update`, {
+        method: 'PATCH',
+        idempotencyKey: `dispute-remove-${Date.now()}`,
+        body: { statusOverride: 'Funded', note: 'Dispute resolved over chat; removed by middleman.' },
       });
-      setMessageVal('');
-      queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', dispute.id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-dispute', dealId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-deal-detail', dealId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
+      router.push(`/admin/deals/${dealId}`);
     } catch (err) {
-      console.error('Failed to post statement:', err);
+      alert(err instanceof Error ? err.message : 'Failed to remove dispute.');
     } finally {
-      setIsSending(false);
+      setIsResolving(false);
     }
   };
 
@@ -225,7 +191,6 @@ export default function AdminDisputeDetailPage() {
     );
   }
 
-  const messages = messagesQuery.data?.messages ?? [];
   const isOpen = ['open', 'under_review', 'problem_raised', 'disputed'].includes(dispute.status.toLowerCase());
 
   return (
@@ -337,111 +302,24 @@ export default function AdminDisputeDetailPage() {
             </Card>
           )}
 
-          {/* Evidence Files Card */}
+          {/* Resolve-over-chat note */}
           <Card className="rounded-2xl border bg-card/60 backdrop-blur shadow-soft overflow-hidden">
             <CardHeader className="border-b bg-muted/10">
               <CardTitle className="text-base flex items-center gap-2">
-                <FileCode className="h-4 w-4 text-primary" />
-                Submitted evidence
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                How to resolve this dispute
               </CardTitle>
-              <CardDescription>Files uploaded by the parties to justify their claims.</CardDescription>
+              <CardDescription>Gather evidence and talk to both parties in the deal chat.</CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              {dispute.evidence.length === 0 ? (
-                <p className="text-center py-6 text-sm text-muted-foreground">No evidence files uploaded yet.</p>
-              ) : (
-                <ul className="divide-y border rounded-xl overflow-hidden bg-card/40">
-                  {dispute.evidence.map((ev) => (
-                    <li key={ev.id} className="flex items-center justify-between p-4 gap-4 hover:bg-muted/30 transition-colors">
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm truncate">Evidence file</span>
-                          <Badge variant={ev.reviewStatus === 'approved' ? 'success' : ev.reviewStatus === 'rejected' ? 'destructive' : 'secondary'} className="text-[10px]">
-                            {ev.reviewStatus.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground font-mono truncate">Hash: {ev.fileHash}</p>
-                        <p className="text-[10px] text-muted-foreground">Type: {ev.mimeType} · Uploaded: {new Date(ev.createdAt).toLocaleDateString()}</p>
-                      </div>
-                      <Button asChild size="sm" variant="outline" className="shrink-0 gap-1.5 h-8">
-                        <a href={ev.url} target="_blank" rel="noopener noreferrer">
-                          <Download className="h-3 w-3" /> View
-                        </a>
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            <CardContent className="p-6 space-y-3 text-sm text-muted-foreground">
+              <p>Use the buyer↔middleman and seller↔middleman chats to collect evidence and discuss the issue directly with each party.</p>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/admin/deals/${dealId}`}>
+                  <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Open the deal &amp; chats
+                </Link>
+              </Button>
+              <p className="text-xs">Once you have what you need, issue a ruling on the right — or remove the dispute to return the deal to its normal flow.</p>
             </CardContent>
-          </Card>
-
-          {/* Discussion Thread Card */}
-          <Card className="rounded-2xl border bg-card/60 backdrop-blur shadow-soft overflow-hidden flex flex-col h-[400px]">
-            <CardHeader className="border-b bg-muted/10 shrink-0">
-              <CardTitle className="text-base flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Mediation thread statements
-              </CardTitle>
-              <CardDescription>Direct testimonies and responses from buyer, seller, and system.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
-              {messagesQuery.isLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-10 w-2/3" />
-                  <Skeleton className="h-10 w-1/2" />
-                </div>
-              ) : messages.length === 0 ? (
-                <p className="text-center py-12 text-sm text-muted-foreground">No statements registered in the thread.</p>
-              ) : (
-                <ol className="flex flex-col gap-3">
-                  {messages.map((msg) => {
-                    const isSystem = msg.role === 'system';
-                    const isMiddleman = msg.role === 'middleman';
-                    const isBuyer = msg.role === 'buyer';
-
-                    return (
-                      <li
-                        key={msg.id}
-                        className={`flex flex-col max-w-[80%] rounded-xl p-3 border text-sm shadow-soft ${
-                          isSystem
-                            ? 'self-center bg-muted/40 border-muted text-muted-foreground max-w-full text-center text-xs'
-                            : isMiddleman
-                            ? 'self-end bg-brand-gradient text-white border-transparent'
-                            : isBuyer
-                            ? 'self-start bg-primary/[0.06] border-primary/20 text-foreground'
-                            : 'self-start bg-card border-border/60 text-foreground'
-                        }`}
-                      >
-                        {!isSystem && (
-                          <span className={`text-[10px] font-bold uppercase tracking-wide block mb-1 ${isMiddleman ? 'text-white/80' : 'text-muted-foreground'}`}>
-                            {msg.role} {msg.senderId ? `(${msg.senderId.slice(0, 6)})` : ''}
-                          </span>
-                        )}
-                        <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
-                        <span className={`text-[9px] mt-1.5 block text-right ${isMiddleman ? 'text-white/60' : 'text-muted-foreground'}`}>
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-            </CardContent>
-            {isOpen && (
-              <form onSubmit={handlePostMessage} className="p-4 border-t bg-muted/10 flex gap-2 items-center shrink-0">
-                <Input
-                  type="text"
-                  placeholder="Post an official mediator statement..."
-                  value={messageVal}
-                  onChange={(e) => setMessageVal(e.target.value)}
-                  disabled={isSending}
-                  className="flex-1 h-9 text-xs"
-                />
-                <Button type="submit" size="icon" disabled={!messageVal.trim() || isSending} className="h-9 w-9 shrink-0">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            )}
           </Card>
         </div>
 
@@ -522,6 +400,21 @@ export default function AdminDisputeDetailPage() {
                   <Button type="submit" variant="gradient" className="w-full font-bold text-xs" disabled={isResolving || !resolveReason.trim()}>
                     {isResolving ? 'Processing resolution...' : 'Issue mediation ruling'}
                   </Button>
+
+                  <div className="border-t pt-3 mt-1">
+                    <p className="text-[10px] text-muted-foreground mb-2 leading-normal">
+                      Resolved the issue over chat? Remove the dispute to return the deal to its normal flow (back to Funded) so it can be completed.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full text-xs border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                      disabled={isResolving}
+                      onClick={handleRemoveDispute}
+                    >
+                      {isResolving ? 'Working…' : 'Remove dispute (return to deal)'}
+                    </Button>
+                  </div>
                 </form>
               ) : (
                 <div className="space-y-4 text-center py-6">

@@ -23,6 +23,7 @@ export interface DealMoneyRow {
   coin: string;
   network: string;
   amount_smallest_unit: string | null;
+  deal_amount: string | null;
   version_no: number;
 }
 
@@ -37,7 +38,7 @@ export async function lockDealForSettlement(
 ): Promise<DealMoneyRow | null> {
   const { rows } = await tx.query<DealMoneyRow>(
     `SELECT id, buyer_id, seller_id, middleman_id, preferred_middleman_id, status, coin, network,
-            amount_smallest_unit, version_no
+            amount_smallest_unit, deal_amount, version_no
        FROM deals WHERE id = $1 FOR UPDATE`,
     [dealId],
   );

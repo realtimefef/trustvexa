@@ -21,6 +21,7 @@ export interface DealMoneyRow {
     coin: string;
     network: string;
     amount_smallest_unit: string | null;
+    deal_amount: string | null;
     version_no: number;
 }
 /**

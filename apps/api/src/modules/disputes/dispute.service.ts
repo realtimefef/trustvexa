@@ -264,7 +264,11 @@ export async function resolveDisputeForMiddleman(
         throw new AppError('no_open_dispute', 'There is no open dispute to resolve.', 409);
       }
 
-      const escrow = BigInt(deal.amount_smallest_unit ?? '0');
+      // Escrow figure for the split. Prefer the on-chain funded amount; if the
+      // deal was moved to Disputed without an on-chain deposit recorded (e.g.
+      // the operator opened the dispute manually), fall back to the deal's
+      // agreed amount so the settlement math has a positive figure to split.
+      const escrow = BigInt(deal.amount_smallest_unit ?? deal.deal_amount ?? '0');
       let split;
       try {
         split = computeSettlement(

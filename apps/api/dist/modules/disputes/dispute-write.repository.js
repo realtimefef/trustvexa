@@ -5,7 +5,7 @@
  */
 export async function lockDealForSettlement(tx, dealId) {
     const { rows } = await tx.query(`SELECT id, buyer_id, seller_id, middleman_id, preferred_middleman_id, status, coin, network,
-            amount_smallest_unit, version_no
+            amount_smallest_unit, deal_amount, version_no
        FROM deals WHERE id = $1 FOR UPDATE`, [dealId]);
     return rows[0] ?? null;
 }
