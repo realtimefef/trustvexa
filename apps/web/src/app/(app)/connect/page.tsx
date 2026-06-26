@@ -60,6 +60,14 @@ interface ConnectionMessage {
   mine: boolean;
 }
 
+/** One matching user in the operator's direct-message search. */
+interface DirectUserResult {
+  id: string;
+  username: string;
+  email: string | null;
+  accountStatus?: string;
+}
+
 const IMG_PREFIX = '[img:';
 const IMG_OLD_PREFIX = '[image:';
 
@@ -357,6 +365,7 @@ export default function ConnectPage() {
   // Operator-only direct-message composer (start a chat with any user).
   const [showDirectModal, setShowDirectModal] = React.useState(false);
   const [directIdentifier, setDirectIdentifier] = React.useState('');
+  const [directDebounced, setDirectDebounced] = React.useState('');
   // Desired channel tab from a deep link (?channel=buyer_mm); applied once the
   // connection loads. Lets deal-page "Contact the middleman" open the right tab.
   const [pendingChannel, setPendingChannel] = React.useState<Channel | null>(null);
@@ -503,6 +512,23 @@ export default function ConnectPage() {
       void queryClient.invalidateQueries({ queryKey: ['connections'] });
     },
     onError: (e) => setError(e instanceof ApiError ? e.message : 'Could not start the chat.'),
+  });
+
+  // Debounce the direct-message search box so we don't query on every keystroke.
+  React.useEffect(() => {
+    const t = setTimeout(() => setDirectDebounced(directIdentifier.trim()), 250);
+    return () => clearTimeout(t);
+  }, [directIdentifier]);
+
+  // Live user search for the direct-message composer (operator-only). Reuses the
+  // existing admin user search, which matches username or id and returns email.
+  const userSearch = useQuery({
+    queryKey: ['direct-user-search', directDebounced],
+    enabled: showDirectModal && user?.role === 'middleman' && directDebounced.length >= 1,
+    queryFn: async () => {
+      const res = await apiRequest<{ users: DirectUserResult[] }>(`/admin/users?q=${encodeURIComponent(directDebounced)}&limit=10`);
+      return res.users ?? [];
+    },
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────────
@@ -1006,18 +1032,43 @@ export default function ConnectPage() {
         </div>
       )}
 
-      {/* Operator-only: direct-message composer — start a chat with any user by
-          username, email, or user ID. */}
+      {/* Operator-only: direct-message composer — search for any user by
+          username, email, or user ID and open a private chat. */}
       {showDirectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !startDirect.isPending && setShowDirectModal(false)}>
           <div className="w-full max-w-sm rounded-2xl border bg-background p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-semibold text-base">Message a user directly</h2>
-            <p className="text-sm text-muted-foreground mt-1">Enter the user&apos;s username, email, or user ID. A private chat opens between you and them.</p>
-            <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); const t = directIdentifier.trim(); if (t) { setError(null); startDirect.mutate(t); } }}>
+            <p className="text-sm text-muted-foreground mt-1">Search by username, email, or user ID. Pick a person to open a private chat — no code needed.</p>
+            <form className="mt-4 space-y-2" onSubmit={(e) => { e.preventDefault(); const t = directIdentifier.trim(); if (t) { setError(null); startDirect.mutate(t); } }}>
               <Input autoFocus value={directIdentifier} onChange={(e) => setDirectIdentifier(e.target.value)}
-                placeholder="username, email, or user ID" className="h-9 text-sm" />
+                placeholder="Search username, email, or user ID" className="h-9 text-sm" />
+
+              {/* Live results */}
+              {directDebounced.length >= 1 && (
+                <div className="max-h-56 overflow-y-auto rounded-xl border divide-y divide-border/40">
+                  {userSearch.isLoading ? (
+                    <div className="px-3 py-3 text-xs text-muted-foreground">Searching…</div>
+                  ) : (userSearch.data?.length ?? 0) === 0 ? (
+                    <div className="px-3 py-3 text-xs text-muted-foreground">No matching users. You can still try the exact email or user ID below.</div>
+                  ) : (
+                    userSearch.data!.map((u) => (
+                      <button key={u.id} type="button"
+                        disabled={startDirect.isPending}
+                        onClick={() => { setError(null); startDirect.mutate(u.id); }}
+                        className="w-full text-left px-3 py-2 hover:bg-muted/60 transition-colors disabled:opacity-50">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold truncate">{u.username}</span>
+                          <span className="font-mono text-[10px] text-muted-foreground shrink-0">{u.id.replace(/-/g, '').slice(0, 8).toUpperCase()}</span>
+                        </div>
+                        {u.email && <span className="text-[11px] text-muted-foreground truncate block">{u.email}</span>}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+
               {error && <p className="text-xs text-destructive">{error}</p>}
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 <Button type="submit" size="sm" className="flex-1" disabled={startDirect.isPending || !directIdentifier.trim()}>
                   {startDirect.isPending ? 'Opening…' : 'Open chat'}
                 </Button>
