@@ -86,7 +86,7 @@ export async function listEscrowAddressesAwaitingFunding(
 				 d.risk_score AS risk_score
 			 FROM escrow_addresses ea
 			 JOIN deals d ON d.id = ea.deal_id
-			WHERE d.status = ANY($1::text[])
+			WHERE d.status = ANY($1::deal_status[])
 			ORDER BY ea.created_at ASC
 			LIMIT $2`,
     [DEPOSIT_WATCH_STATUSES, limit],
