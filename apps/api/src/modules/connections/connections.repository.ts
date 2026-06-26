@@ -141,6 +141,33 @@ export async function listConnectionsForUser(userId: string): Promise<Connection
   return res.rows;
 }
 
+/**
+ * Every connection on the platform, most-recently-active first — for the
+ * operator (middleman-account) console only. Includes chats with no middleman
+ * assigned and pure (non-deal) chats. Callers MUST verify the requester is an
+ * operator before using this; it intentionally bypasses participant scoping.
+ */
+export async function listAllConnections(limit = 200): Promise<ConnectionRow[]> {
+  const res = await query<ConnectionRow>(
+    `SELECT c.id, c.code, c.creator_id, c.joiner_id, c.middleman_id, c.deal_id, c.status,
+            c.creator_role, c.created_at, c.updated_at,
+            d.buyer_id AS deal_buyer_id, d.seller_id AS deal_seller_id,
+            cu.username AS creator_username, ju.username AS joiner_username,
+            mu.username AS middleman_username,
+            cu.account_status AS creator_status, ju.account_status AS joiner_status,
+            cu.account_type AS creator_account_type, ju.account_type AS joiner_account_type
+       FROM connections c
+       JOIN users cu ON cu.id = c.creator_id
+       LEFT JOIN users ju ON ju.id = c.joiner_id
+       LEFT JOIN users mu ON mu.id = c.middleman_id
+       LEFT JOIN deals d ON d.id = c.deal_id
+      ORDER BY c.updated_at DESC
+      LIMIT $1`,
+    [limit],
+  );
+  return res.rows;
+}
+
 export async function setConnectionDeal(connectionId: string, dealId: string): Promise<void> {
   await query(`UPDATE connections SET deal_id = $2, updated_at = now() WHERE id = $1`, [
     connectionId,

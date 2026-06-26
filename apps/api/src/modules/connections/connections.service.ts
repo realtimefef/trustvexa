@@ -17,6 +17,7 @@ import {
   insertConnection,
   insertConnectionMessage,
   listConnectionMessages,
+  listAllConnections,
   listConnectionsForUser,
   softDeleteConnectionMessage,
   type ConnectionRow,
@@ -125,6 +126,22 @@ function isParticipant(row: ConnectionRow, userId: string): boolean {
   return row.creator_id === userId || row.joiner_id === userId || row.middleman_id === userId;
 }
 
+/**
+ * True when the caller is an operator (middleman-account). Operators run the
+ * admin console and may READ any connection — including chats with no middleman
+ * assigned and pure (non-deal) user↔user chats — for moderation and dispute
+ * resolution. Regular buyer/seller accounts never get this and stay scoped to
+ * the connections they participate in. Mirrors the `callerIsOperator` helper
+ * used in the deal party-details / payment services.
+ */
+async function callerIsOperator(userId: string): Promise<boolean> {
+  const res = await query<{ account_type: string }>(
+    `SELECT account_type FROM users WHERE id = $1 LIMIT 1`,
+    [userId],
+  );
+  return res.rows[0]?.account_type === 'middleman';
+}
+
 /** Create a new connection owned by the caller; returns the join code. */
 export async function createConnection(
   userId: string,
@@ -172,14 +189,19 @@ export async function joinConnection(userId: string, codeRaw: string): Promise<C
 }
 
 export async function listConnections(userId: string): Promise<{ connections: ConnectionView[] }> {
-  const rows = await listConnectionsForUser(userId);
+  // Operators see every chat (including no-middleman and non-deal chats) so the
+  // admin console can moderate any conversation; everyone else sees only their
+  // own participating connections.
+  const rows = (await callerIsOperator(userId))
+    ? await listAllConnections()
+    : await listConnectionsForUser(userId);
   return { connections: rows.map(toView) };
 }
 
 /** Load a connection the caller participates in (opaque 404 otherwise). */
 export async function getConnection(userId: string, id: string): Promise<ConnectionView> {
   const row = await getConnectionById(id);
-  if (!row || !isParticipant(row, userId)) {
+  if (!row || (!isParticipant(row, userId) && !(await callerIsOperator(userId)))) {
     throw notFound('Connection not found.');
   }
   return toView(row);
@@ -201,13 +223,15 @@ export async function listMessages(
   channel?: string,
 ): Promise<{ connectionId: string; messages: ConnectionMessageView[] }> {
   const row = await getConnectionById(id);
-  if (!row || !isParticipant(row, userId)) {
+  const isOperator = (!row || !isParticipant(row, userId)) ? await callerIsOperator(userId) : false;
+  if (!row || (!isParticipant(row, userId) && !isOperator)) {
     throw notFound('Connection not found.');
   }
   // Channel access control: buyer_seller is visible to all 3 parties,
   // buyer_mm only to buyer + middleman, seller_mm only to seller + middleman.
   // Buyer/seller are resolved (deal-authoritative) — NOT raw creator/joiner.
-  if (channel) {
+  // Operators may read every channel for moderation.
+  if (channel && !isOperator) {
     const { buyerId, sellerId } = resolveRoles(row);
     const isMm = row.middleman_id === userId;
     const isBuyer = buyerId === userId;

@@ -43,6 +43,13 @@ export declare function claimJoiner(connectionId: string, joinerId: string): Pro
 /** Atomically set the middleman on an existing connection. Returns null when already set. */
 export declare function claimMiddleman(connectionId: string, middlemanId: string): Promise<ConnectionRow | null>;
 export declare function listConnectionsForUser(userId: string): Promise<ConnectionRow[]>;
+/**
+ * Every connection on the platform, most-recently-active first — for the
+ * operator (middleman-account) console only. Includes chats with no middleman
+ * assigned and pure (non-deal) chats. Callers MUST verify the requester is an
+ * operator before using this; it intentionally bypasses participant scoping.
+ */
+export declare function listAllConnections(limit?: number): Promise<ConnectionRow[]>;
 export declare function setConnectionDeal(connectionId: string, dealId: string): Promise<void>;
 /**
  * Ensure a /connect conversation exists for a deal, so buyer + seller (and the
