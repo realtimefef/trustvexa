@@ -138,10 +138,15 @@ export async function register(input, meta) {
     });
     // Enqueue welcome email (Requirement 31-33)
     try {
+        const webAppUrl = (process.env.WEB_APP_URL ?? 'https://trustvexa.com').replace(/\/$/, '');
         await enqueueEmail({
             to: email,
             templateName: 'welcome',
-            templateData: { username: input.username },
+            templateData: {
+                username: input.username,
+                loginUrl: `${webAppUrl}/dashboard`,
+                unsubscribeUrl: `${webAppUrl}/settings`,
+            },
         });
     }
     catch (err) {

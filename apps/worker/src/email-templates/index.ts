@@ -139,6 +139,7 @@ export function getWelcomeEmail(data: {
   loginUrl: string;
   unsubscribeUrl?: string;
 }): string {
+  const loginUrl = data.loginUrl || 'https://trustvexa.com/dashboard';
   const content = `
     <!-- Greeting -->
     <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Welcome to TrustVexa, ${data.username}! 🎉</h1>
@@ -197,7 +198,7 @@ export function getWelcomeEmail(data: {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
       <tr>
         <td align="center">
-          <a href="${data.loginUrl}" class="cta-btn" style="display:inline-block;padding:15px 36px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.2px;mso-padding-alt:0;">
+          <a href="${loginUrl}" class="cta-btn" style="display:inline-block;padding:15px 36px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;border-radius:8px;font-size:15px;font-weight:600;letter-spacing:0.2px;mso-padding-alt:0;">
             Go to your Dashboard →
           </a>
         </td>
