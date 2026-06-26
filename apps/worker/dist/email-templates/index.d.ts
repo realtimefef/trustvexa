@@ -1,6 +1,7 @@
 /**
  * Branded HTML email templates for TrustVexa.
- * Implements a shared base layout with premium dark mode styling and dynamic variable injection.
+ * Professional, responsive email templates compatible with all major email clients.
+ * Follows industry email standards: table-based layout, inline styles, 600px max-width.
  */
 export declare function getWelcomeEmail(data: {
     username: string;
