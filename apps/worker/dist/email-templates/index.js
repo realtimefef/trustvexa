@@ -270,7 +270,7 @@ export function getPasswordResetEmail(data) {
               </td>
               <td>
                 <p style="margin:0;font-size:13px;color:#fbbf24;line-height:1.6;">
-                  This link expires in <strong>1 hour</strong>. If you didn't request a password reset, someone may have entered your email by mistake — you can safely ignore this email. Your password will not change.
+                  This link expires in <strong>15 minutes</strong>. If you didn't request a password reset, someone may have entered your email by mistake — you can safely ignore this email. Your password will not change.
                 </p>
               </td>
             </tr>

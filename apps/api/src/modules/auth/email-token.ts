@@ -16,7 +16,7 @@ const TOKEN_BYTES = 32;
 
 export const SINGLE_USE_TTL_MS: Record<repo.SingleUseTokenType, number> = {
   email_verify: 24 * 60 * 60 * 1000,
-  password_reset: 60 * 60 * 1000,
+  password_reset: 15 * 60 * 1000,
   recovery_email: 24 * 60 * 60 * 1000,
 };
 

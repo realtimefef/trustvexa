@@ -13,7 +13,7 @@ import { hashToken } from './token-store.js';
 const TOKEN_BYTES = 32;
 export const SINGLE_USE_TTL_MS = {
     email_verify: 24 * 60 * 60 * 1000,
-    password_reset: 60 * 60 * 1000,
+    password_reset: 15 * 60 * 1000,
     recovery_email: 24 * 60 * 60 * 1000,
 };
 /** Issue a single-use opaque token of the given type, persisting only its hash. */
