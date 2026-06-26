@@ -50,6 +50,16 @@ export interface DealRow {
 export declare function listDealsForUser(userId: string): Promise<DealRow[]>;
 /** A single deal, but only if the user is a party to it (else `null`). */
 export declare function getDealForUser(dealId: string, userId: string): Promise<DealRow | null>;
+/**
+ * A single deal regardless of party — for operator (middleman-account) reads.
+ * The caller MUST verify the requester is a middleman account before using
+ * this; it intentionally bypasses the party scoping so the operator console can
+ * open any deal (e.g. opened from a chat the operator joined, or a deal whose
+ * `middleman_id` is not yet/no-longer set).
+ */
+export declare function getDealById(dealId: string): Promise<DealRow | null>;
+/** True when the user account is a middleman (operator) account. */
+export declare function isMiddlemanAccount(userId: string): Promise<boolean>;
 /** A hash-chained escrow-log row projected for the activity timeline. */
 export interface TimelineRow {
     action: string;

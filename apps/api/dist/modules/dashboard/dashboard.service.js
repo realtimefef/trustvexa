@@ -10,7 +10,7 @@ import { query } from '@trustvexa/shared';
 import { notFound } from '../../errors/app-error.js';
 import { ensureConnectionForDeal } from '../connections/connections.repository.js';
 import { isWaitingOn, nextActionsFor, orderTimeline } from './action-center.js';
-import { getDealForUser, listDealsForUser, loadTimeline, } from './deal-read.repository.js';
+import { getDealById, getDealForUser, isMiddlemanAccount, listDealsForUser, loadTimeline, } from './deal-read.repository.js';
 /** Determine which party the user is for this deal, or `null` if none. */
 function roleForUser(deal, userId) {
     if (deal.buyer_id === userId)
@@ -91,14 +91,21 @@ export async function getDashboard(userId) {
 }
 /** Deal-detail view: full snapshot + role-filtered activity timeline. */
 export async function getDealDetail(userId, dealId) {
-    const row = await getDealForUser(dealId, userId);
-    if (row === null) {
+    let row = await getDealForUser(dealId, userId);
+    let role = row ? roleForUser(row, userId) : null;
+    // Operator access: a middleman-account user (the admin console) may open any
+    // deal — including ones they aren't the assigned middleman of, e.g. opened
+    // from a chat they joined or a deal whose middleman_id isn't set. Regular
+    // buyer/seller users stay strictly party-scoped (the branch above).
+    if (row === null || role === null) {
+        if (await isMiddlemanAccount(userId)) {
+            row = await getDealById(dealId);
+            role = row ? 'middleman' : null;
+        }
+    }
+    if (row === null || role === null) {
         // Same 404 whether the deal does not exist or the user is not a party, so
         // the endpoint never confirms the existence of someone else's deal.
-        throw notFound('Deal was not found.');
-    }
-    const role = roleForUser(row, userId);
-    if (role === null) {
         throw notFound('Deal was not found.');
     }
     // Self-heal the deal's /connect conversation so the "Open chat" / "Deal chat"

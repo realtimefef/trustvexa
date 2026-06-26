@@ -38,6 +38,27 @@ export async function getDealForUser(dealId, userId) {
     return res.rows[0] ?? null;
 }
 /**
+ * A single deal regardless of party — for operator (middleman-account) reads.
+ * The caller MUST verify the requester is a middleman account before using
+ * this; it intentionally bypasses the party scoping so the operator console can
+ * open any deal (e.g. opened from a chat the operator joined, or a deal whose
+ * `middleman_id` is not yet/no-longer set).
+ */
+export async function getDealById(dealId) {
+    const res = await query(`SELECT ${DEAL_COLUMNS},
+            (SELECT c.id   FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_id,
+            (SELECT c.code FROM connections c WHERE c.deal_id = deals.id ORDER BY c.created_at ASC LIMIT 1) AS connection_code
+       FROM deals
+      WHERE id = $1
+      LIMIT 1`, [dealId]);
+    return res.rows[0] ?? null;
+}
+/** True when the user account is a middleman (operator) account. */
+export async function isMiddlemanAccount(userId) {
+    const res = await query(`SELECT account_type FROM users WHERE id = $1 LIMIT 1`, [userId]);
+    return res.rows[0]?.account_type === 'middleman';
+}
+/**
  * The deal's audit timeline. `middleman_only` rows are included only when the
  * caller is the middleman; buyers and sellers see `user`-visible rows only
  * (Requirement 36.1 visibility split).
