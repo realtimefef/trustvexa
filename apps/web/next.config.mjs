@@ -14,7 +14,12 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 const withPWA = withPWAInit({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
-  register: true,
+  // We register the service worker ourselves (see components/service-worker-register.tsx)
+  // so the registration promise is always caught. With the package's built-in
+  // auto-register, a rejected registration (e.g. inside Google's URL-inspection
+  // sandbox, which blocks service workers) surfaced as an uncaught promise
+  // rejection in the console. The generated /sw.js is unaffected by this flag.
+  register: false,
   // Make a freshly deployed service worker take over immediately instead of
   // waiting for every tab to close. Without this, browsers keep serving the
   // previously cached app shell after a deploy ("still shows old"). skipWaiting

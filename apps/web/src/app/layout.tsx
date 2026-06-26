@@ -6,6 +6,7 @@ import { CookieConsent } from '@/components/cookie-consent';
 import { cn } from '@/lib/utils';
 import { Providers } from './providers';
 import { ExtensionGuard } from '@/components/extension-guard';
+import { ServiceWorkerRegister } from '@/components/service-worker-register';
 import './globals.css';
 
 const inter = Inter({
@@ -26,11 +27,18 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// Canonical public origin. Setting metadataBase makes Next emit absolute
+// canonical/OG URLs against the real domain so Google never indexes the
+// *.onrender.com duplicate. Override with NEXT_PUBLIC_SITE_URL if needed.
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://trustvexa.com').replace(/\/$/, '');
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: 'TrustVexa',
   description: 'Private, secure, crypto-only escrow platform.',
   applicationName: 'TrustVexa',
   manifest: '/manifest.webmanifest',
+  alternates: { canonical: '/' },
   appleWebApp: {
     capable: true,
     title: 'TrustVexa',
@@ -59,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ExtensionGuard />
+        <ServiceWorkerRegister />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             {children}
