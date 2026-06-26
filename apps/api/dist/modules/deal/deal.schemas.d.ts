@@ -337,17 +337,17 @@ export type UpdateDealInputSchema = z.infer<typeof updateDealSchema>;
 export declare const middlemanUpdateDealSchema: z.ZodObject<{
     dealAmountCents: z.ZodNullable<z.ZodOptional<z.ZodNumber>>;
     terms: z.ZodNullable<z.ZodOptional<z.ZodString>>;
-    statusOverride: z.ZodNullable<z.ZodOptional<z.ZodEnum<["Cancelled", "Disputed", "Released", "Refunded"]>>>;
+    statusOverride: z.ZodNullable<z.ZodOptional<z.ZodEnum<["Cancelled", "Disputed", "Released", "Refunded", "Funded"]>>>;
     note: z.ZodNullable<z.ZodOptional<z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
     dealAmountCents?: number | null | undefined;
     terms?: string | null | undefined;
-    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
+    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | "Funded" | null | undefined;
     note?: string | null | undefined;
 }, {
     dealAmountCents?: number | null | undefined;
     terms?: string | null | undefined;
-    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | null | undefined;
+    statusOverride?: "Cancelled" | "Disputed" | "Released" | "Refunded" | "Funded" | null | undefined;
     note?: string | null | undefined;
 }>;
 export type MiddlemanUpdateDealInput = z.infer<typeof middlemanUpdateDealSchema>;

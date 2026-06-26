@@ -146,7 +146,7 @@ export const middlemanUpdateDealSchema = z.object({
     dealAmountCents: z.number().int().min(0).optional().nullable(),
     terms: z.string().max(20_000).optional().nullable(),
     statusOverride: z
-        .enum(['Cancelled', 'Disputed', 'Released', 'Refunded'])
+        .enum(['Cancelled', 'Disputed', 'Released', 'Refunded', 'Funded'])
         .optional()
         .nullable(),
     note: z.string().max(2000).optional().nullable(),

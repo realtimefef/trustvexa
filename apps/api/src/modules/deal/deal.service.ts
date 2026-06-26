@@ -731,7 +731,7 @@ export interface MiddlemanUpdateDealInput {
    *   - 'Released'   : middleman releases funds (marks done)
    *   - 'Refunded'   : middleman issues a full refund
    */
-  statusOverride?: 'Cancelled' | 'Disputed' | 'Released' | 'Refunded' | null;
+  statusOverride?: 'Cancelled' | 'Disputed' | 'Released' | 'Refunded' | 'Funded' | null;
   /** Optional reason/note appended to the audit log. */
   note?: string | null;
 }
