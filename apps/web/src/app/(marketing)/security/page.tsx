@@ -291,10 +291,10 @@ export default function SecurityPage() {
                 Found a vulnerability? We appreciate your help. Please report it privately so we can
                 fix it before it is disclosed. Email{' '}
                 <a
-                  href="mailto:security@trustvexa.com"
+                  href="mailto:support@trustvexa.com"
                   className="font-medium text-foreground underline-offset-4 hover:underline"
                 >
-                  security@trustvexa.com
+                  support@trustvexa.com
                 </a>{' '}
                 with steps to reproduce. Our machine-readable policy is published at{' '}
                 <code className="rounded bg-background px-1.5 py-0.5 font-mono text-xs">

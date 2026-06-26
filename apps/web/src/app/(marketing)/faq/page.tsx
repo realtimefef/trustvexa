@@ -112,7 +112,7 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Security',
     q: 'How do I report a vulnerability?',
-    a: "Email security@trustvexa.com with steps to reproduce. Please report privately and do not access other users' data or disclose publicly until we have resolved the issue.",
+    a: "Email support@trustvexa.com with steps to reproduce. Please report privately and do not access other users' data or disclose publicly until we have resolved the issue.",
   },
   // Account
   {

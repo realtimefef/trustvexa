@@ -352,10 +352,10 @@ export default function AboutPage() {
               <p className="mt-5 text-sm">
                 Reach out at{' '}
                 <a
-                  href="mailto:careers@trustvexa.com"
+                  href="mailto:support@trustvexa.com"
                   className="font-medium text-primary underline-offset-4 hover:underline"
                 >
-                  careers@trustvexa.com
+                  support@trustvexa.com
                 </a>
               </p>
             </div>

@@ -196,10 +196,10 @@ export default function AccessibilityPage() {
         </p>
         <p className="mt-4 text-sm">
           <a
-            href="mailto:accessibility@trustvexa.com"
+            href="mailto:support@trustvexa.com"
             className="font-medium text-primary underline-offset-4 hover:underline"
           >
-            accessibility@trustvexa.com
+            support@trustvexa.com
           </a>
         </p>
       </div>

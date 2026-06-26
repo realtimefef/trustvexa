@@ -36,12 +36,12 @@ describe('security.txt (RFC 9116)', () => {
   it('is served at the well-known path and contains required fields', () => {
     expect(SECURITY_TXT_PATH).toBe('/.well-known/security.txt');
     const txt = buildSecurityTxt({
-      contactEmail: 'security@trustvexa.com',
+      contactEmail: 'support@trustvexa.com',
       expires: '2027-01-01T00:00:00Z',
       policyUrl: 'https://trustvexa.com/security',
       canonicalUrl: 'https://trustvexa.com/.well-known/security.txt',
     });
-    expect(txt).toContain('Contact: mailto:security@trustvexa.com');
+    expect(txt).toContain('Contact: mailto:support@trustvexa.com');
     expect(txt).toContain('Expires: 2027-01-01T00:00:00Z');
     expect(txt).toContain('Policy: https://trustvexa.com/security');
     expect(txt.endsWith('\n')).toBe(true);
