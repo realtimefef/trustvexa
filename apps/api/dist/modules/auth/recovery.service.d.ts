@@ -2,7 +2,8 @@ import type { ChangeEmailInput, ChangePasswordInput, ForgotPasswordInput, ResetP
 /** Issue an email-verification token for the current user (delivered by the mailer). */
 export declare function requestEmailVerification(userId: string): Promise<void>;
 export declare function verifyEmail(token: string): Promise<void>;
-/** Always succeeds to avoid leaking which emails are registered. */
+/** Returns normally when a reset email is queued. Throws when the email is not
+ * registered or the account is deleted — so the user gets an actionable message. */
 export declare function forgotPassword(input: ForgotPasswordInput): Promise<void>;
 export declare function resetPassword(input: ResetPasswordInput): Promise<void>;
 export declare function changePassword(userId: string, input: ChangePasswordInput): Promise<void>;

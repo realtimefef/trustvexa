@@ -41,10 +41,9 @@ export default function ForgotPasswordPage() {
       });
       setSubmittedEmail(values.email);
       setSent(true);
-    } catch {
-      // Always show the success state to prevent email enumeration.
-      setSubmittedEmail(values.email);
-      setSent(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setFormError(msg);
     }
   });
 

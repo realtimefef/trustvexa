@@ -12,7 +12,6 @@ export async function verifyEmail(req, res) {
 }
 export async function forgotPassword(req, res) {
     await recovery.forgotPassword(req.body);
-    // Always 202 regardless of whether the email is registered.
     res.status(202).json({ ok: true });
 }
 export async function resetPassword(req, res) {

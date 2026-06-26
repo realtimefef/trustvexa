@@ -83,25 +83,30 @@ export async function verifyEmail(token) {
         device: null,
     });
 }
-/** Always succeeds to avoid leaking which emails are registered. */
+/** Returns normally when a reset email is queued. Throws when the email is not
+ * registered or the account is deleted — so the user gets an actionable message. */
 export async function forgotPassword(input) {
     const cfg = getAuthConfig();
     const user = await repo.findUserByEmailHash(emailHashOf(input.email, cfg));
-    if (user && user.account_status !== 'deleted' && user.account_status !== 'blocked') {
-        const { token } = await issueSingleUseToken(user.id, 'password_reset');
-        try {
-            await enqueueEmail({
-                to: input.email,
-                templateName: 'password-reset',
-                templateData: {
-                    username: user.username,
-                    resetUrl: `${WEB_APP_URL}/reset-password?token=${token}`,
-                },
-            });
-        }
-        catch (err) {
-            console.warn('Failed to enqueue password-reset email:', err);
-        }
+    if (!user || user.account_status === 'deleted') {
+        throw new AppError('account_not_found', 'No account is registered with this email address. Please check the address or create a new account.', 404);
+    }
+    if (user.account_status === 'blocked') {
+        throw new AppError('account_blocked', 'This account has been suspended. Please contact support@trustvexa.com for assistance.', 403);
+    }
+    const { token } = await issueSingleUseToken(user.id, 'password_reset');
+    try {
+        await enqueueEmail({
+            to: input.email,
+            templateName: 'password-reset',
+            templateData: {
+                username: user.username,
+                resetUrl: `${WEB_APP_URL}/reset-password?token=${token}`,
+            },
+        });
+    }
+    catch (err) {
+        console.warn('Failed to enqueue password-reset email:', err);
     }
 }
 export async function resetPassword(input) {

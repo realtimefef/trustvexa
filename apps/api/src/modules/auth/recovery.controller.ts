@@ -32,7 +32,6 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
   await recovery.forgotPassword(req.body as ForgotPasswordInput);
-  // Always 202 regardless of whether the email is registered.
   res.status(202).json({ ok: true });
 }
 
