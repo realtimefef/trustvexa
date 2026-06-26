@@ -168,6 +168,7 @@ interface ChatPanelProps {
   isLoading: boolean;
   canSend: boolean;
   isClosed: boolean;
+  waitingToJoin: boolean;
   myUserId: string | undefined;
   senderLabel: (id: string) => string;
   onSend: (body: string, channel: Channel) => Promise<void>;
@@ -176,7 +177,7 @@ interface ChatPanelProps {
   uploading: boolean;
 }
 
-function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading }: ChatPanelProps) {
+function ChatPanel({ channel, messages, isLoading, canSend, isClosed, waitingToJoin, myUserId, senderLabel, onSend, onSendImage, onDelete, uploading }: ChatPanelProps) {
   const [draft, setDraft] = React.useState('');
   const endRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
@@ -287,9 +288,15 @@ function ChatPanel({ channel, messages, isLoading, canSend, isClosed, myUserId, 
         <div className="shrink-0 border-t px-4 py-3 text-center text-xs text-muted-foreground italic">
           This conversation is closed.
         </div>
-      ) : (
+      ) : waitingToJoin ? (
         <div className="shrink-0 border-t px-4 py-3 text-center text-xs text-muted-foreground italic">
           Waiting for the other party to join before you can chat.
+        </div>
+      ) : (
+        <div className="shrink-0 border-t px-4 py-3 text-center text-xs text-muted-foreground italic">
+          {channel === 'buyer_seller'
+            ? 'Read-only: the middleman observes the Buyer ↔ Seller channel but does not post here. Use the Buyer ↔ Middleman or Seller ↔ Middleman tab to message a party.'
+            : 'Read-only: you can view this channel but cannot post here.'}
         </div>
       )}
     </div>
@@ -641,7 +648,11 @@ export default function ConnectPage() {
   const canSendInChannel = (ch: Channel): boolean => {
     if (!a?.joined) return false;
     if (a.status === 'closed') return false;
-    if (ch === 'buyer_seller') return myRole !== 'middleman';
+    // The middleman NEVER posts in the buyer↔seller channel — only the buyer and
+    // seller themselves do. The middleman talks to each side via the dedicated
+    // Buyer↔Middleman / Seller↔Middleman channels. An operator merely observing a
+    // chat they aren't a party to also cannot post here.
+    if (ch === 'buyer_seller') return myRole === 'creator' || myRole === 'joiner';
     if (ch === 'buyer_mm') return myRole === 'creator' || myRole === 'middleman';
     if (ch === 'seller_mm') return myRole === 'joiner' || myRole === 'middleman';
     return false;
@@ -915,6 +926,7 @@ export default function ConnectPage() {
                   isLoading={messages.isLoading}
                   canSend={canSendInChannel(activeChannel)}
                   isClosed={a.status === 'closed'}
+                  waitingToJoin={!a.joined}
                   myUserId={user?.id}
                   senderLabel={senderLabel}
                   onSend={handleSend}
