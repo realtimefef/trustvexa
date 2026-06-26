@@ -18,6 +18,7 @@
 import { AppError } from '../../errors/app-error.js';
 import { getRedis } from '@trustvexa/shared';
 import { logger } from '../../logger.js';
+import { openDispute as openDisputeRow } from '../disputes/dispute.repository.js';
 
 import { appendEntry } from './audit-chain.js';
 import type { EscrowLogVisibility, TxClient } from './deal.repository.js';
@@ -873,6 +874,22 @@ export async function middlemanUpdateDeal(
         `UPDATE deals SET status = $2, updated_at = now() WHERE id = $1`,
         [dealId, input.statusOverride],
       );
+
+      // When opening a dispute, ensure a disputes table row exists so the
+      // resolve-dispute endpoint can find it. Skip if one already exists.
+      if (input.statusOverride === 'Disputed') {
+        const existing = await client.query<{ id: string }>(
+          `SELECT id FROM disputes WHERE deal_id = $1 AND status IN ('open','under_review') LIMIT 1`,
+          [dealId],
+        );
+        if (!existing.rows[0]) {
+          await openDisputeRow(client, {
+            dealId,
+            raisedBy: middlemanId,
+            reason: (input.note ?? '').trim() || 'Dispute opened by middleman.',
+          });
+        }
+      }
 
       await client.query(
         `INSERT INTO escrow_logs
