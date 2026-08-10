@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 export const metadata: Metadata = {
   title: 'Documentation | TrustVexa',
   description:
-    'How-to guides for every part of a TrustVexa deal — getting started, creating and inviting, the 48-digit verification, funding, release, disputes, wallets & networks, and troubleshooting.',
+    'How-to guides for every part of a TrustVexa deal — getting started, creating and inviting, the 48-digit verification, funding, release, disputes, settlement, and troubleshooting.',
 };
 
 type Guide = {
@@ -37,12 +37,12 @@ const GUIDES: ReadonlyArray<Guide> = [
   {
     icon: Rocket,
     title: 'Getting started',
-    intro: 'Set up your account so you are ready to trade.',
+    intro: 'Set up your account so you are ready to transact.',
     steps: [
       'Create a free account and verify your email address.',
       'Read how the escrow flow works so both roles are clear.',
-      'Have a supported wallet ready for USDT, SOL, BNB, ETH, or TRX.',
-      'Decide whether you are the buyer (funds the deal) or the seller (delivers).',
+      'Decide whether you are the buyer (funds the deal) or the seller (delivers the work or asset).',
+      'Check the settlement page so you know how funds move before you start.',
     ],
   },
   {
@@ -50,8 +50,8 @@ const GUIDES: ReadonlyArray<Guide> = [
     title: 'Creating & inviting to a deal',
     intro: 'Define the terms once, then bring in the other party.',
     steps: [
-      'Open a new deal and describe the item or service precisely.',
-      'Set the amount, the coin, and the network for payment.',
+      'Open a new deal and describe the work, service, or item precisely.',
+      'Set the amount and the delivery terms both sides are agreeing to.',
       'Deals are screened against the prohibited list when created.',
       'Invite the counterparty so they can review and accept the terms.',
     ],
@@ -70,12 +70,12 @@ const GUIDES: ReadonlyArray<Guide> = [
   {
     icon: Wallet,
     title: 'Funding & confirmations',
-    intro: 'The buyer deposits crypto into escrow.',
+    intro: 'The buyer funds the deal and TrustVexa holds it in escrow.',
     steps: [
-      'Send the exact coin and amount shown on the funding screen.',
-      'Use the matching network for the coin you are sending.',
-      'The deposit is credited once the network confirms it.',
-      'The seller is notified that escrow is funded and can deliver.',
+      'Send the exact asset and amount shown on the deal funding screen.',
+      'Use the matching settlement network for the asset you are sending.',
+      'Funding is credited once it reaches the required confirmation depth.',
+      'The seller is notified that escrow is funded and can begin or deliver.',
     ],
   },
   {
@@ -83,7 +83,7 @@ const GUIDES: ReadonlyArray<Guide> = [
     title: 'Release',
     intro: 'Funds move to the seller once the buyer is satisfied.',
     steps: [
-      'After delivery, the buyer inspects what they received.',
+      'After delivery, the buyer inspects the work or asset they received.',
       'The buyer approves to release funds from escrow.',
       'If the buyer goes quiet, the inspection window auto-approves the release.',
       'A 0.5% seller settlement fee applies when funds are released.',
@@ -92,23 +92,23 @@ const GUIDES: ReadonlyArray<Guide> = [
   {
     icon: Scale,
     title: 'Disputes',
-    intro: 'If something goes wrong, a neutral middleman decides.',
+    intro: 'If something goes wrong, a neutral mediator decides.',
     steps: [
       'Raise the problem in the deal chat first to try to resolve it.',
       'If you cannot agree, open a dispute on the deal.',
-      'Both sides submit evidence — screenshots, hashes, and messages.',
-      'The middleman reviews and decides where the escrowed funds go.',
+      'Both sides submit evidence — screenshots, transaction references, and messages.',
+      'The mediator reviews and decides where the escrowed funds go. Decisions are made by a person, not an algorithm.',
     ],
   },
   {
     icon: Network,
-    title: 'Wallets & networks',
-    intro: 'Supported coins and the networks they run on.',
+    title: 'Settlement & networks',
+    intro: 'How funds are moved today, and on which networks.',
     steps: [
-      'USDT — send on TRC-20 (Tron) or ERC-20 (Ethereum).',
-      'ETH — send on ERC-20 (Ethereum).',
-      'BNB — send on BEP-20 (BNB Chain).',
-      'TRX on Tron and SOL on Solana. Always match coin to network.',
+      'Settlement currently runs on digital assets, with more rails planned.',
+      'USDT settles on TRC-20 (Tron), ERC-20 (Ethereum), BEP-20 (BNB Chain), or Solana.',
+      'ETH on Ethereum, BNB on BNB Chain, TRX on Tron, SOL on Solana.',
+      'Always match the asset to the network shown on the funding screen.',
     ],
   },
   {
@@ -116,8 +116,8 @@ const GUIDES: ReadonlyArray<Guide> = [
     title: 'Troubleshooting',
     intro: 'Fixes for the most common funding issues.',
     steps: [
-      'Payment not showing: confirm the transaction is finished and has on-chain confirmations.',
-      'Wrong network: stop, do not resend, and contact the middleman with your transaction hash.',
+      'Funding not showing: confirm the transfer completed and reached the required confirmations.',
+      'Wrong network: stop, do not resend, and contact support with your transaction reference.',
       'Silent counterparty: the completion clock and auto-approve keep the deal moving; open a dispute if needed.',
       'Check the live status page if something platform-wide seems off.',
     ],
@@ -134,7 +134,7 @@ export default function DocsPage() {
           </>
         }
         title="How-to guides"
-        subtitle="Everything you need to run a deal end to end on TrustVexa — crypto-only escrow with a neutral middleman. Pick a topic below."
+        subtitle="Everything you need to run a deal end to end on TrustVexa — milestone-based escrow with a neutral mediator. Pick a topic below."
       />
 
       <section className="section">
@@ -167,6 +167,28 @@ export default function DocsPage() {
               </Reveal>
             ))}
           </div>
+
+          {/* Settlement note */}
+          <Reveal>
+            <div className="flex items-start gap-3 rounded-2xl border bg-muted/30 p-6">
+              <Network className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium">How settlement works today</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Deals are currently funded and paid out in digital assets, with additional
+                  settlement rails on our roadmap. Networks, confirmation depths, and payout controls
+                  are documented on the{' '}
+                  <Link
+                    href="/crypto"
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    crypto settlement page
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          </Reveal>
 
           {/* Fees note */}
           <Reveal>
@@ -203,11 +225,11 @@ export default function DocsPage() {
               <div className="space-y-2">
                 <p className="text-sm font-medium">Sent on the wrong network?</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  Do not send again. Contact the middleman straight away with your transaction hash
-                  so the deposit can be investigated.
+                  Do not send again. Contact us straight away with your transaction reference so the
+                  funding can be investigated.
                 </p>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/contact">Contact the middleman</Link>
+                  <Link href="/contact">Contact support</Link>
                 </Button>
               </div>
             </div>
