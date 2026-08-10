@@ -14,7 +14,7 @@ const FOOTER_SECTIONS: ReadonlyArray<{
       { href: '/use-cases', label: 'Use cases' },
       { href: '/fees', label: 'Fees' },
       { href: '/crypto', label: 'Crypto settlement' },
-      { href: '/coins', label: 'Supported coins' },
+      { href: '/coins', label: 'Supported assets' },
       { href: '/security', label: 'Trust & Security' },
     ],
   },
@@ -33,7 +33,7 @@ const FOOTER_SECTIONS: ReadonlyArray<{
     title: 'Company',
     links: [
       { href: '/about', label: 'About' },
-      { href: '/about-developer', label: 'About the developer' },
+      { href: '/about-developer', label: 'Team & mission' },
       { href: '/contact', label: 'Contact' },
       { href: '/sitemap', label: 'Sitemap' },
     ],
@@ -49,11 +49,14 @@ const FOOTER_SECTIONS: ReadonlyArray<{
   },
 ];
 
+// Public social profiles, supplied via env. Only entries with a configured URL
+// are rendered — shipping icons that link to a platform's own homepage looks
+// like an unfinished site, so an unset profile is simply hidden instead.
 const SOCIALS = [
-  { href: 'https://twitter.com', label: 'Twitter', Icon: Twitter },
-  { href: 'https://github.com', label: 'GitHub', Icon: Github },
-  { href: 'https://linkedin.com', label: 'LinkedIn', Icon: Linkedin },
-];
+  { href: process.env.NEXT_PUBLIC_SOCIAL_X ?? '', label: 'X', Icon: Twitter },
+  { href: process.env.NEXT_PUBLIC_SOCIAL_GITHUB ?? '', label: 'GitHub', Icon: Github },
+  { href: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN ?? '', label: 'LinkedIn', Icon: Linkedin },
+].filter((social) => social.href.trim().length > 0);
 
 /** Public site footer. */
 export function SiteFooter() {
@@ -70,20 +73,34 @@ export function SiteFooter() {
             Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions.
             Milestone-based releases, a neutral mediator, and a tamper-evident ledger.
           </p>
-          <div className="flex items-center gap-3 pt-1">
-            {SOCIALS.map(({ href, label, Icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/60 text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground hover:shadow-glow"
-              >
-                <Icon className="h-4 w-4" aria-hidden="true" />
-              </a>
-            ))}
-          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            1007 N Orange St, 4th Floor
+            <br />
+            Wilmington, DE 19801, USA
+            <br />
+            <a
+              href="mailto:support@trustvexa.com"
+              className="transition-colors hover:text-foreground"
+            >
+              support@trustvexa.com
+            </a>
+          </p>
+          {SOCIALS.length > 0 && (
+            <div className="flex items-center gap-3 pt-1">
+              {SOCIALS.map(({ href, label, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background/60 text-muted-foreground transition-all hover:border-primary/40 hover:text-foreground hover:shadow-glow"
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
         {FOOTER_SECTIONS.map((section) => (
           <div key={section.title} className="space-y-3">

@@ -6,7 +6,8 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://trustvexa.com').r
 
 // Generates /robots.txt. Public marketing pages are crawlable; the operator
 // console, the auth-gated app sections, and the API proxy are kept out of the
-// index (they require a login and only redirect crawlers to /login).
+// index (they require a login and only redirect crawlers to /login). Keep this
+// list in sync with the authenticated routes listed on /sitemap.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
@@ -25,6 +26,11 @@ export default function robots(): MetadataRoute.Robots {
           '/referrals',
           '/documents',
           '/disputes',
+          '/messages',
+          '/templates',
+          '/calculator',
+          '/announcements',
+          '/support',
           '/connect',
           '/deals',
           '/invite',
