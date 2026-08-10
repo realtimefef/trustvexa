@@ -9,7 +9,7 @@ import { CtaBand } from '@/components/visual/cta-band';
 export const metadata: Metadata = {
   title: 'Prohibited items | TrustVexa',
   description:
-    'Items and activities that are banned on TrustVexa, and categories that require middleman review.',
+    'Items and activities that are banned on TrustVexa, and categories that require mediator review.',
 };
 
 // Mirrors PROHIBITED_GROUPS / RISKY_GROUPS in
@@ -71,7 +71,7 @@ export default function ProhibitedItemsPage() {
           </>
         }
         title="Prohibited & restricted items"
-        subtitle="To keep TrustVexa safe and lawful, some items are banned outright and others are allowed only under middleman review. Deals are automatically screened when they are created."
+        subtitle="To keep TrustVexa safe and lawful, some items are banned outright and others are allowed only under mediator review. Deals are automatically screened when they are created."
       />
 
       <section className="section">
@@ -96,11 +96,11 @@ export default function ProhibitedItemsPage() {
           <div className="space-y-5">
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h2 className="font-display text-xl font-semibold">Allowed with middleman review</h2>
+              <h2 className="font-display text-xl font-semibold">Allowed with mediator review</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              These categories carry extra risk, so deals involving them are routed to a middleman
-              for oversight before funds can be released.
+              These categories carry extra risk, so deals involving them are routed to a mediator for
+              oversight before funds can be released.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               {REVIEW.map((item, i) => (
@@ -130,7 +130,7 @@ export default function ProhibitedItemsPage() {
                 {
                   icon: ShieldAlert,
                   title: 'Risky items go to review',
-                  body: 'Restricted categories are flagged and routed to a neutral middleman who reviews before funds can release.',
+                  body: 'Restricted categories are flagged and routed to a neutral mediator who reviews before funds can release.',
                 },
                 {
                   icon: ShieldCheck,
@@ -165,8 +165,8 @@ export default function ProhibitedItemsPage() {
       </section>
 
       <CtaBand
-        title="Trade allowed goods with confidence"
-        subtitle="If your item is legal and permitted, escrow keeps the whole trade safe end to end."
+        title="Transact with confidence"
+        subtitle="If your work or item is legal and permitted, escrow keeps the whole deal safe end to end."
         primaryLabel="Start a deal"
         primaryHref="/register"
         secondaryLabel="Read the rules"
