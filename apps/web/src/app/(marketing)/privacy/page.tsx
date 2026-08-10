@@ -17,7 +17,7 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '1. Information we collect',
     body: [
-      'Account data such as your username, email, and authentication details; deal data such as amounts, coins, networks, counterparties, and the terms you agree to; and technical data such as device, log, and security information needed to operate the Service.',
+      'Account data such as your username, email, and authentication details; deal data such as amounts, settlement assets and networks, counterparties, and the terms you agree to; and technical data such as device, log, and security information needed to operate the Service.',
     ],
   },
   {
@@ -29,13 +29,13 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '3. How we protect it',
     body: [
-      'Sensitive deal details are encrypted at rest, and access is restricted on a need-to-know basis. The presence of a middleman on a deal is kept private to protect both parties. Financial records are stored in an append-only ledger for integrity.',
+      'Sensitive deal details are encrypted at rest, and access is restricted on a need-to-know basis. The presence of a mediator on a deal is kept confidential to protect both parties. Financial records are stored in an append-only ledger for integrity.',
     ],
   },
   {
     heading: '4. Sharing',
     body: [
-      'We share data with the counterparty and middleman strictly as needed to complete a deal, with service providers who help us operate (such as infrastructure and email providers), and with authorities where required by law. We do not sell your personal data.',
+      'We share data with the counterparty and mediator strictly as needed to complete a deal, with service providers who help us operate (such as infrastructure and email providers), and with authorities where required by law. We do not sell your personal data.',
     ],
   },
   {
