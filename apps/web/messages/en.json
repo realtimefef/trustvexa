@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "TrustVexa",
-    "tagline": "Private, secure, crypto-only escrow."
+    "tagline": "Secure escrow for freelancers, marketplaces, and B2B."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -21,10 +21,10 @@
   },
   "marketing": {
     "title": "TrustVexa",
-    "subtitle": "Trade digital products and accounts safely through a neutral middleman.",
+    "subtitle": "Milestone-based escrow with a neutral mediator for online work and online trade.",
     "hero": {
-      "heading": "Crypto escrow you can trust",
-      "subheading": "Buyer funds are held securely. Released only when you're satisfied — or fully refunded.",
+      "heading": "Secure escrow infrastructure for freelancers and marketplaces",
+      "subheading": "Buyer funds are held securely. Released only when the agreed terms are met \u2014 or fully refunded.",
       "cta": "Start a deal",
       "ctaSecondary": "Learn how it works"
     },
@@ -34,12 +34,16 @@
         "description": "Funds held in platform-controlled wallets until both parties confirm delivery."
       },
       "middleman": {
-        "title": "Neutral middleman",
-        "description": "An optional verified mediator resolves disputes fairly."
+        "title": "Neutral mediation",
+        "description": "A verified mediator resolves disputes fairly, based on the terms and the evidence."
+      },
+      "milestones": {
+        "title": "Milestone releases",
+        "description": "Split a project into stages and release payment stage by stage."
       },
       "crypto": {
-        "title": "Crypto-only",
-        "description": "USDT, ETH, BNB, SOL, TRX — on ETH, BNB, TRON and Solana networks."
+        "title": "Crypto settlement",
+        "description": "Deals settle in USDT, ETH, BNB, SOL, or TRX across Ethereum, BNB Chain, TRON, and Solana. See /crypto for details."
       }
     }
   },
@@ -181,7 +185,7 @@
     "noAddresses": "No payout address configured.",
     "addAddress": "Add address",
     "changeRequests": "Change requests",
-    "noBalance": "Balance unavailable — RPC not configured.",
+    "noBalance": "Balance unavailable \u2014 RPC not configured.",
     "status": {
       "available": "Available",
       "pending": "Pending",
@@ -229,8 +233,8 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
-    "loading": "Loading…",
-    "submitting": "Submitting…",
+    "loading": "Loading\u2026",
+    "submitting": "Submitting\u2026",
     "success": "Success",
     "error": "Error",
     "required": "Required",
