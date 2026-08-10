@@ -97,10 +97,10 @@ export function DealTimeline({ status, className }: DealTimelineProps) {
             <p className="font-semibold capitalize">Deal {status}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {isDisputed
-                ? 'This transaction is currently flagged as disputed. Funds are frozen until a middleman finishes reviewing evidence.'
+                ? 'This deal is currently flagged as disputed. Funds are held in escrow until a mediator finishes reviewing the evidence from both sides.'
                 : isCancelled
-                  ? 'This transaction was mutually cancelled by the buyer and seller. Funds have been returned.'
-                  : 'This transaction has expired without receiving funding inside the required window.'}
+                  ? 'This deal was mutually cancelled by the buyer and seller. Funds have been returned.'
+                  : 'This deal expired without receiving funding inside the required window.'}
             </p>
           </div>
         </div>

@@ -146,7 +146,7 @@ export function DisputeThread({ disputeId, className }: DisputeThreadProps) {
         <form onSubmit={handleSend} className="flex gap-2">
           <Input
             type="text"
-            placeholder="Address the arbitrator or counterparty..."
+            placeholder="Message the mediator or counterparty..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={postMessageMutation.isPending}
