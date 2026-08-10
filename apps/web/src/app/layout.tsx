@@ -32,14 +32,73 @@ const jetbrainsMono = JetBrains_Mono({
 // *.onrender.com duplicate. Override with NEXT_PUBLIC_SITE_URL if needed.
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://trustvexa.com').replace(/\/$/, '');
 
+const SITE_DESCRIPTION =
+  'Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions. Milestone-based releases with neutral dispute mediation.';
+
+// Real founding year, set via env so we never publish a guessed date. When it is
+// blank the foundingDate field is simply omitted from the structured data.
+const FOUNDED_YEAR = process.env.NEXT_PUBLIC_COMPANY_FOUNDED ?? '';
+
+// Organization structured data. This is what search engines, link previews, and
+// manual reviewers read to confirm a real company sits behind the site, so every
+// field here must be verifiable — no placeholder or aspirational values.
+const ORGANIZATION_SCHEMA: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'TrustVexa',
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  email: 'support@trustvexa.com',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '1007 N Orange St, 4th Floor',
+    addressLocality: 'Wilmington',
+    addressRegion: 'DE',
+    postalCode: '19801',
+    addressCountry: 'US',
+  },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    email: 'support@trustvexa.com',
+    url: `${SITE_URL}/contact`,
+    availableLanguage: ['en', 'es'],
+  },
+  ...(FOUNDED_YEAR ? { foundingDate: FOUNDED_YEAR } : {}),
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'TrustVexa',
-  description:
-    'Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions. Milestone-based releases with neutral dispute mediation.',
+  description: SITE_DESCRIPTION,
   applicationName: 'TrustVexa',
   manifest: '/manifest.webmanifest',
   alternates: { canonical: '/' },
+  keywords: [
+    'escrow',
+    'escrow service',
+    'freelancer escrow',
+    'marketplace escrow',
+    'milestone payments',
+    'dispute resolution',
+    'B2B transactions',
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'TrustVexa',
+    url: SITE_URL,
+    title: 'TrustVexa — Secure escrow infrastructure',
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TrustVexa — Secure escrow infrastructure',
+    description: SITE_DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     title: 'TrustVexa',
@@ -67,6 +126,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       className={cn(inter.variable, sora.variable, jetbrainsMono.variable)}
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger -- JSON-LD must be inlined as raw text
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_SCHEMA) }}
+        />
         <ExtensionGuard />
         <ServiceWorkerRegister />
         <NextIntlClientProvider locale={locale} messages={messages}>

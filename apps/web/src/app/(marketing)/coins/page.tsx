@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { Coins, Gauge, Layers, ShieldCheck, Timer, Zap } from 'lucide-react';
 
 import { PageHero } from '@/components/visual/page-hero';
@@ -16,8 +17,9 @@ import {
 } from '@/components/ui/table';
 
 export const metadata: Metadata = {
-  title: 'Supported coins | TrustVexa',
-  description: 'Coins and networks supported for crypto escrow on TrustVexa.',
+  title: 'Settlement assets & networks | TrustVexa',
+  description:
+    'The assets and networks TrustVexa supports for funding and paying out escrow deals, including confirmation rules and typical network costs.',
 };
 
 // Mirrors COIN_NETWORK_SUPPORT in apps/api/src/modules/deal/deal.schemas.ts.
@@ -48,19 +50,19 @@ const CHOOSE = [
     icon: Zap,
     title: 'Cheapest & fastest',
     network: 'Solana (SPL)',
-    body: 'Fractions of a cent in gas and near-instant settlement — ideal for most deals.',
+    body: 'Fractions of a cent in network cost and near-instant settlement — ideal for most deals.',
   },
   {
     icon: Gauge,
     title: 'Cheap & widely used',
     network: 'BNB Chain · TRON',
-    body: 'Very low gas with broad wallet support. A safe default for everyday trades.',
+    body: 'Very low network cost with broad wallet support. A safe default for everyday deals.',
   },
   {
     icon: Layers,
     title: 'Most established',
     network: 'Ethereum (ERC-20)',
-    body: 'The most battle-tested chain. Gas runs higher, so best reserved for larger deals.',
+    body: 'The most battle-tested network. Costs run higher, so best reserved for larger deals.',
   },
 ];
 
@@ -70,14 +72,40 @@ export default function CoinsPage() {
       <PageHero
         eyebrow={
           <>
-            <Coins className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Multi-chain
+            <Coins className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Settlement
           </>
         }
-        title="Supported coins & networks"
-        subtitle="Choose your settlement coin and network when you create a deal. Each coin settles only on its supported chains."
+        title="Settlement assets & networks"
+        subtitle="Escrow deals are currently funded and paid out in digital assets. You choose the asset and network when you create a deal, and each asset settles only on its supported networks."
       />
 
-      {/* Coin cards + orbit */}
+      {/* Context: this is settlement detail, not the product itself */}
+      <section className="border-b bg-muted/20">
+        <div className="container max-w-3xl py-8">
+          <Reveal>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              This page covers the mechanics of moving money. If you are here to understand the
+              escrow service itself — milestones, delivery, and dispute mediation — start with{' '}
+              <Link
+                href="/how-it-works"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                how it works
+              </Link>
+              . For the wider settlement picture, including what TrustVexa is not, see{' '}
+              <Link
+                href="/crypto"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                crypto settlement
+              </Link>
+              .
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Asset cards + orbit */}
       <section className="section">
         <div className="container grid items-center gap-12 lg:grid-cols-[1.3fr_1fr]">
           <div className="grid gap-5 sm:grid-cols-2">
@@ -118,7 +146,7 @@ export default function CoinsPage() {
         </div>
       </section>
 
-      {/* Per-chain confirmation rules */}
+      {/* Per-network confirmation rules */}
       <section className="section border-t bg-muted/20">
         <div className="container max-w-5xl">
           <Reveal>
@@ -129,8 +157,8 @@ export default function CoinsPage() {
                   <Timer className="h-3.5 w-3.5" aria-hidden="true" /> Funding rules
                 </>
               }
-              title="Per-chain confirmations & gas"
-              subtitle="A deal only moves to Funded after enough on-chain confirmations. Larger or suspicious deals can require extra depth."
+              title="Confirmations & network costs"
+              subtitle="A deal only moves to Funded after enough network confirmations. Larger or unusual deals can require extra depth."
             />
           </Reveal>
           <Reveal delay={120} className="mt-10">
@@ -140,7 +168,7 @@ export default function CoinsPage() {
                   <TableRow>
                     <TableHead>Network</TableHead>
                     <TableHead>Confirmation rule</TableHead>
-                    <TableHead>Typical gas</TableHead>
+                    <TableHead>Typical network cost</TableHead>
                     <TableHead>Speed</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -161,6 +189,19 @@ export default function CoinsPage() {
               </Table>
             </div>
           </Reveal>
+          <Reveal delay={160}>
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+              Network costs are estimates that vary with congestion. They are passed through at cost
+              — TrustVexa does not mark them up. See the{' '}
+              <Link
+                href="/fees"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                fee schedule
+              </Link>{' '}
+              for the full breakdown.
+            </p>
+          </Reveal>
         </div>
       </section>
 
@@ -171,11 +212,11 @@ export default function CoinsPage() {
             <SectionHeading
               eyebrow={
                 <>
-                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Pick the right chain
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Pick the right network
                 </>
               }
               title="How to choose a network"
-              subtitle="Gas is a pass-through cost, so the cheaper the chain, the more the seller keeps."
+              subtitle="Network cost is passed through, so the cheaper the network, the more the seller keeps."
             />
           </Reveal>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
@@ -198,12 +239,12 @@ export default function CoinsPage() {
       </section>
 
       <CtaBand
-        title="Pick your coin and start a deal"
-        subtitle="Choose your settlement coin and network, invite your counterparty, and let escrow do the rest."
+        title="Ready to start a deal?"
+        subtitle="Agree the terms, fund escrow, and release on delivery. Settlement details are confirmed at funding time."
         primaryLabel="Start a deal"
         primaryHref="/register"
-        secondaryLabel="See fees"
-        secondaryHref="/fees"
+        secondaryLabel="See how it works"
+        secondaryHref="/how-it-works"
       />
     </>
   );
