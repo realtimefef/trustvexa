@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
+  Building2,
   Clock,
   HelpCircle,
   LifeBuoy,
@@ -33,7 +34,7 @@ const HELP: ReadonlyArray<{ icon: typeof Mail; title: string; body: React.ReactN
     title: 'Disputes',
     body: (
       <>
-        Open a dispute from the deal itself so a middleman can review it. See{' '}
+        Open a dispute from the deal itself so a mediator can review it. See{' '}
         <Link
           href="/how-it-works"
           className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -52,7 +53,7 @@ const HELP: ReadonlyArray<{ icon: typeof Mail; title: string; body: React.ReactN
 ];
 
 const SLA = [
-  { icon: Timer, title: 'Middleman reply', value: 'Within 24 hours', tone: 'text-primary' },
+  { icon: Timer, title: 'Mediator reply', value: 'Within 24 hours', tone: 'text-primary' },
   { icon: Zap, title: 'Seller payout', value: 'Usually within 1 hour', tone: 'text-success' },
   {
     icon: Clock,
@@ -116,6 +117,35 @@ export default function ContactPage() {
                 </div>
               </Reveal>
             ))}
+
+            <Reveal delay={240}>
+              <div className="flex gap-4 rounded-2xl border bg-muted/30 p-6">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Building2 className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-display font-semibold">Company details</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    TrustVexa is operated by a privately held company based at 1007 N Orange St, 4th
+                    Floor, Wilmington, DE 19801, USA. Email{' '}
+                    <a
+                      href="mailto:support@trustvexa.com"
+                      className="font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      support@trustvexa.com
+                    </a>
+                    , or read more about{' '}
+                    <Link
+                      href="/about-developer"
+                      className="font-medium text-foreground underline-offset-4 hover:underline"
+                    >
+                      the team
+                    </Link>
+                    .
+                  </p>
+                </div>
+              </div>
+            </Reveal>
           </div>
 
           <Reveal delay={120}>
