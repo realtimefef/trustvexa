@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   Activity,
   Bell,
+  Brain,
   Eye,
   Fingerprint,
   KeyRound,
@@ -21,6 +22,7 @@ import { SectionHeading } from '@/components/visual/section-heading';
 import { FeatureSplit } from '@/components/visual/feature-split';
 import { ShieldVisual } from '@/components/visual/shield-visual';
 import { CtaBand } from '@/components/visual/cta-band';
+import { Badge } from '@/components/ui/badge';
 
 export const metadata: Metadata = {
   title: 'Trust & Security Center | TrustVexa',
@@ -32,7 +34,7 @@ const PILLARS: ReadonlyArray<{ icon: typeof Lock; title: string; body: string }>
   {
     icon: Lock,
     title: 'Funds held in escrow',
-    body: 'Buyer funds are confirmed on-chain and held in escrow until the deal terms are met. Money never moves on an unverified instruction.',
+    body: 'Buyer funds are independently verified and held in escrow until the deal terms are met. Money never moves on an unverified instruction.',
   },
   {
     icon: Scale,
@@ -46,8 +48,8 @@ const PILLARS: ReadonlyArray<{ icon: typeof Lock; title: string; body: string }>
   },
   {
     icon: Eye,
-    title: 'Privacy by default',
-    body: 'The presence of a middleman on a deal is kept private, and counterparties only see what they need to complete the transaction.',
+    title: 'Confidential by default',
+    body: 'The presence of a mediator on a deal is kept private, and counterparties only see what they need to complete the transaction.',
   },
   {
     icon: ServerCog,
@@ -64,8 +66,8 @@ const PILLARS: ReadonlyArray<{ icon: typeof Lock; title: string; body: string }>
 const FUND_STEPS: ReadonlyArray<{ icon: typeof Lock; title: string; body: string }> = [
   {
     icon: Wallet,
-    title: 'Confirmed on-chain',
-    body: 'Deposits are matched to the deal and confirmed at the required network depth before funding.',
+    title: 'Funding verified',
+    body: 'Deposits are matched to the deal and verified at the required confirmation depth before the deal advances.',
   },
   {
     icon: Lock,
@@ -82,8 +84,8 @@ const FUND_STEPS: ReadonlyArray<{ icon: typeof Lock; title: string; body: string
 const DATA_PROTECTION: ReadonlyArray<{ icon: typeof Lock; title: string; body: string }> = [
   {
     icon: Fingerprint,
-    title: 'Encrypted PII',
-    body: 'Email and sign-up details are encrypted at rest and only the neutral middleman can view them to run a deal.',
+    title: 'Encrypted personal data',
+    body: 'Email and sign-up details are encrypted at rest, and only the neutral mediator assigned to a deal can view what is needed to run it.',
   },
   {
     icon: KeyRound,
@@ -92,13 +94,13 @@ const DATA_PROTECTION: ReadonlyArray<{ icon: typeof Lock; title: string; body: s
   },
   {
     icon: Network,
-    title: 'Wallets hidden',
-    body: 'Every wallet address and transaction is encrypted and never exposed to another user.',
+    title: 'Payout details hidden',
+    body: 'Payout addresses and transaction references are encrypted and never exposed to another user.',
   },
   {
     icon: Eye,
-    title: 'PII access logged',
-    body: 'Every time personal info is decrypted or viewed, it is recorded for full accountability.',
+    title: 'Access logged',
+    body: 'Every time personal information is decrypted or viewed, it is recorded for full accountability.',
   },
 ];
 
@@ -106,7 +108,7 @@ const ACCOUNTABILITY = [
   { value: 'Hash-chained', label: 'Tamper-evident audit logs' },
   { value: 'Dual-control', label: 'On large payouts' },
   { value: 'Allowlist', label: 'Operator withdrawal addresses' },
-  { value: 'Screened', label: 'Deposit & payout addresses' },
+  { value: 'Screened', label: 'Deposit & payout destinations' },
 ];
 
 export default function SecurityPage() {
@@ -132,9 +134,9 @@ export default function SecurityPage() {
               </>
             }
             title="Money only moves when both sides have delivered"
-            body="Escrow removes the leap of faith from trading with a stranger. Funds are confirmed on-chain, held against the deal, and released only on approval — never on an unverified instruction."
+            body="Escrow removes the leap of faith from working with someone you have no history with. Funds are verified, held against the deal, and released only on approval — never on an unverified instruction."
             points={[
-              'On-chain confirmation before funding',
+              'Funding verified before the deal advances',
               'Held in escrow, not on deposit',
               'Dual-control on large releases',
               'Refund to buyer on expiry or dispute',
@@ -215,7 +217,7 @@ export default function SecurityPage() {
                   <Fingerprint className="h-3.5 w-3.5" aria-hidden="true" /> Your data
                 </>
               }
-              title="Private by design, encrypted by default"
+              title="Confidential by design, encrypted by default"
               subtitle="We collect the minimum, encrypt the sensitive, and never sell your data."
             />
           </Reveal>
@@ -253,6 +255,31 @@ export default function SecurityPage() {
         </div>
       </section>
 
+      {/* Roadmap: AI-assisted risk screening */}
+      <section className="section border-t">
+        <div className="container max-w-5xl">
+          <Reveal>
+            <div className="rounded-2xl border border-dashed bg-card/40 p-6 backdrop-blur sm:p-8">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Brain className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <h2 className="font-display text-lg font-semibold">
+                  On the roadmap: AI-assisted risk screening
+                </h2>
+                <Badge variant="outline">Planned</Badge>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                We are building machine-learning risk scoring to flag suspicious deal patterns
+                before funding, and an AI assistant that summarises dispute evidence for the
+                mediator. Neither is live today, and dispute decisions will remain human. We list it
+                here so you know what is shipped and what is not.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* Operations + disclosure */}
       <section className="section border-t bg-muted/20">
         <div className="container max-w-5xl space-y-8">
@@ -261,7 +288,7 @@ export default function SecurityPage() {
               {
                 icon: Activity,
                 title: 'Monitored 24/7',
-                body: 'Health checks, error tracking, and balance reconciliation against on-chain state.',
+                body: 'Health checks, error tracking, and balance reconciliation against settlement records.',
               },
               {
                 icon: Bell,
@@ -271,7 +298,7 @@ export default function SecurityPage() {
               {
                 icon: ShieldAlert,
                 title: 'Emergency pause',
-                body: 'A circuit breaker can pause deposits, payouts, or a chain during an incident.',
+                body: 'A circuit breaker can pause deposits, payouts, or a settlement network during an incident.',
               },
             ].map((o, i) => (
               <Reveal key={o.title} delay={i * 90}>
@@ -326,8 +353,8 @@ export default function SecurityPage() {
       </section>
 
       <CtaBand
-        title="Trade on a platform built for trust"
-        subtitle="Escrow-held funds, a neutral middleman, and a tamper-evident audit trail on every deal."
+        title="Built for trust, not for hype"
+        subtitle="Escrow-held funds, a neutral mediator, and a tamper-evident audit trail on every deal."
         primaryLabel="Get started"
         primaryHref="/register"
         secondaryLabel="How it works"

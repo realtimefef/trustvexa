@@ -13,7 +13,7 @@ import { apiRequest, ApiError, newIdempotencyKey } from '@/lib/api/client';
 import { useAuth } from '@/lib/auth/auth-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────
 
 interface PublicReview {
   id: string;
@@ -33,21 +33,11 @@ interface PublicReviewsResponse {
   total?: number;
 }
 
-const FALLBACK_REVIEWS: PublicReview[] = [
-  { id: '1', authorId: '', authorUsername: 'Crypto_Mara', rating: 5, title: 'Best escrow ever', body: 'Smooth release and clear communication the whole way through. The escrow held funds securely and the middleman was professional when I had a question. Highly recommend.', createdAt: new Date().toISOString() },
-  { id: '2', authorId: '', authorUsername: 'LedgerL24', rating: 5, title: 'Fast and reliable', body: 'Best escrow platform I have used. Funded fast, payout was instant after buyer approved. The verification code step is a great idea — no chance of fraud.', createdAt: new Date().toISOString() },
-  { id: '3', authorId: '', authorUsername: 'NodeWrangler', rating: 4, title: 'Great experience overall', body: 'Great experience overall. Delivery took a little longer than expected but the inspection window gave me plenty of time to verify. Everything checked out perfectly.', createdAt: new Date().toISOString() },
-  { id: '4', authorId: '', authorUsername: 'SafeTrade99', rating: 5, title: 'Dispute resolved in under an hour', body: 'I was skeptical at first but the escrow process removed all trust issues. The middleman resolved a small delivery dispute in under an hour. Excellent platform.', createdAt: new Date().toISOString() },
-];
+// NOTE: This page renders only real, moderated reviews returned by the API.
+// Placeholder/sample reviews and aggregate stats were removed deliberately —
+// published social proof must never be fabricated.
 
-const STATS = [
-  { label: 'Average rating', value: '4.9/5', sub: 'across all completed deals' },
-  { label: 'Deals completed', value: '2,400+', sub: 'and growing every week' },
-  { label: 'Dispute resolution', value: '< 24h', sub: 'average middleman response' },
-  { label: 'Funds secured', value: '$4.2M+', sub: 'total escrow volume' },
-];
-
-// ── Write Review Form ─────────────────────────────────────────────────────────
+// ── Write Review Form ───────────────────────────────────────────────
 
 function WritePublicReviewCard({ onSubmitted }: { onSubmitted: () => void }) {
   const { status, user } = useAuth();
@@ -150,7 +140,7 @@ function WritePublicReviewCard({ onSubmitted }: { onSubmitted: () => void }) {
           <div className="space-y-1.5">
             <Label htmlFor="review-title">Title <span className="text-muted-foreground text-xs">(optional)</span></Label>
             <Input id="review-title" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="e.g. Best escrow platform" maxLength={120} />
+              placeholder="e.g. Milestone released without friction" maxLength={120} />
           </div>
 
           {/* Body */}
@@ -177,7 +167,7 @@ function WritePublicReviewCard({ onSubmitted }: { onSubmitted: () => void }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────────
 
 export default function TestimonialsPage() {
   const queryClient = useQueryClient();
@@ -191,9 +181,8 @@ export default function TestimonialsPage() {
     staleTime: 60_000,
   });
 
-  const reviews: PublicReview[] = (reviewsQuery.data && reviewsQuery.data.length > 0)
-    ? reviewsQuery.data
-    : FALLBACK_REVIEWS;
+  const reviews: PublicReview[] = reviewsQuery.data ?? [];
+  const hasReviews = reviews.length > 0;
 
   return (
     <main className="min-h-screen bg-background">
@@ -201,16 +190,17 @@ export default function TestimonialsPage() {
       <section className="relative overflow-hidden border-b bg-brand-gradient py-20 text-white md:py-28">
         <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-20" />
         <div className="relative mx-auto max-w-4xl px-4 text-center space-y-4">
-          <Badge className="bg-white/15 text-white border-white/20">Verified trader reviews</Badge>
+          <Badge className="bg-white/15 text-white border-white/20">Moderated reviews</Badge>
           <h1 className="font-display text-4xl font-bold tracking-tight md:text-5xl">
-            Traders love TrustVexa
+            Reviews from TrustVexa users
           </h1>
           <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Real reviews from real users. Every review is moderated by our team.
+            Only reviews left by registered users appear here. We publish them as they are — we do
+            not write, buy, or invent reviews.
           </p>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <Button asChild size="lg" className="bg-white text-primary hover:bg-white/90">
-              <Link href="/register">Start trading safely</Link>
+              <Link href="/register">Create an account</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
               <Link href="/how-it-works">How it works</Link>
@@ -219,33 +209,20 @@ export default function TestimonialsPage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="border-b bg-muted/30 py-10">
-        <div className="mx-auto max-w-5xl px-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {STATS.map(s => (
-            <div key={s.label} className="text-center">
-              <p className="font-display text-3xl font-bold text-primary">{s.value}</p>
-              <p className="mt-1 text-sm font-medium">{s.label}</p>
-              <p className="text-xs text-muted-foreground">{s.sub}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Reviews grid */}
       <section className="mx-auto max-w-5xl px-4 py-16 space-y-8">
         <div className="text-center space-y-2">
-          <h2 className="font-display text-2xl font-bold">What our traders say</h2>
-          <p className="text-muted-foreground text-sm">Real platform reviews from verified TrustVexa users</p>
+          <h2 className="font-display text-2xl font-bold">What users say</h2>
+          <p className="text-muted-foreground text-sm">Published exactly as submitted, after moderation</p>
         </div>
 
         {reviewsQuery.isLoading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="rounded-2xl border bg-muted/20 h-48 animate-pulse" />
             ))}
           </div>
-        ) : (
+        ) : hasReviews ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {reviews.map((r) => (
               <Card key={r.id} className="rounded-2xl shadow-soft hover:shadow-glow transition-all hover:-translate-y-0.5">
@@ -285,6 +262,15 @@ export default function TestimonialsPage() {
               </Card>
             ))}
           </div>
+        ) : (
+          <div className="mx-auto max-w-xl rounded-2xl border border-dashed bg-muted/10 px-6 py-10 text-center space-y-3">
+            <MessageSquare className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
+            <p className="font-display text-lg font-semibold">No public reviews yet</p>
+            <p className="text-sm text-muted-foreground">
+              TrustVexa is early, and we would rather show nothing than show reviews we wrote
+              ourselves. If you have completed a deal, yours can be the first.
+            </p>
+          </div>
         )}
       </section>
 
@@ -294,7 +280,7 @@ export default function TestimonialsPage() {
           {[
             { icon: Shield, title: 'Moderated reviews', desc: 'Every review is checked by our team before appearing publicly.' },
             { icon: CheckCircle2, title: 'No paid placements', desc: 'We never pay for reviews or boost positive feedback artificially.' },
-            { icon: MessageSquare, title: 'Real traders', desc: 'Every reviewer is a registered TrustVexa user.' },
+            { icon: MessageSquare, title: 'Registered users only', desc: 'Every reviewer is a registered TrustVexa account holder.' },
           ].map(t => (
             <div key={t.title} className="space-y-2">
               <div className="mx-auto h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -312,7 +298,7 @@ export default function TestimonialsPage() {
         <div className="text-center space-y-2">
           <h2 className="font-display text-2xl font-bold">Share your experience</h2>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
-            Used TrustVexa? Tell others about it. Reviews help the community trust the platform.
+            Used TrustVexa? Tell others about it. Reviews help the community judge the platform.
           </p>
         </div>
         <WritePublicReviewCard onSubmitted={() => void queryClient.invalidateQueries({ queryKey: ['public-reviews'] })} />
@@ -324,9 +310,10 @@ export default function TestimonialsPage() {
 
       {/* CTA */}
       <section className="py-16 text-center px-4 space-y-4 border-t">
-        <h2 className="font-display text-2xl font-bold">Ready to trade with confidence?</h2>
+        <h2 className="font-display text-2xl font-bold">Ready to transact with confidence?</h2>
         <p className="text-muted-foreground text-sm max-w-md mx-auto">
-          Join thousands of buyers and sellers who protect every deal with TrustVexa escrow.
+          Protect your next project or sale with milestone-based escrow and neutral dispute
+          mediation.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Button asChild variant="gradient" size="lg">
