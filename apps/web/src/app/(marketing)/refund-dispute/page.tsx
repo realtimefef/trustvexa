@@ -22,13 +22,13 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '2. Raising a dispute',
     body: [
-      'If something goes wrong, either party can open a dispute from the deal. Opening a dispute pauses the normal flow and routes the deal to a neutral middleman for review.',
+      'If something goes wrong, either party can open a dispute from the deal. Opening a dispute pauses the normal flow and routes the deal to a neutral mediator for review.',
     ],
   },
   {
     heading: '3. Evidence & review',
     body: [
-      'Both parties may submit evidence such as messages, screenshots, and delivery proof. The middleman reviews the agreed terms and the evidence, and may ask follow-up questions before deciding.',
+      'Both parties may submit evidence such as messages, screenshots, and delivery proof. The mediator reviews the agreed terms and the evidence, and may ask follow-up questions before deciding. Dispute decisions are made by a person, not by an automated system.',
     ],
   },
   {
@@ -40,7 +40,7 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '5. Fees on disputed deals',
     body: [
-      'Platform and settlement fees follow the published fee schedule and the final decision. Network (gas) costs already incurred on-chain cannot be reversed.',
+      'Platform and settlement fees follow the published fee schedule and the final decision. Network costs already incurred on a settlement network cannot be reversed.',
     ],
   },
   {
@@ -86,7 +86,7 @@ export default function RefundDisputePage() {
             <p className="font-display font-semibold">Escrow frozen on dispute</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               The moment a dispute is opened the escrowed funds are frozen. Neither party can
-              release, cancel, or redirect them until the middleman issues a ruling.
+              release, cancel, or redirect them until the mediator issues a ruling.
             </p>
           </div>
           <div className="rounded-2xl border bg-card p-6 shadow-soft">
@@ -96,7 +96,7 @@ export default function RefundDisputePage() {
             <p className="font-display font-semibold">Evidence window</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Both sides have a fair window to submit their case. Accepted evidence includes chat
-              logs, screenshots, delivery proof, and on-chain transaction records.
+              logs, screenshots, delivery proof, and settlement transaction records.
             </p>
           </div>
           <div className="rounded-2xl border bg-card p-6 shadow-soft">
@@ -105,8 +105,8 @@ export default function RefundDisputePage() {
             </div>
             <p className="font-display font-semibold">Decision is final</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              The middleman's decision is final for the purpose of releasing escrowed funds. It is
-              recorded immutably against the deal record.
+              The mediator&apos;s decision is final for the purpose of releasing escrowed funds. It
+              is recorded immutably against the deal record.
             </p>
           </div>
         </div>
@@ -135,21 +135,21 @@ export default function RefundDisputePage() {
             },
             {
               step: '3',
-              label: 'Middleman review (up to 7 days for complex cases)',
+              label: 'Mediator review (up to 7 days for complex cases)',
               detail:
-                'A neutral middleman reads the agreed deal terms and all submitted evidence. They may ask clarifying questions to either party before deciding.',
+                'A neutral mediator reads the agreed deal terms and all submitted evidence. They may ask clarifying questions to either party before deciding.',
             },
             {
               step: '4',
               label: 'Decision issued',
               detail:
-                'The middleman records their ruling: full release to seller, full refund to buyer, or a partial split. Both parties are notified immediately.',
+                'The mediator records their ruling: full release to seller, full refund to buyer, or a partial split. Both parties are notified immediately.',
             },
             {
               step: '5',
               label: 'Funds released or refunded',
               detail:
-                'The on-chain settlement is executed in line with the ruling. Gas costs already incurred cannot be reversed.',
+                'Settlement is executed in line with the ruling. Network costs already incurred cannot be reversed.',
             },
           ].map((item) => (
             <li key={item.step} className="flex gap-4 rounded-2xl border bg-muted/30 p-5">
@@ -180,15 +180,15 @@ export default function RefundDisputePage() {
             },
             {
               title: 'Delivery screenshots',
-              body: 'Visual proof of what was delivered — or not delivered — gives the middleman objective evidence to work with. Timestamped screenshots are stronger than descriptions.',
+              body: 'Visual proof of what was delivered — or not delivered — gives the mediator objective evidence to work with. Timestamped screenshots are stronger than descriptions.',
             },
             {
               title: 'Timestamped chat',
               body: 'Conversation exports showing the negotiation, any delivery confirmations, and any complaints raised in real time provide a reliable chronology of events.',
             },
             {
-              title: 'On-chain transaction proof',
-              body: 'Blockchain transaction hashes, wallet addresses, and block explorer links confirm what moved on-chain and when — this type of evidence is tamper-proof.',
+              title: 'Settlement transaction proof',
+              body: 'Transaction references and settlement records confirm exactly what moved and when. This type of evidence cannot be edited after the fact, so it carries significant weight.',
             },
           ].map((tip) => (
             <div key={tip.title} className="rounded-2xl border bg-card p-6 shadow-soft">
