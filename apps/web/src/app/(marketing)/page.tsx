@@ -1,15 +1,12 @@
 import Link from 'next/link';
 import {
-  ArrowRight, AtSign, BadgeCheck, Boxes, Check, Coins, Database,
-  EyeOff, Gamepad2, Gavel, Globe, KeyRound, Lock, Package, Scale,
-  ShieldCheck, ShoppingCart, Sparkles, Star, Store, UserPlus,
-  Wallet, X, Zap,
+  ArrowRight, Boxes, Brain, Check, Coins, Database, FileCheck, Gavel, Globe,
+  Handshake, KeyRound, Lock, Package, Scale, Search, ShieldCheck, ShoppingCart,
+  Sparkles, Star, Store, UserPlus, Wallet, Workflow, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityTicker } from '@/components/visual/activity-ticker';
 import { AuroraBackground } from '@/components/visual/aurora-background';
-import { BlockchainGlobe } from '@/components/visual/blockchain-globe';
-import { CoinOrbit } from '@/components/visual/coin-orbit';
 import { CountUp } from '@/components/visual/count-up';
 import { DealFlowSvg } from '@/components/visual/deal-flow-svg';
 import { DealTimelineSvg } from '@/components/visual/deal-timeline-svg';
@@ -26,53 +23,63 @@ import { ShieldVisual } from '@/components/visual/shield-visual';
 import { TiltCard } from '@/components/visual/tilt-card';
 
 const STEPS = [
-  { icon: Wallet,      title: 'Create a deal',     body: 'Set amount, coin, network. Invite counterparty with a single-use link and 48-digit verification code.' },
-  { icon: Lock,        title: 'Buyer funds escrow', body: 'Buyer sends crypto to the escrow address. Funds confirmed on-chain at required depth before the deal proceeds.' },
-  { icon: ShieldCheck, title: 'Seller delivers',    body: 'Seller delivers the digital product. Buyer inspects within the agreed window, with a neutral middleman on standby.' },
-  { icon: Gavel,       title: 'Release or mediate', body: 'On approval funds release to the seller. Disputes trigger the middleman; double-entry ledger keeps every cent accounted for.' },
+  { icon: Wallet,      title: 'Create a deal',      body: 'Set the amount, the deliverables, and the milestone schedule. Invite the other side with a single-use link and verification code.' },
+  { icon: Lock,        title: 'Buyer funds escrow',  body: 'The buyer funds the deal. Nothing is released to the seller until the funds are confirmed and the terms are locked in.' },
+  { icon: ShieldCheck, title: 'Seller delivers',     body: 'The seller delivers the work or the asset. The buyer inspects within an agreed window, with a neutral mediator on standby.' },
+  { icon: Gavel,       title: 'Release or mediate',  body: 'On approval, funds release to the seller. Disputes go to a neutral mediator; a double-entry ledger keeps every cent accounted for.' },
 ];
+
 const FEATURES = [
-  { icon: Scale,      title: 'Neutral middleman',  body: 'A human mediator resolves disputes fairly with full audit history and agreed terms applied to every decision.' },
-  { icon: Globe,      title: 'Multi-chain',         body: 'USDT, ETH, BNB, SOL, TRX across Ethereum, BNB Chain, TRON, and Solana — funded and settled in your chosen coin.' },
-  { icon: Coins,      title: 'Transparent fees',    body: 'A clear sliding-scale fee from 5% down to 1.35% with a $30 minimum. No hidden charges, ever.' },
-  { icon: Lock,       title: 'Private by design',   body: 'Deal details are envelope-encrypted and middleman presence stays private to protect both sides.' },
-  { icon: BadgeCheck, title: 'On-chain proof',      body: 'Every funding and payout is verified on-chain at required confirmation depth, recorded to the smallest unit.' },
-  { icon: Database,   title: 'Double-entry ledger', body: 'A tamper-evident ledger accounts for every cent across escrow, fees, and settlement — fully auditable.' },
+  { icon: Workflow,   title: 'Milestone-based releases', body: 'Split a project into stages and release payment stage by stage, so neither side carries the whole risk at once.' },
+  { icon: Scale,      title: 'Neutral mediation',        body: 'A human mediator resolves disputes against the written terms and the submitted evidence, with full audit history.' },
+  { icon: Coins,      title: 'Transparent fees',         body: 'A clear sliding-scale fee from 5% down to 1.35% with a $30 minimum. No hidden charges, ever.' },
+  { icon: FileCheck,  title: 'Evidence-based disputes',  body: 'Terms, deliverables, and messages are captured as they happen, so a dispute is decided on a record rather than on memory.' },
+  { icon: Database,   title: 'Double-entry ledger',      body: 'A tamper-evident ledger accounts for every cent across escrow, fees, and settlement — fully auditable.' },
+  { icon: Lock,       title: 'Encrypted by default',     body: 'Deal details are envelope-encrypted at rest and access is scoped to the parties on the deal.' },
 ];
+
 const STATS = [
-  { value: 5,    suffix: ' coins',  label: 'Supported assets' },
-  { value: 4,    suffix: ' chains', label: 'Networks supported' },
-  { value: 1.35, suffix: '%', decimals: 2, label: 'Lowest platform fee' },
-  { value: 24,   suffix: '/7',      label: 'Middleman mediation' },
+  { value: 4,    suffix: ' stages',           label: 'Escrow stages per deal' },
+  { value: 1.35, suffix: '%', decimals: 2,    label: 'Lowest platform fee' },
+  { value: 50,   suffix: 'k', label: 'Maximum deal size (USD)' },
+  { value: 24,   suffix: '/7',                label: 'Dispute mediation' },
 ];
-const COINS = ['USDT', 'ETH', 'BNB', 'SOL', 'TRX', 'Ethereum', 'BNB Chain', 'TRON', 'Solana'];
+
+const AUDIENCES = ['Freelancers', 'Agencies', 'Online marketplaces', 'B2B services', 'Domain & site sales', 'Digital goods sellers'];
+
 const USE_CASES = [
-  { icon: AtSign,   title: 'Social media accounts', body: 'Instagram, TikTok, YouTube, X, and Telegram handovers with verification.' },
-  { icon: Gamepad2, title: 'Gaming accounts',        body: 'Steam, Epic, Riot and more — transferred only once funds are secured.' },
-  { icon: KeyRound, title: 'Software licenses',      body: 'License, serial, and activation keys delivered against locked escrow.' },
-  { icon: Package,  title: 'Digital products',       body: 'Source code, designs, templates, and downloadable goods.' },
-  { icon: Globe,    title: 'Domains & websites',     body: 'High-value domain and site sales with a neutral middleman on standby.' },
-  { icon: Boxes,    title: 'Subscriptions & more',   body: 'Any digital asset where both sides want a safe, on-chain settlement.' },
+  { icon: Workflow,  title: 'Freelance projects',   body: 'Milestone-based payment for design, development, and content work — funded up front, released on delivery.' },
+  { icon: Store,     title: 'Marketplace payouts',  body: 'Hold buyer funds while a marketplace order is fulfilled, then release to the seller on confirmation.' },
+  { icon: Handshake, title: 'B2B transactions',     body: 'Two companies with no prior relationship can transact without either side fronting the whole risk.' },
+  { icon: Globe,     title: 'Domains & websites',   body: 'High-value domain and site transfers with a neutral mediator on standby for the handover.' },
+  { icon: KeyRound,  title: 'Licenses & accounts',  body: 'Software licenses, activation keys, and account transfers delivered against locked escrow.' },
+  { icon: Package,   title: 'Digital products',     body: 'Source code, designs, templates, and downloadable goods where delivery needs to be verified.' },
 ];
+
 const WITHOUT = ['Send first and hope the other side delivers','No recourse if a counterparty disappears','Disputes turn into your word against theirs','Funds gone the moment you hit send'];
-const WITH_US = ['Funds held safely in escrow until terms are met','A neutral middleman mediates any dispute','Every step recorded in a tamper-evident ledger','Release only when both sides have delivered'];
-const TESTIMONIALS = [
-  { quote: 'TrustVexa made a $20k account sale completely painless. Funds were locked the moment I sent them and released the second I confirmed delivery.', name: 'Marcus T.', role: 'Digital reseller' },
-  { quote: 'The middleman stepped in on a disputed delivery and resolved it in hours, not weeks. The audit trail meant there was nothing to argue about.', name: 'Lena K.', role: 'SaaS founder' },
-  { quote: 'Fees are transparent and the multi-chain support means I never have to convert coins. This is how crypto escrow should work.', name: 'Devon R.', role: 'Crypto trader' },
-];
+const WITH_US = ['Funds held safely in escrow until terms are met','A neutral mediator resolves any dispute','Every step recorded in a tamper-evident ledger','Release only when both sides have delivered'];
+
 const TRUST_POINTS = [
-  { icon: Zap,         label: 'Instant on-chain confirmation',  desc: 'Funding verified at block-depth — no guessing.' },
-  { icon: Lock,        label: 'Dual-control on large payouts',   desc: 'Two approvers required before any broadcast.' },
-  { icon: Database,    label: 'Hash-chained audit log',          desc: 'Every state change cryptographically signed.' },
-  { icon: ShieldCheck, label: 'Envelope-encrypted PII',          desc: 'Emails and addresses AES-256-GCM encrypted.' },
+  { icon: Zap,         label: 'Confirmed funding',            desc: 'Deals only advance once funding is verified.' },
+  { icon: Lock,        label: 'Dual-control on large payouts', desc: 'Two approvers required before any release.' },
+  { icon: Database,    label: 'Hash-chained audit log',        desc: 'Every state change cryptographically signed.' },
+  { icon: ShieldCheck, label: 'Envelope-encrypted PII',        desc: 'Emails and addresses AES-256-GCM encrypted.' },
 ];
+
+// Roadmap only. Nothing in this list is live today — keep it labelled that way.
+const AI_ROADMAP = [
+  { icon: Search, title: 'Fraud & risk scoring',    body: 'Score new deals and counterparties on behavioural signals so high-risk transactions get extra verification before funding.' },
+  { icon: Brain,  title: 'Dispute assistance',       body: 'Summarise the evidence on a disputed deal and surface the relevant clauses, so a human mediator decides faster and more consistently.' },
+  { icon: FileCheck, title: 'Terms drafting',        body: 'Turn a plain-language description of a project into clear, structured milestones and acceptance criteria.' },
+];
+
 const FAQ = [
-  { q: 'How does crypto escrow protect me?', a: 'Funds are held in a secure escrow address and only released when both parties have met the agreed terms. Neither side can run off with the money, and a neutral middleman is always on standby.' },
-  { q: 'Which coins and networks are supported?', a: 'USDT, ETH, BNB, SOL, and TRX across Ethereum, BNB Chain, TRON, and Solana. You choose coin and network at deal creation; settlement happens in that same coin.' },
-  { q: 'What are the fees?', a: 'A sliding-scale platform fee from 5% down to 1.35% with a $30 minimum, plus a 0.5% seller settlement fee. On-chain gas is passed through at cost.' },
-  { q: 'What deal sizes are supported?', a: '$400 to $50,000, settled in your chosen coin. The fee tier automatically gets cheaper as deal size grows.' },
-  { q: 'What happens if there is a dispute?', a: 'Either side can open a dispute. A neutral middleman reviews evidence, applies the written terms, and issues a final decision — release, refund, or partial settlement — all recorded in the ledger.' },
+  { q: 'How does escrow protect me?', a: 'Funds are held in escrow and only released when both parties have met the agreed terms. Neither side can walk away with the money, and a neutral mediator is always on standby.' },
+  { q: 'How does payment and settlement work?', a: 'Deals are currently funded and settled in digital assets (USDT, ETH, BNB, SOL, TRX) across Ethereum, BNB Chain, TRON, and Solana. Full details are on the crypto settlement page. Additional settlement rails are on the roadmap.' },
+  { q: 'What are the fees?', a: 'A sliding-scale platform fee from 5% down to 1.35% with a $30 minimum, plus a 0.5% seller settlement fee. Network costs are passed through at cost.' },
+  { q: 'What deal sizes are supported?', a: '$400 to $50,000 per deal. The fee tier automatically gets cheaper as deal size grows.' },
+  { q: 'What happens if there is a dispute?', a: 'Either side can open a dispute. A neutral mediator reviews the evidence, applies the written terms, and issues a final decision — release, refund, or partial settlement — all recorded in the ledger.' },
+  { q: 'Does TrustVexa use AI?', a: 'Not yet. Fraud scoring, dispute assistance, and terms drafting are on our roadmap and are clearly marked as planned rather than shipped.' },
 ];
 
 export default function HomePage() {
@@ -88,17 +95,17 @@ export default function HomePage() {
             <Reveal delay={60}>
               <span className="eyebrow mt-2">
                 <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
-                Crypto-only escrow · neutral middleman · on-chain verified
+                Milestone-based · automated · dispute-ready
               </span>
             </Reveal>
             <Reveal delay={120}>
               <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl xl:text-6xl">
-                Trade digital goods <span className="text-gradient-shine">safely</span> with crypto escrow
+                Secure escrow infrastructure for <span className="text-gradient-shine">freelancers</span> and marketplaces
               </h1>
             </Reveal>
             <Reveal delay={180}>
               <p className="max-w-lg text-base text-muted-foreground md:text-lg">
-                TrustVexa holds funds on-chain while you trade digital products and accounts. A neutral middleman keeps both sides protected — every cent accounted for.
+                TrustVexa is the trust layer for online transactions. Funds are held in escrow and released against milestones, so neither side has to go first on trust — with a neutral mediator if a deal goes sideways.
               </p>
             </Reveal>
             <Reveal delay={240}>
@@ -113,10 +120,10 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={300}>
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-success" aria-hidden /> On-chain verified</span>
-                <span className="inline-flex items-center gap-1.5"><Lock className="h-4 w-4 text-primary" aria-hidden /> Funds protected</span>
+                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-success" aria-hidden /> Funds held in escrow</span>
+                <span className="inline-flex items-center gap-1.5"><Workflow className="h-4 w-4 text-primary" aria-hidden /> Milestone releases</span>
                 <span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-warning" aria-hidden /> $400 – $50,000 deals</span>
-                <span className="inline-flex items-center gap-1.5"><EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden /> No personal info required</span>
+                <span className="inline-flex items-center gap-1.5"><Scale className="h-4 w-4 text-muted-foreground" aria-hidden /> Neutral mediation</span>
               </div>
             </Reveal>
           </div>
@@ -128,58 +135,20 @@ export default function HomePage() {
         </div>
         <div className="container pb-8">
           <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            Funds and settlement across leading coins and networks
+            Built for the people who transact online
           </p>
           <Marquee>
-            {COINS.map((coin) => (
-              <span key={coin} className="flex items-center gap-2 rounded-full border border-border bg-card/50 px-5 py-2 font-mono text-sm font-medium text-muted-foreground">
-                <Coins className="h-4 w-4 text-primary" aria-hidden />{coin}
+            {AUDIENCES.map((item) => (
+              <span key={item} className="flex items-center gap-2 rounded-full border border-border bg-card/50 px-5 py-2 font-mono text-sm font-medium text-muted-foreground">
+                <Boxes className="h-4 w-4 text-primary" aria-hidden />{item}
               </span>
             ))}
           </Marquee>
         </div>
       </section>
 
-      {/* ─── PRIVACY CALLOUT STRIP ────────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-t">
-        {/* gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" aria-hidden />
-        <div className="absolute inset-y-0 left-0 w-1 bg-primary" aria-hidden />
-        <div className="container relative py-7">
-          <Reveal>
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
-              {/* icon badge */}
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
-                <ShieldCheck className="h-7 w-7" aria-hidden />
-              </div>
-              {/* headline + body */}
-              <div className="flex-1">
-                <p className="font-display text-lg font-bold tracking-tight text-foreground sm:text-xl">
-                  🔒 Secure yourself — no private or personal information needed
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Your real name, address, and ID <span className="font-semibold text-foreground">stay completely private</span>. Your counterparty never sees your personal details — everything is encrypted and exchanged only through secure, verified channels.
-                </p>
-                {/* mobile badges */}
-                <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"><EyeOff className="h-3.5 w-3.5" aria-hidden /> No ID required</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"><Lock className="h-3.5 w-3.5" aria-hidden /> Encrypted end-to-end</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-medium text-success"><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Private by design</span>
-                </div>
-              </div>
-              {/* desktop badges */}
-              <div className="hidden shrink-0 flex-col gap-2 sm:flex">
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary"><EyeOff className="h-4 w-4" aria-hidden /> No ID required</span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary"><Lock className="h-4 w-4" aria-hidden /> Encrypted end-to-end</span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-1.5 text-sm font-medium text-success"><ShieldCheck className="h-4 w-4" aria-hidden /> Private by design</span>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
       {/* ─── QUICK STATS BAR ──────────────────────────────────────────────── */}
-      <section className="border-b bg-card/40">
+      <section className="border-y bg-card/40">
           <div className="container grid grid-cols-2 gap-3 py-6 md:grid-cols-4 md:py-8">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 80} className="text-center">
@@ -194,44 +163,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 3D BLOCKCHAIN GLOBE ──────────────────────────────────────────── */}
-      <section className="section relative overflow-hidden border-t bg-muted/20">
-        <AuroraBackground grid={false} />
-        <div className="container grid items-center gap-10 lg:grid-cols-2">
-          <Reveal delay={100} className="order-2 flex justify-center lg:order-1">
-            <BlockchainGlobe />
-          </Reveal>
-          <Reveal className="order-1 lg:order-2">
-            <span className="eyebrow"><Globe className="h-3.5 w-3.5" aria-hidden /> Multi-chain by design</span>
-            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">One platform. Four chains. Five coins.</h2>
-            <p className="mt-4 text-muted-foreground">Choose your coin and chain when you create a deal. TrustVexa confirms funding on-chain at the required block depth and settles in the same asset — no surprise conversions, no counterparty risk.</p>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {['USDT on 4 chains','ETH on Ethereum','BNB on BNB Chain','SOL on Solana','TRX on TRON','On-chain verified funding'].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 shrink-0 text-success" aria-hidden />{item}</li>
-              ))}
-            </ul>
-            <Button asChild size="lg" variant="outline" className="mt-6">
-              <Link href="/coins">See supported coins <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-            </Button>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ─── DEAL TIMELINE SVG (NEW) ──────────────────────────────────────── */}
+      {/* ─── DEAL TIMELINE ────────────────────────────────────────────────── */}
       <section className="section relative overflow-hidden">
         <div className="container">
           <Reveal>
             <SectionHeading
               eyebrow={<><Zap className="h-3.5 w-3.5" aria-hidden /> See it live</>}
               title="Watch a deal move through escrow"
-              subtitle="Four clear stages, all verified on-chain. No step skipped, no cent unaccounted for."
+              subtitle="Four clear stages. No step skipped, no cent unaccounted for."
             />
           </Reveal>
           <Reveal delay={100} className="mt-8 flex justify-center">
             <div className="w-full max-w-2xl rounded-2xl border bg-card/60 px-4 py-6 sm:px-8 sm:py-10 shadow-glow backdrop-blur">
               <DealTimelineSvg />
               <p className="mt-4 text-center text-xs text-muted-foreground">
-                Each node pulses when that stage is active. The traveling dot shows real-time value movement.
+                Each node pulses when that stage is active. The traveling dot shows value moving through the deal.
               </p>
             </div>
           </Reveal>
@@ -266,7 +212,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── 3D LEDGER STACK + SECURITY RING (NEW) ────────────────────────── */}
+      {/* ─── LEDGER + SECURITY ────────────────────────────────────────────── */}
       <section className="section relative overflow-hidden">
         <div className="container grid items-center gap-10 lg:grid-cols-2">
           <Reveal>
@@ -299,7 +245,7 @@ export default function HomePage() {
             <SectionHeading
               eyebrow={<><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Why TrustVexa</>}
               title="Built for trust, end to end"
-              subtitle="Every layer is designed to keep your funds safe and your trades transparent."
+              subtitle="Every layer is designed to keep funds safe and the terms of a deal enforceable."
             />
           </Reveal>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -323,9 +269,9 @@ export default function HomePage() {
         <div className="container">
           <Reveal>
             <SectionHeading
-              eyebrow={<><Boxes className="h-3.5 w-3.5" aria-hidden /> What you can trade</>}
-              title="Built for high-value digital trades"
-              subtitle="From social accounts to source code, TrustVexa secures the trades that are too risky to do face to face."
+              eyebrow={<><Boxes className="h-3.5 w-3.5" aria-hidden /> Who it is for</>}
+              title="Built for high-value online transactions"
+              subtitle="From freelance milestones to marketplace payouts, TrustVexa secures the deals that are too risky to do on a handshake."
             />
           </Reveal>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -346,24 +292,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── COIN ORBIT ───────────────────────────────────────────────────── */}
-      <section className="section border-t bg-muted/20 relative overflow-hidden">
-        <AuroraBackground grid={false} />
-        <div className="container grid items-center gap-10 lg:grid-cols-2">
-          <Reveal className="order-2 lg:order-1">
-            <span className="eyebrow"><Globe className="h-3.5 w-3.5" aria-hidden /> Multi-chain by design</span>
-            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">Fund and settle across four networks</h2>
-            <p className="mt-4 max-w-xl text-muted-foreground">Choose your coin and chain when you create a deal. TrustVexa confirms funding on-chain at the required depth and settles in the same asset — no surprise conversions.</p>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-              {['USDT on 4 chains','ETH on Ethereum','BNB on BNB Chain','SOL on Solana','TRX on TRON','On-chain verified funding'].map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm"><Check className="h-4 w-4 shrink-0 text-success" aria-hidden />{item}</li>
-              ))}
-            </ul>
-            <Button asChild size="lg" variant="outline" className="mt-6">
-              <Link href="/coins">See supported coins <ArrowRight className="h-4 w-4" aria-hidden /></Link>
-            </Button>
+      {/* ─── AI ROADMAP (clearly labelled as not yet shipped) ─────────────── */}
+      <section className="section border-t bg-muted/20">
+        <div className="container">
+          <Reveal>
+            <SectionHeading
+              eyebrow={<><Brain className="h-3.5 w-3.5" aria-hidden /> On the roadmap</>}
+              title="Where AI fits into escrow"
+              subtitle="None of the following is live yet. These are the three places where we believe machine learning genuinely improves an escrow product, and they are what we are building next."
+            />
           </Reveal>
-          <Reveal delay={150} className="order-1 flex justify-center lg:order-2"><CoinOrbit /></Reveal>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {AI_ROADMAP.map((item, i) => (
+              <Reveal key={item.title} delay={i * 90}>
+                <div className="flex h-full flex-col rounded-2xl border border-dashed bg-card/60 p-6 backdrop-blur">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <item.icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="rounded-full border border-border bg-muted/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      Planned
+                    </span>
+                  </div>
+                  <h3 className="font-display text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -374,8 +330,8 @@ export default function HomePage() {
           <Reveal>
             <SectionHeading
               eyebrow={<><Scale className="h-3.5 w-3.5" aria-hidden /> The difference</>}
-              title="Why escrow beats trading on trust"
-              subtitle="The same deal, with and without a neutral middleman holding the funds."
+              title="Why escrow beats transacting on trust"
+              subtitle="The same deal, with and without a neutral party holding the funds."
             />
           </Reveal>
           <div className="mt-10 grid gap-5 md:grid-cols-2">
@@ -383,7 +339,7 @@ export default function HomePage() {
               <div className="h-full rounded-2xl border border-destructive/30 bg-destructive/[0.03] p-7">
                 <div className="mb-4 flex items-center gap-2">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/15 text-destructive"><X className="h-5 w-5" /></span>
-                  <h3 className="font-display text-base font-semibold">Trading directly</h3>
+                  <h3 className="font-display text-base font-semibold">Transacting directly</h3>
                 </div>
                 <ul className="space-y-2.5">
                   {WITHOUT.map((item) => (
@@ -420,8 +376,8 @@ export default function HomePage() {
             reverse
             eyebrow={<><ShieldCheck className="h-3.5 w-3.5" aria-hidden /> Security first</>}
             title="Your money is protected at every step"
-            body="Funds are confirmed on-chain, held in escrow, and released only when both sides have delivered. Sensitive data is encrypted, and every movement is recorded in a tamper-evident ledger."
-            points={['On-chain verified funding','Encrypted, private deal details','Hash-chained audit trail','Dual-control on large payouts']}
+            body="Funds are confirmed before a deal advances, held in escrow, and released only when both sides have delivered. Sensitive data is encrypted, and every movement is recorded in a tamper-evident ledger."
+            points={['Verified funding before delivery','Encrypted, private deal details','Hash-chained audit trail','Dual-control on large payouts']}
             visual={<ShieldVisual />}
           />
         </div>
@@ -445,7 +401,7 @@ export default function HomePage() {
                   <h3 className="font-display text-lg font-semibold">For buyers</h3>
                 </div>
                 <ul className="space-y-2.5">
-                  {['Your funds stay in escrow until you approve delivery','Inspect the product or account before release','Open a dispute with a neutral middleman any time','Refunded automatically if a deal expires unfunded'].map((p) => (
+                  {['Your funds stay in escrow until you approve delivery','Inspect the work or asset before release','Open a dispute with a neutral mediator any time','Refunded automatically if a deal expires unfunded'].map((p) => (
                     <li key={p} className="flex items-start gap-2.5 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />{p}</li>
                   ))}
                 </ul>
@@ -458,7 +414,7 @@ export default function HomePage() {
                   <h3 className="font-display text-lg font-semibold">For sellers</h3>
                 </div>
                 <ul className="space-y-2.5">
-                  {['See funds confirmed on-chain before you hand over','Inspection window auto-releases if buyer goes silent','Clear, predictable payout in your chosen coin','Every step logged — good-faith delivery is provable'].map((p) => (
+                  {['See funds confirmed before you deliver','Inspection window auto-releases if the buyer goes silent','Clear, predictable payout on completion','Every step logged — good-faith delivery is provable'].map((p) => (
                     <li key={p} className="flex items-start gap-2.5 text-sm"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden />{p}</li>
                   ))}
                 </ul>
@@ -468,21 +424,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── DEAL FLOW SVG ────────────────────────────────────────────────── */}
+      {/* ─── DEAL FLOW ────────────────────────────────────────────────────── */}
       <section className="section border-t bg-muted/20">
         <div className="container">
           <Reveal>
             <SectionHeading
               eyebrow={<><ArrowRight className="h-3.5 w-3.5 rotate-45" aria-hidden /> See it in action</>}
-              title="Funds flow on-chain — never off-platform"
-              subtitle="Every cent moves along a cryptographically verified path. No shortcuts."
+              title="Funds flow through escrow — never off-platform"
+              subtitle="Every cent moves along a verified path. No shortcuts."
             />
           </Reveal>
           <Reveal delay={100} className="mt-8">
             <div className="rounded-2xl border bg-card/60 p-6 shadow-soft backdrop-blur md:p-10">
               <DealFlowSvg />
               <div className="mt-7 grid gap-4 grid-cols-1 sm:grid-cols-3">
-                {[{step:'01',title:'On-chain escrow',body:'Buyer sends to a unique per-deal address. Confirmed at required depth.'},{step:'02',title:'Verified delivery',body:'Seller hands over to the middleman. Buyer inspects within agreed window.'},{step:'03',title:'Immutable release',body:'Payout broadcast on-chain, tracked with an explorer link for both sides.'}].map((s) => (
+                {[{step:'01',title:'Funded escrow',body:'Buyer funds a unique per-deal address. Confirmed before the deal advances.'},{step:'02',title:'Verified delivery',body:'Seller delivers. Buyer inspects within the agreed window.'},{step:'03',title:'Recorded release',body:'Payout is executed and recorded, with a receipt available to both sides.'}].map((s) => (
                   <div key={s.step} className="flex items-start gap-3">
                     <span className="font-display text-2xl font-bold text-gradient opacity-60">{s.step}</span>
                     <div>
@@ -497,45 +453,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS ─────────────────────────────────────────────────── */}
-      <section className="section relative overflow-hidden">
-        <AuroraBackground grid={false} />
-        <div className="container">
+      {/* ─── SETTLEMENT DISCLOSURE ────────────────────────────────────────── */}
+      <section className="section relative overflow-hidden border-t">
+        <div className="container max-w-4xl">
           <Reveal>
-            <SectionHeading
-              eyebrow={<><Star className="h-3.5 w-3.5" aria-hidden /> Loved by traders</>}
-              title="Trusted on both sides of the deal"
-              subtitle="Buyers and sellers rely on TrustVexa to settle high-value digital trades with zero drama."
-            />
+            <div className="flex flex-col gap-4 rounded-2xl border bg-card/60 p-7 backdrop-blur sm:flex-row sm:items-center sm:gap-7">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Coins className="h-6 w-6" aria-hidden />
+              </span>
+              <div className="flex-1">
+                <p className="font-display text-lg font-semibold">How deals are funded today</p>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Escrow deals are currently funded and settled in digital assets across four networks. The mechanics, supported assets, confirmation rules, and network costs are all documented on the settlement page.
+                </p>
+              </div>
+              <Button asChild variant="outline" className="shrink-0">
+                <Link href="/crypto">Settlement details <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+              </Button>
+            </div>
           </Reveal>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            {TESTIMONIALS.map((t, i) => (
-              <Reveal key={t.name} delay={i * 90}>
-                <figure className="flex h-full flex-col gap-4 rounded-2xl border bg-card/60 p-6 backdrop-blur transition-all hover:shadow-glow">
-                  <div className="flex gap-0.5 text-warning">
-                    {Array.from({length:5}).map((_,s) => <Star key={s} className="h-3.5 w-3.5 fill-current" aria-hidden />)}
-                  </div>
-                  <blockquote className="flex-1 text-sm leading-relaxed text-foreground/90">&ldquo;{t.quote}&rdquo;</blockquote>
-                  <figcaption className="flex items-center gap-2.5 border-t pt-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gradient font-semibold text-white">{t.name.charAt(0)}</span>
-                    <span>
-                      <span className="block text-sm font-semibold">{t.name}</span>
-                      <span className="block text-xs text-muted-foreground">{t.role}</span>
-                    </span>
-                  </figcaption>
-                </figure>
-              </Reveal>
-            ))}
-          </div>
-          {/* Link to full reviews page */}
-          <div className="mt-8 text-center">
-            <Link
-              href="/testimonials"
-              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline underline-offset-4"
-            >
-              Read all reviews <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </div>
         </div>
       </section>
 
@@ -560,10 +496,10 @@ export default function HomePage() {
               <ParticleField count={30} className="opacity-20" />
               <div className="relative mx-auto flex max-w-xl flex-col items-center gap-5">
                 <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold backdrop-blur">
-                  <Sparkles className="h-4 w-4" aria-hidden /> Start trading safely today
+                  <Sparkles className="h-4 w-4" aria-hidden /> Start transacting safely today
                 </span>
                 <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">Ready to make your first safe deal?</h2>
-                <p className="text-white/80">Create your account in seconds. No KYC, no minimums — just secure, on-chain escrow for digital goods and accounts.</p>
+                <p className="text-white/80">Create your account in minutes and open a milestone-based escrow deal with anyone you work with.</p>
                 <div className="flex flex-wrap items-center justify-center gap-3">
                   <Button asChild size="xl" className="bg-white text-primary hover:bg-white/90">
                     <Link href="/register">Create free account <ArrowRight className="h-5 w-5" aria-hidden /></Link>
