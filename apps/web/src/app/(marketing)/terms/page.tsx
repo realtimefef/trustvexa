@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ScrollText, Bitcoin, ShieldCheck, Scale, Hash } from 'lucide-react';
+import { ScrollText, Landmark, ShieldCheck, Scale, Hash } from 'lucide-react';
 
 import { LegalLayout } from '@/components/visual/legal-layout';
 import { PolicyVersionBadge } from '@/components/policy-version-badge';
@@ -8,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Terms of Service | TrustVexa',
-  description: 'The terms that govern your use of the TrustVexa crypto escrow service.',
+  description: 'The terms that govern your use of the TrustVexa escrow service.',
 };
 
-const LAST_UPDATED = 'June 2026';
+const LAST_UPDATED = 'August 2026';
 
 const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> = [
   {
@@ -23,27 +23,29 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '2. What TrustVexa does',
     body: [
-      'TrustVexa provides a crypto-only escrow service for trading digital products and online accounts. We hold funds in escrow while a buyer and seller complete a transaction, and we may provide a neutral middleman to mediate disputes.',
-      'TrustVexa is not a bank, money transmitter offering deposit accounts, broker, or investment service. Funds held in escrow are held for the purpose of settling a specific deal and are not deposits.',
+      'TrustVexa provides an escrow service for online transactions between two parties — including freelance and contract work, digital goods and services, marketplace sales, and business-to-business deals. We hold funds in escrow while a buyer and seller complete a transaction, and we may provide a neutral mediator to review disputes.',
+      'Deals are currently funded and settled using digital assets on the networks listed on our settlement page. Additional settlement methods may be added over time, and the funding screen for each deal always shows the accepted method for that deal.',
+      'TrustVexa is not a bank, a money transmitter offering deposit accounts, a broker, an exchange, or an investment service. Funds held in escrow are held for the purpose of settling a specific deal and are not deposits.',
     ],
   },
   {
     heading: '3. Eligibility & accounts',
     body: [
       'You are responsible for the accuracy of your account information and for keeping your credentials and two-factor methods secure. You are responsible for all activity under your account.',
+      'We may request additional verification information from you where it is needed to prevent fraud, to resolve a dispute, or to meet a legal or regulatory obligation. Funds may be held until that verification is complete.',
     ],
   },
   {
     heading: '4. Deals & escrow',
     body: [
-      'A deal is governed by the written terms both parties accept before funding. Once the buyer funds the escrow address and the funds are confirmed on-chain, the deal proceeds according to those terms.',
+      'A deal is governed by the written terms both parties accept before funding. Once the buyer funds the deal and the funding is confirmed on the relevant settlement network, the deal proceeds according to those terms.',
       'All amounts are computed server-side in the smallest unit of the relevant currency and recorded in a double-entry ledger. Released funds are paid to the seller minus the applicable platform and settlement fees.',
     ],
   },
   {
     heading: '5. Fees',
     body: [
-      'Fees are disclosed before you commit to a deal and follow the published schedule on our Fees page, including the platform fee, a minimum fee, a settlement fee, and pass-through network (gas) costs. By proceeding with a deal you agree to the fees shown for that deal.',
+      'Fees are disclosed before you commit to a deal and follow the published schedule on our Fees page, including the platform fee, a minimum fee, a settlement fee, and pass-through network costs. By proceeding with a deal you agree to the fees shown for that deal.',
     ],
   },
   {
@@ -55,13 +57,14 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
   {
     heading: '7. Disputes & mediation',
     body: [
-      "If a dispute arises, either party may open a dispute. A neutral middleman will review the submitted evidence and the agreed terms and issue a final decision, which may be a release, a refund, or a partial settlement. You agree that the middleman's decision within the Service is final for the purpose of releasing escrowed funds.",
+      'If a dispute arises, either party may open a dispute. A neutral mediator will review the submitted evidence and the agreed terms and issue a final decision, which may be a release, a refund, or a partial settlement. You agree that the mediator’s decision within the Service is final for the purpose of releasing escrowed funds.',
+      'Dispute decisions are made by a person. Where we use automated tools to assist review, they inform the mediator and do not replace human judgement.',
     ],
   },
   {
-    heading: '8. Crypto & network risk',
+    heading: '8. Settlement & network risk',
     body: [
-      'Blockchain transactions are irreversible and subject to network congestion, fees, and price volatility. You are responsible for sending the correct asset on the correct network to the correct address. TrustVexa is not liable for losses caused by user error, third-party wallets, or network conditions outside our control.',
+      'Transactions on a settlement network are irreversible and subject to network congestion, fees, and price volatility. You are responsible for sending the correct asset on the correct network to the correct address shown on the deal. TrustVexa is not liable for losses caused by user error, third-party wallets, or network conditions outside our control.',
     ],
   },
   {
@@ -96,10 +99,10 @@ const ALL_HEADINGS = SECTIONS.map((s) => s.heading);
 
 const KEY_POINTS = [
   {
-    icon: Bitcoin,
-    title: 'Crypto-only, no bank',
+    icon: Landmark,
+    title: 'Escrow, not banking',
     description:
-      'All deals settle exclusively in cryptocurrency. TrustVexa is not a bank and holds no deposit accounts.',
+      'We hold funds only to settle a specific deal. TrustVexa is not a bank, broker, or exchange, and holds no deposit accounts.',
   },
   {
     icon: Hash,
@@ -109,9 +112,9 @@ const KEY_POINTS = [
   },
   {
     icon: Scale,
-    title: 'Middleman-mediated disputes',
+    title: 'Mediator-reviewed disputes',
     description:
-      'A neutral middleman reviews evidence and issues a binding decision on any deal that enters a formal dispute.',
+      'A neutral mediator reviews the evidence and issues a binding decision on any deal that enters a formal dispute.',
   },
   {
     icon: ShieldCheck,
