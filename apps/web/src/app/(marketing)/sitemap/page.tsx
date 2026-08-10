@@ -21,14 +21,23 @@ const GROUPS: ReadonlyArray<{
   {
     title: 'Product',
     description:
-      'Core feature pages explaining how TrustVexa works, what it costs, and which coins are supported.',
+      'Core feature pages explaining how TrustVexa works, what it costs, and who it is built for.',
     links: [
       { href: '/', label: 'Home' },
       { href: '/how-it-works', label: 'How it works' },
       { href: '/fees', label: 'Fees' },
-      { href: '/coins', label: 'Supported coins' },
       { href: '/use-cases', label: 'Use cases' },
       { href: '/faq', label: 'FAQ' },
+    ],
+  },
+  {
+    title: 'Settlement',
+    description:
+      'How funds are moved today, the networks we support, and the confirmation rules that apply.',
+    links: [
+      { href: '/crypto', label: 'Crypto settlement' },
+      { href: '/coins', label: 'Supported assets & networks' },
+      { href: '/status', label: 'Network & platform status' },
     ],
   },
   {
@@ -37,10 +46,10 @@ const GROUPS: ReadonlyArray<{
       'Background on TrustVexa, the team, how to reach us, and our security and trust practices.',
     links: [
       { href: '/about', label: 'About' },
-      { href: '/about-developer', label: 'About the developer' },
+      { href: '/about-developer', label: 'Team & mission' },
       { href: '/contact', label: 'Contact' },
       { href: '/security', label: 'Trust & Security Center' },
-      { href: '/status', label: 'Platform status' },
+      { href: '/changelog', label: 'Product updates' },
     ],
   },
   {
@@ -75,7 +84,7 @@ const GROUPS: ReadonlyArray<{
       { href: '/faq', label: 'FAQ' },
       { href: '/security', label: 'Security guide' },
       { href: '/fees', label: 'Fee calculator & schedule' },
-      { href: '/coins', label: 'Supported coins & networks' },
+      { href: '/crypto', label: 'Settlement guide' },
       { href: '/contact', label: 'Contact support' },
     ],
   },
