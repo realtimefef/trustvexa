@@ -11,10 +11,10 @@ const FOOTER_SECTIONS: ReadonlyArray<{
     title: 'Product',
     links: [
       { href: '/how-it-works', label: 'How it works' },
-      { href: '/fees', label: 'Fees' },
-      { href: '/coins', label: 'Supported coins' },
       { href: '/use-cases', label: 'Use cases' },
-      { href: '/faq', label: 'FAQ' },
+      { href: '/fees', label: 'Fees' },
+      { href: '/crypto', label: 'Crypto settlement' },
+      { href: '/coins', label: 'Supported coins' },
       { href: '/security', label: 'Trust & Security' },
     ],
   },
@@ -44,7 +44,7 @@ const FOOTER_SECTIONS: ReadonlyArray<{
       { href: '/help', label: 'Help Center' },
       { href: '/docs', label: 'Documentation' },
       { href: '/status', label: 'Status' },
-      { href: '/security', label: 'Security' },
+      { href: '/faq', label: 'FAQ' },
     ],
   },
 ];
@@ -67,8 +67,8 @@ export function SiteFooter() {
         <div className="space-y-4 md:col-span-2">
           <BrandLogo />
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-            Private, secure, crypto-only escrow with a neutral middleman. Trade digital goods and
-            accounts with confidence from start to finish.
+            Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions.
+            Milestone-based releases, a neutral mediator, and a tamper-evident ledger.
           </p>
           <div className="flex items-center gap-3 pt-1">
             {SOCIALS.map(({ href, label, Icon }) => (
@@ -106,7 +106,9 @@ export function SiteFooter() {
       <div className="border-t">
         <div className="container flex flex-col items-center justify-between gap-2 py-6 text-xs text-muted-foreground sm:flex-row">
           <p>&copy; {new Date().getFullYear()} TrustVexa. All rights reserved.</p>
-          <p>Crypto-only escrow. Not a bank. Funds are held in escrow, not on deposit.</p>
+          <p>
+            Escrow and dispute resolution. Not a bank. Funds are held in escrow, not on deposit.
+          </p>
         </div>
       </div>
     </footer>

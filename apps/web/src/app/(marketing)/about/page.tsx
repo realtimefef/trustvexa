@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
+  Brain,
   Building2,
+  CalendarDays,
   Eye,
   Globe2,
   KeyRound,
@@ -23,14 +25,18 @@ import { Badge } from '@/components/ui/badge';
 export const metadata: Metadata = {
   title: 'About | TrustVexa',
   description:
-    'What TrustVexa is, who it is for, and the principles behind our crypto escrow service.',
+    'What TrustVexa is, who it is for, and the principles behind our escrow platform for freelancers, marketplaces, and B2B transactions.',
 };
+
+// Set NEXT_PUBLIC_COMPANY_FOUNDED (e.g. "2025") to show the founding year on this
+// page. It is intentionally left blank rather than filled with a guess.
+const FOUNDED_YEAR = process.env.NEXT_PUBLIC_COMPANY_FOUNDED ?? '';
 
 const VALUES: ReadonlyArray<{ icon: typeof Scale; title: string; body: string }> = [
   {
     icon: Scale,
     title: 'Neutrality',
-    body: 'Our middleman has no stake in the outcome of a deal. Decisions follow the agreed terms and the evidence — nothing else.',
+    body: 'Our mediator has no stake in the outcome of a deal. Decisions follow the agreed terms and the evidence — nothing else.',
   },
   {
     icon: ScrollText,
@@ -39,8 +45,8 @@ const VALUES: ReadonlyArray<{ icon: typeof Scale; title: string; body: string }>
   },
   {
     icon: Eye,
-    title: 'Privacy',
-    body: 'Sensitive deal details are encrypted at rest, and the presence of a middleman stays private to protect both sides of a trade.',
+    title: 'Confidentiality',
+    body: 'Sensitive deal details are envelope-encrypted at rest and access is scoped to the parties on the deal.',
   },
   {
     icon: ShieldCheck,
@@ -51,16 +57,16 @@ const VALUES: ReadonlyArray<{ icon: typeof Scale; title: string; body: string }>
 
 const STATS = [
   { value: '$400 – $50k', label: 'Supported deal range' },
-  { value: '5 coins', label: 'Across 4 networks' },
-  { value: 'Crypto-only', label: 'No fiat, no KYC docs' },
-  { value: 'Neutral', label: 'Human middleman on every deal' },
+  { value: '4 stages', label: 'Escrow stages per deal' },
+  { value: 'Neutral', label: 'Human mediator on every deal' },
+  { value: 'Wilmington, DE', label: 'US headquarters' },
 ];
 
 const TEAM = [
   {
     name: 'Ethan R. Caldwell',
     role: 'Founder & Lead Developer',
-    bio: "Builds TrustVexa around one mission: the private, secure transfer of money and goods between people who don't yet trust each other.",
+    bio: "Builds TrustVexa around one mission: the safe transfer of money and work between people who don't yet trust each other.",
     initials: 'EC',
   },
   {
@@ -79,12 +85,12 @@ const ROADMAP: ReadonlyArray<{
   description: string;
 }> = [
   {
-    icon: Zap,
-    badge: 'Now',
-    badgeVariant: 'success',
-    title: 'More chains',
+    icon: Brain,
+    badge: 'Next',
+    badgeVariant: 'warning',
+    title: 'AI fraud detection & dispute assistance',
     description:
-      'We are actively evaluating additional layer-1 and layer-2 networks to bring more coin choices to buyers and sellers. Priority goes to chains with low gas and high settlement finality.',
+      'Not live yet. We are building risk scoring for new deals and counterparties, plus evidence summarisation that helps a human mediator resolve disputes faster and more consistently. Final decisions stay with people.',
   },
   {
     icon: KeyRound,
@@ -98,9 +104,9 @@ const ROADMAP: ReadonlyArray<{
     icon: Globe2,
     badge: 'Future',
     badgeVariant: 'secondary',
-    title: 'Global escrow',
+    title: 'More settlement rails & markets',
     description:
-      'Expanding to more markets and deal types — from freelance contracts and domain names to physical goods — while keeping the same neutral, evidence-based resolution process.',
+      'Expanding settlement options and deal types — from freelance contracts and domain names to broader B2B services — while keeping the same neutral, evidence-based resolution process.',
   },
 ];
 
@@ -113,8 +119,8 @@ export default function AboutPage() {
             <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Our mission
           </>
         }
-        title="Escrow built for the crypto era"
-        subtitle="TrustVexa is a crypto-only escrow service for safely trading digital products and online accounts between people who don't yet trust each other."
+        title="The trust layer for online transactions"
+        subtitle="TrustVexa is an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions — built so neither side of a deal has to go first on trust."
       />
 
       {/* Mission band */}
@@ -139,14 +145,25 @@ export default function AboutPage() {
               <Target className="h-3.5 w-3.5" aria-hidden="true" /> Why we built it
             </span>
             <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Trading online shouldn't require blind trust
+              Transacting online shouldn't require blind trust
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Trading digital goods online is risky: the buyer fears paying for nothing, and the
-              seller fears handing over goods without payment. Traditional escrow is slow,
-              expensive, and rarely built for crypto. TrustVexa holds funds securely while both
-              sides complete their obligations, with a neutral middleman ready to mediate if a deal
-              goes sideways.
+              Paying a freelancer, buying from a marketplace seller, or closing a B2B deal with a
+              new counterparty all carry the same problem: someone has to go first. Traditional
+              escrow is slow, expensive, and rarely designed for small, fast online deals. TrustVexa
+              holds funds while both sides complete their obligations, releases against milestones,
+              and puts a neutral mediator on standby if a deal goes sideways.
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              Deals are currently funded and settled in digital assets. The full mechanics are
+              documented on our{' '}
+              <Link
+                href="/crypto"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                settlement page
+              </Link>
+              .
             </p>
           </Reveal>
           <Reveal delay={120}>
@@ -225,6 +242,19 @@ export default function AboutPage() {
                 </div>
               </div>
             </Reveal>
+            {FOUNDED_YEAR ? (
+              <Reveal delay={150}>
+                <div className="flex h-full gap-4 rounded-2xl border bg-card/60 p-6 backdrop-blur">
+                  <CalendarDays className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                  <div>
+                    <p className="font-display font-semibold">Founded</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      TrustVexa has been building escrow infrastructure since {FOUNDED_YEAR}.
+                    </p>
+                  </div>
+                </div>
+              </Reveal>
+            ) : null}
             <Reveal delay={200}>
               <div className="flex h-full gap-4 rounded-2xl border bg-card/60 p-6 backdrop-blur">
                 <ScrollText className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
@@ -268,8 +298,8 @@ export default function AboutPage() {
                     <strong className="font-semibold text-white">
                       Funds only move when terms are met.
                     </strong>{' '}
-                    The escrowed amount stays locked until both sides confirm delivery or a
-                    middleman ruling is issued — there is no way to silently drain it.
+                    The escrowed amount stays locked until both sides confirm delivery or a mediator
+                    ruling is issued — there is no way to silently drain it.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -280,7 +310,7 @@ export default function AboutPage() {
                     <strong className="font-semibold text-white">
                       Decisions follow evidence, not preference.
                     </strong>{' '}
-                    Our middlemen review the agreed terms and submitted proof. They have no
+                    Our mediators review the agreed terms and submitted proof. They have no
                     financial incentive to favor either party.
                   </span>
                 </li>
@@ -292,7 +322,7 @@ export default function AboutPage() {
                     <strong className="font-semibold text-white">
                       Fees are published and never hidden.
                     </strong>{' '}
-                    Every applicable charge — platform fee, settlement fee, and on-chain gas — is
+                    Every applicable charge — platform fee, settlement fee, and network cost — is
                     shown before you fund a deal. Nothing appears at checkout that wasn't disclosed.
                   </span>
                 </li>
@@ -309,7 +339,7 @@ export default function AboutPage() {
             <SectionHeading
               eyebrow="What's coming"
               title="Roadmap & vision"
-              subtitle="We build deliberately. Here is where TrustVexa is headed and when."
+              subtitle="We build deliberately. Everything below is planned work, not shipped functionality."
             />
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-3">
@@ -364,7 +394,7 @@ export default function AboutPage() {
       </section>
 
       <CtaBand
-        title="Trade with people, safely"
+        title="Transact with people, safely"
         subtitle="Create your account and open your first escrow deal in minutes."
         primaryLabel="Create free account"
         primaryHref="/register"
