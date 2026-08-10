@@ -10,7 +10,7 @@ import { FaqExplorer, type FaqEntry } from '@/components/visual/faq-explorer';
 export const metadata: Metadata = {
   title: 'FAQ | TrustVexa',
   description:
-    'Answers to common questions about crypto escrow, funding, fees, the fee split, disputes, security, and your account.',
+    'Answers to common questions about TrustVexa escrow, funding, fees, the fee split, disputes, security, settlement, and your account.',
 };
 
 const FAQ: ReadonlyArray<FaqEntry> = [
@@ -18,17 +18,17 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Getting started',
     q: 'What is TrustVexa?',
-    a: 'TrustVexa is a crypto-only escrow service for safely trading digital products and online accounts. Funds are held in escrow until both sides meet the agreed terms, with a neutral middleman ready to mediate.',
+    a: 'TrustVexa is an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions. Funds are held in escrow and released against agreed milestones, with a neutral mediator ready to step in if a deal goes wrong.',
   },
   {
     category: 'Getting started',
     q: 'How do I create a deal?',
-    a: 'From your dashboard, choose "New deal", set the amount, coin, network, fee payer, and terms, then invite your counterparty with a single-use link and a verification code.',
+    a: 'From your dashboard, choose "New deal", set the amount, the deliverables, the settlement asset and network, the fee payer, and the terms, then invite your counterparty with a single-use link and a verification code.',
   },
   {
     category: 'Getting started',
     q: 'What deal sizes are supported?',
-    a: 'Deals range from $400 to $50,000, settled in your chosen coin. The platform fee rate gets cheaper as the deal size grows.',
+    a: 'Deals range from $400 to $50,000. The platform fee rate gets cheaper as the deal size grows.',
   },
   {
     category: 'Getting started',
@@ -39,12 +39,12 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Funding & payments',
     q: 'How does the buyer fund a deal?',
-    a: 'The buyer sends crypto to a unique escrow address for the chosen network. The platform waits for the required on-chain confirmation depth before the deal advances.',
+    a: 'The buyer funds the deal against a unique per-deal address. Funding is independently verified at the required confirmation depth before the deal advances, so the seller can see the money is really there.',
   },
   {
     category: 'Funding & payments',
-    q: 'Which coins and networks are supported?',
-    a: 'USDT, ETH, BNB, SOL, and TRX across Ethereum, BNB Chain, TRON, and Solana. USDT settles on all four chains; the native coins settle on their own chain.',
+    q: 'How is settlement handled today?',
+    a: 'Deals are currently funded and settled in digital assets — USDT, ETH, BNB, SOL, and TRX across Ethereum, BNB Chain, TRON, and Solana. The full mechanics are documented on our crypto settlement page. Additional settlement rails are on the roadmap.',
   },
   {
     category: 'Funding & payments',
@@ -54,13 +54,13 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Funding & payments',
     q: 'What happens if I send the wrong amount or wrong network?',
-    a: 'Always send the exact asset on the exact network shown. Blockchain transactions are irreversible; sending the wrong asset or chain can result in loss that the platform cannot recover.',
+    a: 'Always send the exact asset on the exact network shown. Settlement transactions are irreversible; sending the wrong asset or chain can result in loss that the platform cannot recover.',
   },
   // Fees & split
   {
     category: 'Fees & split',
     q: 'What are the fees?',
-    a: 'A sliding-scale platform fee from 5% down to 1.35% with a $30 minimum, plus a 0.5% seller settlement fee. On-chain network gas is passed through at cost and shown at funding.',
+    a: 'A sliding-scale platform fee from 5% down to 1.35% with a $30 minimum, plus a 0.5% seller settlement fee. Network costs are passed through at cost and shown at funding.',
   },
   {
     category: 'Fees & split',
@@ -81,33 +81,38 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Disputes',
     q: 'What happens if there is a dispute?',
-    a: 'Either side can open a dispute from the deal. A neutral middleman reviews the evidence, applies the written terms, and issues a final decision — release, refund, or a partial settlement.',
+    a: 'Either side can open a dispute from the deal. A neutral mediator reviews the evidence, applies the written terms, and issues a final decision — release, refund, or a partial settlement.',
   },
   {
     category: 'Disputes',
     q: 'How long does mediation take?',
-    a: 'It depends on the complexity and how quickly both sides submit evidence. The middleman may ask follow-up questions before deciding.',
+    a: 'It depends on the complexity and how quickly both sides submit evidence. The mediator may ask follow-up questions before deciding.',
   },
   {
     category: 'Disputes',
     q: 'Can I cancel a deal before it is funded?',
     a: 'Yes. A deal that has not been funded can be cancelled without a dispute, and no platform fee applies because no funds were held.',
   },
+  {
+    category: 'Disputes',
+    q: 'Does TrustVexa use AI to decide disputes?',
+    a: 'No. AI-assisted evidence summarisation and fraud/risk scoring are on our roadmap and are clearly labelled as planned rather than shipped. Dispute decisions are made by a human mediator.',
+  },
   // Security
   {
     category: 'Security',
-    q: 'Do I need to share personal information to use TrustVexa?',
-    a: 'No. TrustVexa is designed so you can secure yourself without exposing private data. Your real name, address, and ID are never shared with your counterparty — personal details stay encrypted and accessible only on a need-to-know basis. Only the deal terms and a one-time verification code are exchanged between parties.',
+    q: 'What information is shared with my counterparty?',
+    a: 'Only what the deal requires: the terms, the deliverables, and a one-time verification code. Your personal details are encrypted at rest and are not shown to the other side of the deal. Where a deal is higher-risk, or where law or our payment partners require it, we may ask you for additional verification before funds can move.',
   },
   {
     category: 'Security',
     q: 'How are my funds protected?',
-    a: 'Funds are confirmed on-chain and held in escrow until the deal terms are met. Money never moves on an unverified instruction, and every movement is recorded in a double-entry ledger.',
+    a: 'Funding is verified before a deal advances and held in escrow until the deal terms are met. Money never moves on an unverified instruction, and every movement is recorded in a double-entry ledger.',
   },
   {
     category: 'Security',
     q: 'How is my data protected?',
-    a: 'Sensitive deal details are encrypted at rest, access is scoped on a need-to-know basis, and the presence of a middleman on a deal is kept private to both sides.',
+    a: 'Sensitive deal details are envelope-encrypted at rest, access is scoped on a need-to-know basis, and the presence of a mediator on a deal is kept private to both sides.',
   },
   {
     category: 'Security',
@@ -129,7 +134,7 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Timing & SLA',
     q: 'How long does payout take?',
-    a: 'In the vast majority of cases, the payout broadcast happens within one hour of buyer approval. For complex deals or those with additional verification steps the process can take up to 24 hours. If a deal enters a disputed state, the middleman will review the evidence and issue a decision; disputed payouts may take up to 7 days from when the dispute is opened.',
+    a: 'In the vast majority of cases, the payout is executed within one hour of buyer approval. For complex deals or those with additional verification steps the process can take up to 24 hours. If a deal enters a disputed state, the mediator will review the evidence and issue a decision; disputed payouts may take up to 7 days from when the dispute is opened.',
   },
   {
     category: 'Timing & SLA',
@@ -160,34 +165,34 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   // Deals & trading
   {
     category: 'Deals & trading',
-    q: 'What can I trade on TrustVexa?',
-    a: 'TrustVexa is designed for digital products and online account sales — things like software licences, digital art, domain names, social media accounts, and in-game items, provided they are legal and not on our Prohibited items list. Physical goods, regulated financial instruments, and any item banned by our prohibited-items policy cannot be traded. If you are unsure whether an item is permitted, check the Prohibited items page before proceeding.',
+    q: 'What can I use TrustVexa for?',
+    a: 'Freelance and B2B services, marketplace orders, milestone-based projects, domain and website transfers, digital products, and legitimate account transfers — provided they are legal and not on our Prohibited items list. Physical goods, regulated financial instruments, and anything banned by that policy cannot be traded. If you are unsure whether something is permitted, check the Prohibited items page before proceeding.',
   },
   {
     category: 'Deals & trading',
     q: 'Can I duplicate a past deal?',
-    a: 'Yes. From your deal history you can clone the settings of a completed deal — the amount, coin, network, fee split, and terms — into a new draft. Only the deal configuration is cloned; the counterparty invitation is never reused. You will invite the other party fresh each time, which ensures the verification code flow is always conducted anew for security.',
+    a: 'Yes. From your deal history you can clone the settings of a completed deal — the amount, settlement asset, network, fee split, and terms — into a new draft. Only the deal configuration is cloned; the counterparty invitation is never reused. You will invite the other party fresh each time, which ensures the verification code flow is always conducted anew for security.',
   },
   {
     category: 'Deals & trading',
     q: 'What happens if a deal expires without being funded?',
     a: "If a deal invite is not acted on within the expiry window, or if the deal is funded but the 3-day delivery window lapses without completion, the deal auto-cancels. For auto-cancels on funded deals, any held funds are returned in full to the buyer's registered withdrawal address. No platform fee is charged on auto-cancelled deals.",
   },
-  // Wallet & crypto
+  // Wallet & settlement
   {
-    category: 'Wallet & crypto',
+    category: 'Wallet & settlement',
     q: 'Do I need a specific wallet to use TrustVexa?',
-    a: 'No specific wallet is required. Any wallet that can send and receive the chosen coin on the chosen network will work — whether that is a hardware wallet, a browser-extension wallet, a mobile wallet, or an exchange withdrawal. You simply send to the escrow address shown in the deal and receive your payout to the withdrawal address you register in your account settings.',
+    a: 'No specific wallet is required. Any wallet that can send and receive the chosen asset on the chosen network will work — whether that is a hardware wallet, a browser-extension wallet, a mobile wallet, or an exchange withdrawal. You send to the escrow address shown in the deal and receive your payout to the withdrawal address you register in your account settings.',
   },
   {
-    category: 'Wallet & crypto',
+    category: 'Wallet & settlement',
     q: 'What is address-poisoning protection?',
-    a: 'Address poisoning is an attack where a bad actor sends a tiny "dust" transaction to your wallet from an address that looks nearly identical to one you regularly use, hoping you will accidentally copy it next time. TrustVexa\'s address-poisoning protection ensures that look-alike addresses from dust transactions are never auto-filled in the withdrawal address field. Your registered payout address is always taken from your verified account settings, not from your on-chain transaction history.',
+    a: 'Address poisoning is an attack where a bad actor sends a tiny "dust" transaction to your wallet from an address that looks nearly identical to one you regularly use, hoping you will accidentally copy it next time. TrustVexa\'s address-poisoning protection ensures that look-alike addresses from dust transactions are never auto-filled in the withdrawal address field. Your registered payout address is always taken from your verified account settings, not from your transaction history.',
   },
   {
-    category: 'Wallet & crypto',
+    category: 'Wallet & settlement',
     q: 'How are payouts processed?',
-    a: "After buyer approval (or automatic release at the end of the inspection window), a middleman performs a final review to confirm there are no outstanding disputes or compliance flags. Once cleared, the payout transaction is broadcast on-chain to the seller's registered withdrawal address. The deal record updates with the transaction hash so both parties can independently track the transfer to completion on a block explorer.",
+    a: "After buyer approval (or automatic release at the end of the inspection window), a mediator performs a final review to confirm there are no outstanding disputes or compliance flags. Once cleared, the payout is executed to the seller's registered withdrawal address. The deal record updates with the transaction reference so both parties can independently verify the transfer.",
   },
 ];
 
@@ -197,7 +202,7 @@ const POPULAR_CATEGORIES = [
   'Fees & split',
   'Trust & verification',
   'Timing & SLA',
-  'Wallet & crypto',
+  'Wallet & settlement',
   'Deals & trading',
   'Disputes',
   'Security',
@@ -224,7 +229,7 @@ export default function FaqPage() {
             <p className="text-sm font-medium text-muted-foreground">
               <span className="text-foreground font-semibold">{FAQ.length}+ questions</span> ·{' '}
               <span className="text-foreground font-semibold">10 categories</span> ·{' '}
-              <span className="text-foreground font-semibold">Updated June 2026</span>
+              <span className="text-foreground font-semibold">Updated August 2026</span>
             </p>
           </div>
 
