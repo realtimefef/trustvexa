@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Middleman dispute-resolution form (task 7.5). Renders only for the assigned
- * middleman of a deal whose dispute is still open. The server re-validates the
+ * Mediator dispute-resolution form (task 7.5). Renders only for the assigned
+ * mediator of a deal whose dispute is still open. The server re-validates the
  * caller, the dispute state, and the settlement math, so this is UX only. A
  * partial split asks for the buyer's smallest-unit share; full refund/release
  * do not. On success it shows the outcome and the generated decision document
