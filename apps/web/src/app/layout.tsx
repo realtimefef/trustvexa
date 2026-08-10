@@ -35,7 +35,8 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://trustvexa.com').r
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'TrustVexa',
-  description: 'Private, secure, crypto-only escrow platform.',
+  description:
+    'Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions. Milestone-based releases with neutral dispute mediation.',
   applicationName: 'TrustVexa',
   manifest: '/manifest.webmanifest',
   alternates: { canonical: '/' },
