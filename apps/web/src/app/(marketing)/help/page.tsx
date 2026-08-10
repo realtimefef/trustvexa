@@ -59,13 +59,13 @@ const HUB: ReadonlyArray<{
   {
     icon: MessageCircle,
     title: 'Contact',
-    description: 'Reach the middleman team or open a ticket.',
+    description: 'Reach the mediation team or open a ticket.',
     href: '/contact',
   },
   {
     icon: LifeBuoy,
     title: 'Status',
-    description: 'Live platform and per-network status.',
+    description: 'Live platform and settlement network status.',
     href: '/status',
   },
 ];
@@ -76,43 +76,33 @@ const GUIDES: ReadonlyArray<{
   steps: ReadonlyArray<string>;
 }> = [
   {
-    icon: Wallet,
-    title: 'Payment not showing',
-    steps: [
-      'Confirm the transaction is finished in your wallet and has on-chain confirmations.',
-      'Check you sent the exact coin and amount shown on the deal funding screen.',
-      'Allow a few minutes — deposits are credited after the network confirms them.',
-      'Still missing after confirmations? Open a ticket with your transaction hash.',
-    ],
-  },
-  {
-    icon: Network,
-    title: 'Wrong network',
-    steps: [
-      'Match the network to the coin: USDT on TRC-20 or ERC-20, ETH on ERC-20, BNB on BEP-20, TRX on Tron, SOL on Solana.',
-      'Sending on the wrong network can delay or lose funds, so always verify before you send.',
-      'If you already sent on the wrong network, do not send again.',
-      'Contact the middleman immediately with your transaction hash so we can investigate.',
-    ],
-  },
-  {
     icon: UserX,
-    title: 'Seller is silent',
+    title: 'The other side has gone quiet before delivery',
     steps: [
-      'Use the deal chat to request a delivery update first.',
+      'Use the deal chat to request a delivery or progress update first.',
       'Remember the 3-day completion clock keeps the deal moving even without replies.',
-      'If the seller never delivers, you are protected — funds stay in escrow.',
-      'Open a dispute and the middleman will review the evidence.',
+      'If nothing is ever delivered, you are protected — funds stay in escrow.',
+      'Open a dispute and a mediator will review the evidence from both sides.',
     ],
   },
   {
     icon: UserX,
-    title: 'Buyer is silent',
+    title: 'You delivered and the buyer has gone quiet',
     steps: [
-      'Confirm you delivered exactly what the deal describes and posted proof in the chat.',
+      'Confirm you delivered exactly what the deal describes and posted proof in the deal chat.',
       'If the buyer goes quiet after delivery, the inspection window auto-approves the release.',
-      'Do not send anything outside the deal terms.',
-      'If you need help, open a dispute and the middleman will step in.',
+      'Do not send or hand over anything outside the agreed deal terms.',
+      'If you need help sooner, open a dispute and a mediator will step in.',
+    ],
+  },
+  {
+    icon: Coins,
+    title: 'Refund or cancellation',
+    steps: [
+      'If a deal has not been funded or delivered, it can be cancelled by agreement.',
+      'For a funded deal, raise the issue in the deal chat first.',
+      'If you cannot agree, open a dispute and submit your evidence.',
+      'The mediator reviews both sides and decides where the funds go.',
     ],
   },
   {
@@ -126,13 +116,23 @@ const GUIDES: ReadonlyArray<{
     ],
   },
   {
-    icon: Coins,
-    title: 'Refund request',
+    icon: Wallet,
+    title: 'Funding is not showing on the deal',
     steps: [
-      'If a deal has not been funded or delivered, it can be cancelled by agreement.',
-      'For a funded deal, raise the issue in the deal chat first.',
-      'If you cannot agree, open a dispute and submit your evidence.',
-      'The middleman reviews both sides and decides where the funds go.',
+      'Confirm the transfer completed and reached the required confirmation depth.',
+      'Check you sent the exact asset and amount shown on the deal funding screen.',
+      'Allow a few minutes — funding is credited once the settlement network confirms it.',
+      'Still missing after confirmation? Open a ticket with your transaction reference.',
+    ],
+  },
+  {
+    icon: Network,
+    title: 'Sent on the wrong settlement network',
+    steps: [
+      'Always match the network shown on the funding screen before you send anything.',
+      'Sending on the wrong network can delay or lose funds, so verify first.',
+      'If you already sent on the wrong network, do not send again.',
+      'Contact us immediately with your transaction reference so we can investigate. Full settlement details are on the crypto settlement page.',
     ],
   },
 ];
@@ -147,7 +147,7 @@ export default function HelpPage() {
           </>
         }
         title="Help &amp; Support Center"
-        subtitle="Whatever you need, start here. Browse the guides below, follow steps for a common problem, or reach the middleman team directly."
+        subtitle="Whatever you need, start here. Browse the guides below, follow steps for a common problem, or reach the mediation team directly."
       />
 
       <section className="section">
@@ -184,7 +184,7 @@ export default function HelpPage() {
               <h2 className="font-display text-xl font-semibold">Guided help</h2>
               <p className="text-sm text-muted-foreground">
                 Short, practical steps for the situations people run into most. If these do not
-                resolve it, open a ticket and a middleman will help.
+                resolve it, open a ticket and a mediator will help.
               </p>
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
@@ -192,7 +192,7 @@ export default function HelpPage() {
                 <Reveal key={guide.title} delay={(i % 2) * 80}>
                   <div className="h-full rounded-2xl border bg-card/60 p-6 backdrop-blur transition-all hover:shadow-glow">
                     <div className="flex items-center gap-2">
-                      <guide.icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <guide.icon className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
                       <p className="font-display font-semibold">{guide.title}</p>
                     </div>
                     <ol className="mt-4 space-y-2.5">
@@ -209,6 +209,16 @@ export default function HelpPage() {
                 </Reveal>
               ))}
             </div>
+            <p className="text-sm text-muted-foreground">
+              Questions specific to how funds are settled?{' '}
+              <Link
+                href="/crypto"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                See crypto settlement
+              </Link>
+              .
+            </p>
           </div>
 
           {/* Open a ticket */}
@@ -221,14 +231,14 @@ export default function HelpPage() {
                     Still need help? Open a ticket
                   </CardTitle>
                   <CardDescription>
-                    Reach the neutral middleman directly. Include your deal reference and any
-                    transaction hashes so we can act quickly.
+                    Reach a neutral mediator directly. Include your deal reference and any
+                    transaction references so we can act quickly.
                   </CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3 pt-0">
                 <Button asChild variant="gradient" size="sm">
-                  <Link href="/contact">Contact the middleman</Link>
+                  <Link href="/contact">Contact support</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link href="/support">Open a ticket</Link>
