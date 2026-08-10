@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import {
   CheckCircle2,
   Clock,
-  EyeOff,
   Gavel,
   HandCoins,
   Lock,
@@ -24,39 +23,39 @@ import { CtaBand } from '@/components/visual/cta-band';
 export const metadata: Metadata = {
   title: 'How it works | TrustVexa',
   description:
-    'How TrustVexa crypto escrow protects buyers and sellers, step by step, with a neutral middleman.',
+    'How TrustVexa escrow protects buyers and sellers step by step, from funding through delivery, release, and neutral dispute mediation.',
 };
 
 const STEPS: ReadonlyArray<{ icon: typeof UserPlus; title: string; body: string }> = [
   {
     icon: UserPlus,
     title: 'Create a deal & invite',
-    body: 'The initiator sets the amount, coin, network, and who pays the fee, then invites the counterparty with a single-use link and a verification code. Both sides agree to the written terms before anything moves.',
+    body: 'The initiator sets the amount, the deliverables, the milestone schedule, and who pays the fee, then invites the counterparty with a single-use link and a verification code. Both sides agree to the written terms before anything moves.',
   },
   {
     icon: Lock,
     title: 'Buyer funds escrow',
-    body: 'The buyer sends crypto to a unique escrow address. The platform waits for the required on-chain confirmation depth and checks the amount against a locked FX quote before the deal advances.',
+    body: 'The buyer funds the deal against a unique per-deal reference. Funding is verified and checked against a locked quote before the deal advances — nothing is released to the seller at this stage.',
   },
   {
     icon: PackageCheck,
     title: 'Seller delivers',
-    body: 'Once funds are confirmed, the seller hands over the digital product or account and submits proof. The buyer reviews within the agreed inspection window.',
+    body: 'Once funding is confirmed, the seller delivers the work or the asset and submits proof. The buyer reviews within the agreed inspection window.',
   },
   {
     icon: CheckCircle2,
     title: 'Buyer approves',
-    body: 'When the buyer confirms everything is as described, the deal is approved and the payout is queued. If the window lapses without a dispute, release can proceed under the agreed terms.',
+    body: 'When the buyer confirms everything is as described, the milestone is approved and the payout is queued. If the window lapses without a dispute, release can proceed under the agreed terms.',
   },
   {
     icon: HandCoins,
     title: 'Funds release',
-    body: 'The seller is paid out in the chosen coin, minus the platform fee and a small settlement fee. Every movement is recorded in a double-entry ledger down to the smallest unit.',
+    body: 'The seller is paid out minus the platform fee and a small settlement fee. Every movement is recorded in a double-entry ledger down to the smallest unit.',
   },
   {
     icon: Gavel,
     title: 'Disputes & mediation',
-    body: 'If something goes wrong, either side can open a dispute. A neutral middleman reviews the evidence, applies the terms, and issues a final decision — release, refund, or a partial settlement.',
+    body: 'If something goes wrong, either side can open a dispute. A neutral mediator reviews the evidence, applies the terms, and issues a final decision — release, refund, or a partial settlement.',
   },
 ];
 
@@ -66,8 +65,8 @@ const ROLES = [
     role: 'Buyer',
     color: 'text-sky-500',
     duties: [
-      'Agrees the deal and price',
-      'Funds escrow from any wallet',
+      'Agrees the deal, scope, and price',
+      'Funds escrow before work begins',
       'Inspects the delivery',
       'Approves or opens a dispute',
     ],
@@ -78,18 +77,18 @@ const ROLES = [
     color: 'text-emerald-500',
     duties: [
       'Creates the deal & invites the buyer',
-      'Hands the product to the middleman',
+      'Delivers the agreed work or asset',
       'Submits delivery proof',
       'Receives payout on approval',
     ],
   },
   {
     icon: Scale,
-    role: 'Middleman',
+    role: 'Mediator',
     color: 'text-primary',
     duties: [
       'Stays out until both sides are ready',
-      'Verifies and transfers the product',
+      'Verifies contested handovers',
       'Mediates any dispute neutrally',
       'Releases funds with dual-control',
     ],
@@ -100,7 +99,7 @@ const SAFEGUARDS = [
   {
     icon: Timer,
     title: '3-day completion clock',
-    body: 'Once the middleman is contacted, the deal must complete within 3 days or it auto-cancels and refunds the buyer.',
+    body: 'Once the mediator is contacted, the deal must complete within 3 days or it auto-cancels and refunds the buyer.',
   },
   {
     icon: Clock,
@@ -114,8 +113,8 @@ const SAFEGUARDS = [
   },
   {
     icon: ShieldCheck,
-    title: 'On-chain verification',
-    body: 'Funding is confirmed on-chain at the required depth, and every state change is logged immutably.',
+    title: 'Verified funding',
+    body: 'A deal only advances once funding is independently verified, and every state change is logged immutably.',
   },
 ];
 
@@ -129,7 +128,7 @@ export default function HowItWorksPage() {
           </>
         }
         title="How TrustVexa escrow works"
-        subtitle="Escrow keeps funds safe between strangers. Money is only released when both sides have done their part — and a neutral middleman is always on standby."
+        subtitle="Escrow keeps funds safe between parties who have no history together. Money is only released when both sides have done their part — and a neutral mediator is always on standby."
       />
 
       {/* Timeline */}
@@ -165,7 +164,7 @@ export default function HowItWorksPage() {
             <SectionHeading
               eyebrow="Who does what"
               title="Three roles, one safe deal"
-              subtitle="Everyone knows their part — and the middleman only steps in when the money needs handling."
+              subtitle="Everyone knows their part — and the mediator only steps in when the money needs handling."
             />
           </Reveal>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
@@ -226,34 +225,9 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      <section className="border-y bg-primary/5">
-        <div className="container py-6">
-          <Reveal>
-            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:gap-8 sm:text-left">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <EyeOff className="h-6 w-6 text-primary" aria-hidden />
-              </div>
-              <div>
-                <p className="font-display text-base font-semibold tracking-tight sm:text-lg">
-                  Secure yourself — no private or personal information needed
-                </p>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Your real name, address, and ID are never shared with your counterparty. Personal details stay encrypted and private — only the deal terms and a one-time verification code are exchanged between parties.
-                </p>
-              </div>
-              <div className="hidden shrink-0 items-center gap-6 text-sm text-muted-foreground sm:flex">
-                <span className="inline-flex items-center gap-1.5"><EyeOff className="h-4 w-4 text-primary" aria-hidden /> No ID required</span>
-                <span className="inline-flex items-center gap-1.5"><Lock className="h-4 w-4 text-primary" aria-hidden /> AES-256-GCM encrypted</span>
-                <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-success" aria-hidden /> Private by design</span>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
       <CtaBand
         title="Ready to start a deal?"
-        subtitle="Deals range from $400 to $50,000 and settle in your chosen coin. See the full fee schedule before you commit."
+        subtitle="Deals range from $400 to $50,000. See the full fee schedule before you commit."
         primaryLabel="Create an account"
         primaryHref="/register"
         secondaryLabel="View fees"

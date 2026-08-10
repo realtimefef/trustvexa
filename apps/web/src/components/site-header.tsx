@@ -13,8 +13,8 @@ import { LanguageToggle } from '@/components/language-toggle';
 
 const NAV_LINKS = [
   { href: '/how-it-works', label: 'How it works' },
+  { href: '/use-cases', label: 'Use cases' },
   { href: '/fees', label: 'Fees' },
-  { href: '/coins', label: 'Supported coins' },
   { href: '/security', label: 'Security' },
   { href: '/faq', label: 'FAQ' },
   { href: '/about', label: 'Company' },

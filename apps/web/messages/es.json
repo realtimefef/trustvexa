@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "TrustVexa",
-    "tagline": "Fideicomiso privado, seguro y solo con criptomonedas."
+    "tagline": "Fideicomiso seguro para freelancers, marketplaces y transacciones B2B."
   },
   "nav": {
     "dashboard": "Panel de control",
@@ -21,9 +21,9 @@
   },
   "marketing": {
     "title": "TrustVexa",
-    "subtitle": "Intercambie productos digitales y cuentas de forma segura a través de un intermediario neutral.",
+    "subtitle": "Fideicomiso basado en hitos con un mediador neutral, para trabajo freelance, pagos de marketplaces y acuerdos B2B.",
     "hero": {
-      "heading": "Fideicomiso de criptomonedas en el que puedes confiar",
+      "heading": "Infraestructura de fideicomiso segura para freelancers y marketplaces",
       "subheading": "Los fondos del comprador se guardan de forma segura. Se liberan solo cuando estás satisfecho, o se devuelven completamente.",
       "cta": "Iniciar un acuerdo",
       "ctaSecondary": "Cómo funciona"
@@ -31,15 +31,19 @@
     "features": {
       "escrow": {
         "title": "Fideicomiso seguro",
-        "description": "Los fondos se mantienen en carteras controladas por la plataforma hasta que ambas partes confirmen la entrega."
+        "description": "Los fondos se mantienen bajo control de la plataforma hasta que ambas partes confirmen la entrega."
+      },
+      "milestones": {
+        "title": "Liberación por hitos",
+        "description": "Divide un proyecto en etapas y libera el pago a medida que cada hito se aprueba."
       },
       "middleman": {
-        "title": "Intermediario neutral",
-        "description": "Un mediador verificado y opcional resuelve las disputas de forma justa."
+        "title": "Mediación neutral",
+        "description": "Un mediador verificado revisa las pruebas y resuelve las disputas de forma justa."
       },
       "crypto": {
-        "title": "Solo criptomonedas",
-        "description": "USDT, ETH, BNB, SOL, TRX — en redes ETH, BNB, TRON y Solana."
+        "title": "Liquidación en cripto",
+        "description": "Hoy los acuerdos se financian y liquidan en activos digitales. Consulta los detalles en la página de liquidación en cripto."
       }
     }
   },
@@ -124,7 +128,7 @@
     "deal": {
       "asBuyer": "Como comprador",
       "asSeller": "Como vendedor",
-      "asMiddleman": "Como intermediario"
+      "asMiddleman": "Como mediador"
     }
   },
   "deal": {
@@ -138,7 +142,7 @@
       "Cancelled": "Cancelado",
       "Funded": "Financiado",
       "SellerHandover": "Entrega",
-      "MiddlemanVerified": "Verificado por intermediario",
+      "MiddlemanVerified": "Verificado por el mediador",
       "Delivered": "Entregado",
       "Approved": "Aprobado",
       "PayoutQueued": "Pago en cola",
@@ -162,12 +166,12 @@
     },
     "labels": {
       "amount": "Monto del acuerdo",
-      "coin": "Moneda",
+      "coin": "Activo",
       "network": "Red",
       "feePayer": "Pagador de comisión",
       "buyer": "Comprador",
       "seller": "Vendedor",
-      "middleman": "Intermediario",
+      "middleman": "Mediador",
       "fundBy": "Financiar antes de",
       "completeBy": "Completar antes de"
     }
@@ -253,9 +257,9 @@
   },
   "scaffoldForm": {
     "legend": "Comprobación de cableado del proveedor",
-    "coinLabel": "Moneda",
+    "coinLabel": "Activo",
     "submit": "Validar",
     "valid": "Validación de esquema aprobada.",
-    "invalid": "Por favor seleccione una moneda admitida."
+    "invalid": "Por favor seleccione un activo admitido."
   }
 }

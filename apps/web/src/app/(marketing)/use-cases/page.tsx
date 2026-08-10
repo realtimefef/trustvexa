@@ -11,6 +11,7 @@ import {
   Layers,
   ShieldAlert,
   Sparkles,
+  Store,
   Wrench,
 } from 'lucide-react';
 
@@ -23,10 +24,46 @@ import { Button } from '@/components/ui/button';
 export const metadata: Metadata = {
   title: 'Use cases | TrustVexa',
   description:
-    'Real examples of deals you can safely complete with TrustVexa escrow — digital products, account transfers, and freelance services — settled in crypto with a neutral middleman.',
+    'Real examples of deals you can safely complete with TrustVexa escrow — freelance projects, marketplace payouts, B2B services, digital products, and account transfers.',
 };
 
 type Example = { icon: typeof Boxes; title: string; body: string };
+
+const SERVICES: ReadonlyArray<Example> = [
+  {
+    icon: Wrench,
+    title: 'Freelance & development work',
+    body: 'Pay for a build, a bug fix, or a design milestone. The buyer funds up front, the seller delivers, the buyer reviews, then funds release.',
+  },
+  {
+    icon: Layers,
+    title: 'Milestone-based projects',
+    body: 'Break a larger engagement into stages so each completed milestone settles on its own before the next begins.',
+  },
+  {
+    icon: Headphones,
+    title: 'Consulting & B2B services',
+    body: 'Audits, retainers, setup work, or a defined scope between two companies with no prior relationship. Agree the deliverable up front so acceptance is unambiguous.',
+  },
+];
+
+const MARKETPLACES: ReadonlyArray<Example> = [
+  {
+    icon: Store,
+    title: 'Marketplace orders & payouts',
+    body: 'Hold buyer funds while an order is fulfilled, then release to the seller on confirmation — so a marketplace never has to arbitrate with its own money at stake.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Domains & online assets',
+    body: 'Transfer a domain name or an established website. The mediator confirms the transfer landed before settlement.',
+  },
+  {
+    icon: Globe,
+    title: 'High-value private sales',
+    body: 'Two parties who found each other online and need a neutral third party to hold the money while the handover happens.',
+  },
+];
 
 const DIGITAL: ReadonlyArray<Example> = [
   {
@@ -40,9 +77,9 @@ const DIGITAL: ReadonlyArray<Example> = [
     body: 'E-books, design assets, datasets, and legitimate software licenses or product keys — released once the buyer verifies they work.',
   },
   {
-    icon: Sparkles,
-    title: 'Domains & online assets',
-    body: 'Transfer a domain name or established website. The middleman confirms the transfer landed before settlement.',
+    icon: KeyRound,
+    title: 'Account & subscription transfers',
+    body: 'Transfer ownership of an account or membership you are entitled to sell. These carry extra risk, so they are routed to a mediator for review before release.',
   },
 ];
 
@@ -50,35 +87,17 @@ const ACCOUNTS: ReadonlyArray<Example> = [
   {
     icon: Globe,
     title: 'Social media accounts',
-    body: 'Hand over an Instagram, TikTok, YouTube, or X account you legitimately own. Credentials change hands under escrow protection.',
+    body: 'Hand over an account you legitimately own. Credentials change hands under escrow protection with a mediator verifying the handover.',
   },
   {
     icon: Gamepad2,
     title: 'Gaming accounts',
-    body: 'Sell a Steam, Epic, or Riot account you own. Escrow holds the payment until the buyer confirms access and recovery details.',
+    body: 'Sell an account you own. Escrow holds the payment until the buyer confirms access and recovery details.',
   },
   {
     icon: KeyRound,
-    title: 'Subscription & service accounts',
-    body: 'Transfer ownership of an account or membership you are entitled to sell. The middleman verifies the handover before release.',
-  },
-];
-
-const SERVICES: ReadonlyArray<Example> = [
-  {
-    icon: Wrench,
-    title: 'Freelance & development work',
-    body: 'Pay for a build, a bug fix, or a design milestone. The seller delivers, the buyer reviews, then funds release.',
-  },
-  {
-    icon: Headphones,
-    title: 'Consulting & one-off services',
-    body: 'Audits, setup help, or a defined piece of work. Agree the deliverable up front so confirmation is clear.',
-  },
-  {
-    icon: Layers,
-    title: 'Milestone-based projects',
-    body: 'Break a larger engagement into deals so each completed stage settles on its own before the next begins.',
+    title: 'Licenses & activation keys',
+    body: 'Legitimate keys and licenses, verified as working before the money moves.',
   },
 ];
 
@@ -109,12 +128,37 @@ export default function UseCasesPage() {
             <Boxes className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Use cases
           </>
         }
-        title="What you can trade"
-        subtitle="TrustVexa is a crypto-only escrow service with a neutral middleman. If a deal is legal and the goods are yours to sell, escrow keeps both sides protected from funding to release."
+        title="Who uses TrustVexa"
+        subtitle="Freelancers, marketplaces, and businesses use TrustVexa when a deal is too large to do on trust. If it is legal and it is yours to sell, escrow keeps both sides protected from funding to release."
       />
 
       <section className="section">
         <div className="container max-w-4xl space-y-16">
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" aria-hidden="true" />
+              <h2 className="font-display text-xl font-semibold">Freelance & B2B services</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Define the deliverable clearly when you create the deal. Escrow protects the buyer
+              until the work is delivered, and protects the freelancer from a payment that never
+              arrives after delivery.
+            </p>
+            <ExampleGrid items={SERVICES} />
+          </div>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary" aria-hidden="true" />
+              <h2 className="font-display text-xl font-semibold">Marketplaces & private sales</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              A neutral party holds the funds while the order is fulfilled, so neither the platform
+              nor the parties have to front the risk.
+            </p>
+            <ExampleGrid items={MARKETPLACES} />
+          </div>
+
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <Code2 className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -122,7 +166,7 @@ export default function UseCasesPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               Anything delivered as a file, a key, or a transfer. The buyer funds the deal, the
-              seller delivers, and the 3-day completion clock keeps things moving toward release.
+              seller delivers, and the completion clock keeps things moving toward release.
             </p>
             <ExampleGrid items={DIGITAL} />
           </div>
@@ -134,22 +178,10 @@ export default function UseCasesPage() {
             </div>
             <p className="text-sm text-muted-foreground">
               Selling an account you legitimately own is allowed, but these categories carry extra
-              risk and are routed to a middleman for review before funds can release. Only trade
+              risk and are routed to a mediator for review before funds can release. Only trade
               accounts you have the right to sell.
             </p>
             <ExampleGrid items={ACCOUNTS} />
-          </div>
-
-          <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h2 className="font-display text-xl font-semibold">Services & freelance work</h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Define the deliverable clearly when you create the deal. Escrow protects the buyer
-              until the work is delivered and protects the seller from a chargeback after delivery.
-            </p>
-            <ExampleGrid items={SERVICES} />
           </div>
 
           {/* Prohibited reminder */}
@@ -187,12 +219,12 @@ export default function UseCasesPage() {
                 </CardTitle>
                 <CardDescription>
                   If your item is legal and yours to sell, it is almost certainly allowed. When in
-                  doubt, reach out and a middleman can confirm before you create the deal.
+                  doubt, reach out and a mediator can confirm before you create the deal.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3 pt-2">
                 <Button asChild variant="gradient" size="sm">
-                  <Link href="/contact">Ask before you trade</Link>
+                  <Link href="/contact">Ask before you deal</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link href="/how-it-works">See how it works</Link>
@@ -205,7 +237,7 @@ export default function UseCasesPage() {
 
       <CtaBand
         title="Found your use case?"
-        subtitle="Open an escrow deal and trade your digital goods, accounts, or services with both sides protected."
+        subtitle="Open an escrow deal and transact with both sides protected."
         primaryLabel="Start a deal"
         primaryHref="/register"
         secondaryLabel="View fees"
