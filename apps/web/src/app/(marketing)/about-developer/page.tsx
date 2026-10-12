@@ -5,6 +5,7 @@ import { Brain, Building2, Code2, Compass, Mail, MapPin, ShieldCheck, Target } f
 import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 export const metadata: Metadata = {
   title: 'Team & mission | TrustVexa',
   description:
-    'The people behind TrustVexa — secure escrow infrastructure for freelancers, marketplaces, and B2B transactions, with neutral dispute mediation.',
+    'The people behind TrustVexa — an AI contract scanner and deal checker in development, plus secure escrow infrastructure for freelancers, marketplaces, and B2B transactions, with neutral dispute mediation.',
 };
 
 const TEAM: ReadonlyArray<{
@@ -22,10 +23,16 @@ const TEAM: ReadonlyArray<{
   bio: string;
 }> = [
   {
+    icon: Brain,
+    name: 'Rebecca Herman',
+    role: 'CEO & Founder',
+    bio: 'Rebecca founded TrustVexa and sets its direction: secure escrow and dispute mediation for online deals today, and an AI contract scanner and deal checker in development.',
+  },
+  {
     icon: Code2,
     name: 'Ethan R. Caldwell',
-    role: 'Founder & Lead Developer',
-    bio: 'Ethan designed and built TrustVexa from the ground up: the milestone escrow model, the funding verification flow, the dispute process, and the security controls that keep funds safe while a deal is in progress.',
+    role: 'Lead Developer',
+    bio: 'Ethan designed and built the TrustVexa escrow platform: the milestone escrow model, the funding verification flow, the dispute process, and the security controls that keep funds safe while a deal is in progress.',
   },
   {
     icon: MapPin,
@@ -45,7 +52,7 @@ export default function AboutDeveloperPage() {
           </>
         }
         title="The people behind TrustVexa"
-        subtitle="We build escrow infrastructure for freelancers, marketplaces, and B2B transactions — milestone-based releases with a neutral mediator standing between the two sides."
+        subtitle="We build an AI contract scanner and deal checker, and escrow infrastructure for freelancers, marketplaces, and B2B transactions — milestone-based releases with a neutral mediator standing between the two sides."
       />
 
       <section className="section">
@@ -99,7 +106,14 @@ export default function AboutDeveloperPage() {
                 <p className="text-sm font-medium">Where we are</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   TrustVexa is operated by a privately held, multi-investor-funded company based at
-                  504 N 4th St, Parkston, SD 57366-2007, USA. Reach the team at{' '}
+                  504 N 4th St, Parkston, SD 57366-2007, USA. Reach the CEO at{' '}
+                  <a
+                    href="mailto:rebecca.herman@trustvexa.com"
+                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                  >
+                    rebecca.herman@trustvexa.com
+                  </a>
+                  {' '}or the team at{' '}
                   <a
                     href="mailto:support@trustvexa.com"
                     className="font-medium text-foreground underline-offset-4 hover:underline"
@@ -138,10 +152,12 @@ export default function AboutDeveloperPage() {
                 <Badge variant="outline">Planned</Badge>
               </div>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Our next engineering focus is AI-assisted trust: risk scoring that flags suspicious
+                Our next engineering focus is AI-assisted trust: an AI contract scanner and deal checker
+                that extracts key terms, flags risky clauses, and checks deals against company policy
+                and playbooks (re-checked on every upload or edit), risk scoring that flags suspicious
                 deal patterns before funding, and an assistant that summarises dispute evidence so
-                mediators reach fair decisions faster. Neither has shipped yet, and the final call on
-                a dispute will stay with a person.
+                mediators reach fair decisions faster. None has shipped yet, and the final call on
+                a contract, deal, or dispute will stay with a person.
               </p>
             </div>
           </Reveal>
@@ -168,6 +184,8 @@ export default function AboutDeveloperPage() {
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand />
     </>

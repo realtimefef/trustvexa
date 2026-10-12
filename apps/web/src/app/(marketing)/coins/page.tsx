@@ -7,6 +7,7 @@ import { Reveal } from '@/components/visual/reveal';
 import { SectionHeading } from '@/components/visual/section-heading';
 import { CoinOrbit } from '@/components/visual/coin-orbit';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import {
   Table,
   TableBody,
@@ -76,7 +77,7 @@ export default function CoinsPage() {
           </>
         }
         title="Settlement assets & networks"
-        subtitle="Escrow deals are currently funded and paid out in digital assets. You choose the asset and network when you create a deal, and each asset settles only on its supported networks."
+        subtitle="Escrow deals can be funded and paid out in digital assets or in traditional currency. For the digital-asset path, you choose the asset and network when you create a deal, and each asset settles only on its supported networks."
       />
 
       {/* Context: this is settlement detail, not the product itself */}
@@ -237,6 +238,8 @@ export default function CoinsPage() {
           </div>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Ready to start a deal?"

@@ -6,12 +6,13 @@ import { Button } from '@/components/ui/button';
 import { BlockchainGlobe } from '@/components/visual/blockchain-globe';
 import { CoinOrbit } from '@/components/visual/coin-orbit';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { SectionHeading } from '@/components/visual/section-heading';
 
 export const metadata: Metadata = {
-  title: 'Crypto settlement | TrustVexa',
+  title: 'Digital-asset settlement | TrustVexa',
   description:
     'How TrustVexa escrow deals are funded and settled on-chain: supported assets, networks, confirmation rules, and network costs.',
 };
@@ -135,17 +136,18 @@ export default function CryptoSettlementPage() {
               <p className="mt-3 text-muted-foreground">
                 TrustVexa is an escrow and dispute-resolution platform. We are not an exchange, a
                 broker, or a custodial wallet service, and we do not issue, trade, or make markets in
-                any digital asset. Digital assets are the settlement rail we support today; the
-                product itself is the escrow workflow, the milestone logic, and the mediation process.
+                any digital asset. Digital assets are one of the settlement options we support, alongside traditional
+                currency; the product itself is the escrow workflow, the milestone logic, and the mediation process.
               </p>
               <p className="mt-3 text-muted-foreground">
-                Additional settlement rails are on our roadmap. Anything not yet live is labelled as
-                planned on this site.
+                This page covers the digital-asset path. Additional settlement options are on our roadmap, and anything not yet live is labelled as planned on this site.
               </p>
             </div>
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Pick your asset and start a deal"

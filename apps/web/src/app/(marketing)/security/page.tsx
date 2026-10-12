@@ -22,6 +22,7 @@ import { SectionHeading } from '@/components/visual/section-heading';
 import { FeatureSplit } from '@/components/visual/feature-split';
 import { ShieldVisual } from '@/components/visual/shield-visual';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { Badge } from '@/components/ui/badge';
 
 export const metadata: Metadata = {
@@ -351,6 +352,8 @@ export default function SecurityPage() {
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Built for trust, not for hype"

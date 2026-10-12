@@ -8,7 +8,6 @@ import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { SectionHeading } from '@/components/visual/section-heading';
 import { CtaBand } from '@/components/visual/cta-band';
-import { Badge } from '@/components/ui/badge';
 
 export const metadata: Metadata = {
   title: 'AI Contract Scanner & Deal Checker | TrustVexa',
@@ -46,10 +45,8 @@ export default function ContractScannerPage() {
           </>
         }
         title="Review every contract and deal before you commit"
-        subtitle="An AI-powered scanner that extracts key terms, flags risky clauses, and checks each deal against your policy and playbooks — re-checked every time the content changes."
-      >
-        <Badge variant="warning">In development</Badge>
-      </PageHero>
+        subtitle="An AI-powered scanner we are building to extract key terms, flag risky clauses, and check each deal against your policy and playbooks — re-checked every time the content changes."
+      />
 
       <section className="section">
         <div className="container">
