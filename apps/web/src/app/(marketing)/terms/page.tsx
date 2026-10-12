@@ -24,7 +24,7 @@ const SECTIONS: ReadonlyArray<{ heading: string; body: ReadonlyArray<string> }> 
     heading: '2. What TrustVexa does',
     body: [
       'TrustVexa provides an escrow service for online transactions between two parties — including freelance and contract work, digital goods and services, marketplace sales, and business-to-business deals. We hold funds in escrow while a buyer and seller complete a transaction, and we may provide a neutral mediator to review disputes.',
-      'Deals are currently funded and settled using digital assets on the networks listed on our settlement page. Additional settlement methods may be added over time, and the funding screen for each deal always shows the accepted method for that deal.',
+      'Deals can be funded and settled using digital assets on the networks listed on our settlement page, or in traditional currency where offered. Additional settlement methods may be added over time, and the funding screen for each deal always shows the accepted method for that deal.',
       'TrustVexa is not a bank, a money transmitter offering deposit accounts, a broker, an exchange, or an investment service. Funds held in escrow are held for the purpose of settling a specific deal and are not deposits.',
     ],
   },

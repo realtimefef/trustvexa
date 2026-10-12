@@ -73,7 +73,7 @@ const AI_ROADMAP = [
   { icon: FileCheck, title: 'Terms drafting',        body: 'Turn a plain-language description of a project into clear, structured milestones and acceptance criteria.' },
 ];
 
-// In development — shown with a badge on the homepage and on /contract-scanner.
+// AI contract scanner capabilities (being built).
 const CONTRACT_AI = [
   { icon: FileSearch,    title: 'Contract scanning',        body: 'Analyze contracts and deal documents and extract key terms, obligations, parties, and dates.' },
   { icon: ShieldAlert,   title: 'Risky clause detection',   body: 'Flag risky or non-standard clauses so they get a human look before anyone signs.' },
@@ -312,7 +312,7 @@ export default function HomePage() {
             <SectionHeading
               eyebrow={<><FileSearch className="h-3.5 w-3.5" aria-hidden /> AI contract scanner &amp; deal checker</>}
               title="Know what you are signing before you fund a deal"
-              subtitle="An AI-powered review layer for contracts and deal documents, re-checked every time the content changes, with human review for consequential decisions. Currently in development."
+              subtitle="An AI-powered review layer for contracts and deal documents, re-checked every time the content changes, with human review for consequential decisions. We are building this now."
             />
           </Reveal>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -322,9 +322,6 @@ export default function HomePage() {
                   <div className="mb-4 flex items-center justify-between">
                     <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-brand-gradient group-hover:text-white">
                       <item.icon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <span className="rounded-full border border-border bg-muted/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      In development
                     </span>
                   </div>
                   <h3 className="font-display text-base font-semibold">{item.title}</h3>

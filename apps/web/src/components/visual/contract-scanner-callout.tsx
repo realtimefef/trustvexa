@@ -16,10 +16,7 @@ export function ContractScannerCallout() {
             </span>
             <div className="flex-1">
               <p className="font-display text-lg font-semibold">
-                AI contract scanner &amp; deal checker{' '}
-                <span className="ml-1 rounded-full border border-border bg-muted/60 px-2.5 py-1 align-middle text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  In development
-                </span>
+                AI contract scanner &amp; deal checker
               </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 We are building an AI-powered scanner that extracts key terms, obligations, and dates, flags risky

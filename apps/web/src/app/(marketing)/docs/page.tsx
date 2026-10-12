@@ -115,8 +115,8 @@ const GUIDES: ReadonlyArray<Guide> = [
   },
   {
     icon: Brain,
-    title: 'AI contract scanner (in development)',
-    intro: 'A planned review layer for contracts and deal documents. Not yet available.',
+    title: 'AI contract scanner',
+    intro: 'A review layer we are building for contracts and deal documents. Not yet available.',
     steps: [
       'Upload a contract or deal document to a deal.',
       'The scanner will extract key terms, obligations, and dates and flag risky or non-standard clauses.',
