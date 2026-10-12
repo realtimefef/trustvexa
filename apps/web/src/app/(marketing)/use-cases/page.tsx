@@ -18,13 +18,14 @@ import {
 import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Use cases | TrustVexa',
   description:
-    'Real examples of deals you can safely complete with TrustVexa escrow — freelance projects, marketplace payouts, B2B services, digital products, and account transfers.',
+    'Real examples of deals you can safely complete with TrustVexa escrow — freelance projects, marketplace payouts, B2B services, digital products, and account transfers — plus contract and deal review with our AI scanner (in development).',
 };
 
 type Example = { icon: typeof Boxes; title: string; body: string };
@@ -234,6 +235,8 @@ export default function UseCasesPage() {
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Found your use case?"

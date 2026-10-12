@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "TrustVexa",
-    "tagline": "Fideicomiso seguro para freelancers, marketplaces y transacciones B2B."
+    "tagline": "Escáner de contratos con IA y fideicomiso seguro para freelancers, marketplaces y transacciones B2B."
   },
   "nav": {
     "dashboard": "Panel de control",
@@ -42,8 +42,8 @@
         "description": "Un mediador verificado revisa las pruebas y resuelve las disputas de forma justa."
       },
       "crypto": {
-        "title": "Liquidación en cripto",
-        "description": "Hoy los acuerdos se financian y liquidan en activos digitales. Consulta los detalles en la página de liquidación en cripto."
+        "title": "Liquidación flexible",
+        "description": "Los acuerdos pueden financiarse y liquidarse en activos digitales o en moneda tradicional. Consulta los detalles en la página de liquidación."
       }
     }
   },

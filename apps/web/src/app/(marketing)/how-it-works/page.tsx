@@ -19,18 +19,19 @@ import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { SectionHeading } from '@/components/visual/section-heading';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 
 export const metadata: Metadata = {
   title: 'How it works | TrustVexa',
   description:
-    'How TrustVexa escrow protects buyers and sellers step by step, from funding through delivery, release, and neutral dispute mediation.',
+    'How TrustVexa escrow protects buyers and sellers step by step, from funding through delivery, release, and neutral dispute mediation — plus the AI contract scanner and deal checker now in development.',
 };
 
 const STEPS: ReadonlyArray<{ icon: typeof UserPlus; title: string; body: string }> = [
   {
     icon: UserPlus,
     title: 'Create a deal & invite',
-    body: 'The initiator sets the amount, the deliverables, the milestone schedule, and who pays the fee, then invites the counterparty with a single-use link and a verification code. Both sides agree to the written terms before anything moves.',
+    body: 'The initiator sets the amount, the deliverables, the milestone schedule, and who pays the fee, then invites the counterparty with a single-use link and a verification code. Both sides agree to the written terms before anything moves. Our AI contract scanner (in development) will also check the contract itself before you commit.',
   },
   {
     icon: Lock,
@@ -224,6 +225,8 @@ export default function HowItWorksPage() {
           </div>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Ready to start a deal?"

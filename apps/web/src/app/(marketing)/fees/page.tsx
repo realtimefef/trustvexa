@@ -64,7 +64,7 @@ export default function FeesPage() {
           </>
         }
         title="Simple, transparent fees"
-        subtitle="A sliding-scale platform fee that gets cheaper as deals get larger, plus a small seller settlement fee. On-chain network gas is passed through at cost."
+        subtitle="A sliding-scale platform fee that gets cheaper as deals get larger, plus a small seller settlement fee. For digital-asset settlement, on-chain network gas is passed through at cost."
       />
 
       {/* How fees compare — feature line band */}

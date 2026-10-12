@@ -10,7 +10,7 @@ import { FaqExplorer, type FaqEntry } from '@/components/visual/faq-explorer';
 export const metadata: Metadata = {
   title: 'FAQ | TrustVexa',
   description:
-    'Answers to common questions about TrustVexa escrow, funding, fees, the fee split, disputes, security, settlement, and your account.',
+    'Answers to common questions about TrustVexa escrow, the AI contract scanner and deal checker, funding, fees, the fee split, disputes, security, settlement, and your account.',
 };
 
 const FAQ: ReadonlyArray<FaqEntry> = [
@@ -18,7 +18,7 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Getting started',
     q: 'What is TrustVexa?',
-    a: 'TrustVexa is an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions. Funds are held in escrow and released against agreed milestones, with a neutral mediator ready to step in if a deal goes wrong.',
+    a: 'TrustVexa is an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions, and we are building an AI-powered contract scanner and deal checker. Funds are held in escrow and released against agreed milestones, with a neutral mediator ready to step in if a deal goes wrong.',
   },
   {
     category: 'Getting started',
@@ -35,6 +35,32 @@ const FAQ: ReadonlyArray<FaqEntry> = [
     q: 'Do both parties need an account?',
     a: 'Yes. The counterparty joins through the invite link and creates or signs into their account before the deal can proceed.',
   },
+  // AI contract scanner
+  {
+    category: 'AI contract scanner',
+    q: 'What is the AI contract scanner and deal checker?',
+    a: 'An AI-powered tool, currently in development, that analyzes contracts and deal documents, extracts key terms, obligations, and dates, flags risky or non-standard clauses, and checks deals against company policy and playbooks.',
+  },
+  {
+    category: 'AI contract scanner',
+    q: 'Is the contract scanner available today?',
+    a: 'Not yet. It is in development and is labelled as such everywhere on this site. Escrow and dispute mediation are live today.',
+  },
+  {
+    category: 'AI contract scanner',
+    q: 'How often is a document checked?',
+    a: 'Every time. Content is re-checked whenever a document is uploaded, edited, or re-submitted, so reviews always reflect the latest version.',
+  },
+  {
+    category: 'AI contract scanner',
+    q: 'What else will it do?',
+    a: 'Clause comparison, redline suggestions, risk scoring, plain-language summaries, and audit-ready reports.',
+  },
+  {
+    category: 'AI contract scanner',
+    q: 'Will AI make the final call on a contract or deal?',
+    a: 'No. Human review stays in place for consequential decisions. The scanner assists reviewers; it does not replace them.',
+  },
   // Funding & payments
   {
     category: 'Funding & payments',
@@ -44,7 +70,7 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Funding & payments',
     q: 'How is settlement handled today?',
-    a: 'Deals are currently funded and settled in digital assets — USDT, ETH, BNB, SOL, and TRX across Ethereum, BNB Chain, TRON, and Solana. The full mechanics are documented on our crypto settlement page. Additional settlement rails are on the roadmap.',
+    a: 'Deals can be funded and settled in digital assets (USDT, ETH, BNB, SOL, and TRX across Ethereum, BNB Chain, TRON, and Solana) or in traditional currency. The digital-asset mechanics are documented on our settlement page. Additional settlement options are on the roadmap.',
   },
   {
     category: 'Funding & payments',
@@ -96,7 +122,7 @@ const FAQ: ReadonlyArray<FaqEntry> = [
   {
     category: 'Disputes',
     q: 'Does TrustVexa use AI to decide disputes?',
-    a: 'No. AI-assisted evidence summarisation and fraud/risk scoring are on our roadmap and are clearly labelled as planned rather than shipped. Dispute decisions are made by a human mediator.',
+    a: 'No. AI-assisted evidence summarisation, fraud/risk scoring, and the contract scanner are in development and clearly labelled as such rather than shipped. Dispute decisions are made by a human mediator.',
   },
   // Security
   {

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import {
   AlertTriangle,
   BookOpen,
+  Brain,
   CheckCircle2,
   CircleDollarSign,
   Hash,
@@ -18,6 +19,7 @@ import {
 import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
@@ -105,10 +107,21 @@ const GUIDES: ReadonlyArray<Guide> = [
     title: 'Settlement & networks',
     intro: 'How funds are moved today, and on which networks.',
     steps: [
-      'Settlement currently runs on digital assets, with more rails planned.',
+      'Deals can settle in digital assets or in traditional currency, with more options planned.',
       'USDT settles on TRC-20 (Tron), ERC-20 (Ethereum), BEP-20 (BNB Chain), or Solana.',
       'ETH on Ethereum, BNB on BNB Chain, TRX on Tron, SOL on Solana.',
       'Always match the asset to the network shown on the funding screen.',
+    ],
+  },
+  {
+    icon: Brain,
+    title: 'AI contract scanner (in development)',
+    intro: 'A planned review layer for contracts and deal documents. Not yet available.',
+    steps: [
+      'Upload a contract or deal document to a deal.',
+      'The scanner will extract key terms, obligations, and dates and flag risky or non-standard clauses.',
+      'The deal is checked against company policy and playbooks, and re-checked every time the document is uploaded, edited, or re-submitted.',
+      'Reviewers see risk scores, summaries, clause comparisons, and redline suggestions; consequential decisions stay with a person.',
     ],
   },
   {
@@ -236,6 +249,8 @@ export default function DocsPage() {
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand
         title="Ready to put it into practice?"

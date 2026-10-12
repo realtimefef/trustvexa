@@ -71,8 +71,8 @@ const TEAM = [
   },
   {
     name: 'Ethan R. Caldwell',
-    role: 'Founder & Lead Developer',
-    bio: "Builds TrustVexa around one mission: the safe transfer of money and work between people who don't yet trust each other.",
+    role: 'Lead Developer',
+    bio: "Builds the TrustVexa platform around one mission: the safe transfer of money and work between people who don't yet trust each other.",
     initials: 'EC',
   },
   {
@@ -215,7 +215,7 @@ export default function AboutPage() {
             <SectionHeading
               eyebrow="The people behind it"
               title="Built by a small, focused team"
-              subtitle="A founder who knows the product cold, and a US-based operations lead you can reach."
+              subtitle="A founder-CEO who sets the direction, a lead developer who builds the product, and a US-based operations lead you can reach."
             />
           </Reveal>
           <div className="mt-14 grid gap-6 sm:grid-cols-2">

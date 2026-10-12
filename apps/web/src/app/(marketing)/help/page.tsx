@@ -17,6 +17,7 @@ import {
 import { PageHero } from '@/components/visual/page-hero';
 import { Reveal } from '@/components/visual/reveal';
 import { CtaBand } from '@/components/visual/cta-band';
+import { ContractScannerCallout } from '@/components/visual/contract-scanner-callout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -132,7 +133,7 @@ const GUIDES: ReadonlyArray<{
       'Always match the network shown on the funding screen before you send anything.',
       'Sending on the wrong network can delay or lose funds, so verify first.',
       'If you already sent on the wrong network, do not send again.',
-      'Contact us immediately with your transaction reference so we can investigate. Full settlement details are on the crypto settlement page.',
+      'Contact us immediately with your transaction reference so we can investigate. Full settlement details are on the settlement page.',
     ],
   },
 ];
@@ -215,7 +216,7 @@ export default function HelpPage() {
                 href="/crypto"
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
-                See crypto settlement
+                See settlement details
               </Link>
               .
             </p>
@@ -251,6 +252,8 @@ export default function HelpPage() {
           </Reveal>
         </div>
       </section>
+
+      <ContractScannerCallout />
 
       <CtaBand />
     </>
