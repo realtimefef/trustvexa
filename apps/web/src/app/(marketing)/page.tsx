@@ -5,7 +5,6 @@ import {
   ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, Star, Store, UserPlus, Wallet, Workflow, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ActivityTicker } from '@/components/visual/activity-ticker';
 import { AuroraBackground } from '@/components/visual/aurora-background';
 import { CountUp } from '@/components/visual/count-up';
 import { DealFlowSvg } from '@/components/visual/deal-flow-svg';
@@ -104,7 +103,6 @@ export default function HomePage() {
         <ParticleField count={45} className="opacity-40" />
         <div className="container grid items-center gap-10 py-16 md:py-24 lg:grid-cols-2 lg:gap-12">
           <div className="flex flex-col items-start gap-5">
-            <Reveal><ActivityTicker /></Reveal>
             <Reveal delay={60}>
               <span className="eyebrow mt-2">
                 <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
