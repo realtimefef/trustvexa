@@ -59,10 +59,16 @@ const STATS = [
   { value: '$400 – $50k', label: 'Supported deal range' },
   { value: '4 stages', label: 'Escrow stages per deal' },
   { value: 'Neutral', label: 'Human mediator on every deal' },
-  { value: 'Wilmington, DE', label: 'US headquarters' },
+  { value: 'Parkston, SD', label: 'US headquarters' },
 ];
 
 const TEAM = [
+  {
+    name: 'Rebecca Herman',
+    role: 'CEO & Founder',
+    bio: 'Leads TrustVexa: secure escrow for online deals today, and an AI contract scanner and deal checker in development.',
+    initials: 'RH',
+  },
   {
     name: 'Ethan R. Caldwell',
     role: 'Founder & Lead Developer',
@@ -120,7 +126,7 @@ export default function AboutPage() {
           </>
         }
         title="The trust layer for online transactions"
-        subtitle="TrustVexa is an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions — built so neither side of a deal has to go first on trust."
+        subtitle="TrustVexa is building an AI-powered contract scanner and deal checker, alongside an escrow and dispute-resolution platform for freelancers, marketplaces, and B2B transactions — so neither side of a deal has to go first on trust."
       />
 
       {/* Mission band */}
@@ -155,7 +161,22 @@ export default function AboutPage() {
               and puts a neutral mediator on standby if a deal goes sideways.
             </p>
             <p className="mt-4 text-muted-foreground">
-              Deals are currently funded and settled in digital assets. The full mechanics are
+              Our AI contract scanner and deal checker is in development. It analyzes contracts
+              and deal documents, extracts key terms, obligations, and dates, flags risky or
+              non-standard clauses, and checks deals against company policy and playbooks.
+              Content is re-checked every time a document is uploaded, edited, or re-submitted,
+              so reviews always reflect the latest version. Human review stays in place for
+              consequential decisions.{' '}
+              <Link
+                href="/contract-scanner"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                Learn more
+              </Link>
+              .
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              Deals can be funded and settled in digital assets or in traditional currency. The full mechanics are
               documented on our{' '}
               <Link
                 href="/crypto"
@@ -237,7 +258,7 @@ export default function AboutPage() {
                 <div>
                   <p className="font-display font-semibold">US headquarters</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    1007 N Orange St, 4th Floor, Wilmington, DE 19801, USA.
+                    504 N 4th St, Parkston, SD 57366-2007, USA.
                   </p>
                 </div>
               </div>

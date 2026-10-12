@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "TrustVexa",
-    "tagline": "Secure escrow for freelancers, marketplaces, and B2B."
+    "tagline": "AI contract scanner and secure escrow for freelancers, marketplaces, and B2B."
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -42,8 +42,8 @@
         "description": "Split a project into stages and release payment stage by stage."
       },
       "crypto": {
-        "title": "Crypto settlement",
-        "description": "Deals settle in USDT, ETH, BNB, SOL, or TRX across Ethereum, BNB Chain, TRON, and Solana. See /crypto for details."
+        "title": "Flexible settlement",
+        "description": "Deals settle in digital assets (USDT, ETH, BNB, SOL, TRX) or in traditional currency. See /crypto for settlement details."
       }
     }
   },

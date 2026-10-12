@@ -12,8 +12,9 @@ const FOOTER_SECTIONS: ReadonlyArray<{
     links: [
       { href: '/how-it-works', label: 'How it works' },
       { href: '/use-cases', label: 'Use cases' },
+      { href: '/contract-scanner', label: 'AI contract scanner' },
       { href: '/fees', label: 'Fees' },
-      { href: '/crypto', label: 'Crypto settlement' },
+      { href: '/crypto', label: 'Settlement' },
       { href: '/coins', label: 'Supported assets' },
       { href: '/security', label: 'Trust & Security' },
     ],
@@ -70,13 +71,14 @@ export function SiteFooter() {
         <div className="space-y-4 md:col-span-2">
           <BrandLogo />
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-            Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions.
-            Milestone-based releases, a neutral mediator, and a tamper-evident ledger.
+            AI contract scanner and deal checker, plus secure escrow infrastructure for
+            freelancers, marketplaces, and B2B transactions. Milestone-based releases, a neutral
+            mediator, and a tamper-evident ledger.
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            1007 N Orange St, 4th Floor
+            504 N 4th St
             <br />
-            Wilmington, DE 19801, USA
+            Parkston, SD 57366-2007, USA
             <br />
             <a
               href="mailto:support@trustvexa.com"

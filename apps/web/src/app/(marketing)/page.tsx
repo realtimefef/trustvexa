@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import {
-  ArrowRight, Boxes, Brain, Check, Coins, Database, FileCheck, Gavel, Globe,
-  Handshake, KeyRound, Lock, Package, Scale, Search, ShieldCheck, ShoppingCart,
-  Sparkles, Star, Store, UserPlus, Wallet, Workflow, X, Zap,
+  ArrowRight, Boxes, Brain, CalendarClock, Check, ClipboardCheck, Coins, Database, FileCheck, FileSearch, FileText,
+  Gavel, GitCompare, Globe, Handshake, KeyRound, ListChecks, Lock, Package, RefreshCw, Scale, Search,
+  ShieldAlert, ShieldCheck, ShoppingCart, Sparkles, Star, Store, UserPlus, Wallet, Workflow, X, Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActivityTicker } from '@/components/visual/activity-ticker';
@@ -73,13 +73,26 @@ const AI_ROADMAP = [
   { icon: FileCheck, title: 'Terms drafting',        body: 'Turn a plain-language description of a project into clear, structured milestones and acceptance criteria.' },
 ];
 
+// In development — shown with a badge on the homepage and on /contract-scanner.
+const CONTRACT_AI = [
+  { icon: FileSearch,    title: 'Contract scanning',        body: 'Analyze contracts and deal documents and extract key terms, obligations, parties, and dates.' },
+  { icon: ShieldAlert,   title: 'Risky clause detection',   body: 'Flag risky or non-standard clauses so they get a human look before anyone signs.' },
+  { icon: ClipboardCheck,title: 'Deal checker',             body: 'Check each deal against company policy and playbooks and see exactly where it deviates.' },
+  { icon: RefreshCw,     title: 'Re-checked every time',    body: 'Content is re-checked whenever a document is uploaded, edited, or re-submitted, so reviews always reflect the latest version.' },
+  { icon: GitCompare,    title: 'Clause comparison',        body: 'Compare clauses against your preferred language and earlier versions of the same document.' },
+  { icon: FileText,      title: 'Redline suggestions',      body: 'Get suggested redlines for flagged clauses, ready for a reviewer to accept or reject.' },
+  { icon: ListChecks,    title: 'Risk scoring & summaries', body: 'A clear risk score and plain-language summary for every contract and deal.' },
+  { icon: CalendarClock, title: 'Audit-ready reports',      body: 'Exportable reports of what was checked, what was flagged, and who approved it.' },
+];
+
 const FAQ = [
   { q: 'How does escrow protect me?', a: 'Funds are held in escrow and only released when both parties have met the agreed terms. Neither side can walk away with the money, and a neutral mediator is always on standby.' },
-  { q: 'How does payment and settlement work?', a: 'Deals are currently funded and settled in digital assets (USDT, ETH, BNB, SOL, TRX) across Ethereum, BNB Chain, TRON, and Solana. Full details are on the crypto settlement page. Additional settlement rails are on the roadmap.' },
+  { q: 'How does payment and settlement work?', a: 'Deals can be funded and settled in digital assets (USDT, ETH, BNB, SOL, TRX across Ethereum, BNB Chain, TRON, and Solana) or in traditional currency. Full details are on the settlement page.' },
   { q: 'What are the fees?', a: 'A sliding-scale platform fee from 5% down to 1.35% with a $30 minimum, plus a 0.5% seller settlement fee. Network costs are passed through at cost.' },
   { q: 'What deal sizes are supported?', a: '$400 to $50,000 per deal. The fee tier automatically gets cheaper as deal size grows.' },
   { q: 'What happens if there is a dispute?', a: 'Either side can open a dispute. A neutral mediator reviews the evidence, applies the written terms, and issues a final decision — release, refund, or partial settlement — all recorded in the ledger.' },
-  { q: 'Does TrustVexa use AI?', a: 'Not yet. Fraud scoring, dispute assistance, and terms drafting are on our roadmap and are clearly marked as planned rather than shipped.' },
+  { q: 'What is the AI contract scanner and deal checker?', a: 'An AI-powered tool, currently in development, that analyzes contracts and deal documents, extracts key terms, obligations, and dates, flags risky or non-standard clauses, and checks deals against company policy and playbooks. Content is re-checked every time a document is uploaded, edited, or re-submitted. Human review stays in place for consequential decisions.' },
+  { q: 'Does TrustVexa use AI today?', a: 'Not in production yet. The contract scanner and deal checker, fraud scoring, dispute assistance, and terms drafting are in development and are clearly marked as such rather than shipped.' },
 ];
 
 export default function HomePage() {
@@ -105,7 +118,7 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={180}>
               <p className="max-w-lg text-base text-muted-foreground md:text-lg">
-                TrustVexa is the trust layer for online transactions. Funds are held in escrow and released against milestones, so neither side has to go first on trust — with a neutral mediator if a deal goes sideways.
+                TrustVexa is the trust layer for online transactions. Funds are held in escrow and released against milestones, so neither side has to go first on trust — with a neutral mediator if a deal goes sideways. Our AI contract scanner and deal checker, now in development, will review contracts before you commit.
               </p>
             </Reveal>
             <Reveal delay={240}>
@@ -292,6 +305,42 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ─── AI CONTRACT SCANNER & DEAL CHECKER (in development) ──────────── */}
+      <section className="section relative overflow-hidden border-t">
+        <div className="container">
+          <Reveal>
+            <SectionHeading
+              eyebrow={<><FileSearch className="h-3.5 w-3.5" aria-hidden /> AI contract scanner &amp; deal checker</>}
+              title="Know what you are signing before you fund a deal"
+              subtitle="An AI-powered review layer for contracts and deal documents, re-checked every time the content changes, with human review for consequential decisions. Currently in development."
+            />
+          </Reveal>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {CONTRACT_AI.map((item, i) => (
+              <Reveal key={item.title} delay={(i % 4) * 80}>
+                <div className="card-glow group flex h-full flex-col rounded-2xl border bg-card p-6 shadow-soft transition-all hover:-translate-y-1">
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-brand-gradient group-hover:text-white">
+                      <item.icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="rounded-full border border-border bg-muted/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      In development
+                    </span>
+                  </div>
+                  <h3 className="font-display text-base font-semibold">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={100} className="mt-8 flex justify-center">
+            <Button asChild variant="outline">
+              <Link href="/contract-scanner">Explore the contract scanner <ArrowRight className="h-4 w-4" aria-hidden /></Link>
+            </Button>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ─── AI ROADMAP (clearly labelled as not yet shipped) ─────────────── */}
       <section className="section border-t bg-muted/20">
         <div className="container">
@@ -464,7 +513,7 @@ export default function HomePage() {
               <div className="flex-1">
                 <p className="font-display text-lg font-semibold">How deals are funded today</p>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Escrow deals are currently funded and settled in digital assets across four networks. The mechanics, supported assets, confirmation rules, and network costs are all documented on the settlement page.
+                  Escrow deals can be funded and settled in digital assets or in traditional currency. The mechanics, supported assets, confirmation rules, and costs are documented on the settlement page.
                 </p>
               </div>
               <Button asChild variant="outline" className="shrink-0">
