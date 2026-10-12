@@ -99,7 +99,7 @@ export default function AboutDeveloperPage() {
                 <p className="text-sm font-medium">Where we are</p>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   TrustVexa is operated by a privately held, multi-investor-funded company based at
-                  1007 N Orange St, 4th Floor, Wilmington, DE 19801, USA. Reach the team at{' '}
+                  504 N 4th St, Parkston, SD 57366-2007, USA. Reach the team at{' '}
                   <a
                     href="mailto:support@trustvexa.com"
                     className="font-medium text-foreground underline-offset-4 hover:underline"

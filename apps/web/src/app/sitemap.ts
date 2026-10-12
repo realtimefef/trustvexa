@@ -9,6 +9,7 @@ const PUBLIC_PATHS: ReadonlyArray<string> = [
   '/how-it-works',
   '/fees',
   '/use-cases',
+  '/contract-scanner',
   '/crypto',
   '/coins',
   '/about',

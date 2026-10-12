@@ -33,7 +33,7 @@ const jetbrainsMono = JetBrains_Mono({
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://trustvexa.com').replace(/\/$/, '');
 
 const SITE_DESCRIPTION =
-  'Secure escrow infrastructure for freelancers, marketplaces, and B2B transactions. Milestone-based releases with neutral dispute mediation.';
+  'TrustVexa is building an AI-powered contract scanner and deal checker, alongside secure escrow infrastructure for freelancers, marketplaces, and B2B transactions. Milestone-based releases with neutral dispute mediation.';
 
 // Real founding year, set via env so we never publish a guessed date. When it is
 // blank the foundingDate field is simply omitted from the structured data.
@@ -49,12 +49,18 @@ const ORGANIZATION_SCHEMA: Record<string, unknown> = {
   url: SITE_URL,
   description: SITE_DESCRIPTION,
   email: 'support@trustvexa.com',
+  founder: {
+    '@type': 'Person',
+    name: 'Rebecca Herman',
+    jobTitle: 'CEO & Founder',
+    email: 'rebecca.herman@trustvexa.com',
+  },
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '1007 N Orange St, 4th Floor',
-    addressLocality: 'Wilmington',
-    addressRegion: 'DE',
-    postalCode: '19801',
+    streetAddress: '504 N 4th St',
+    addressLocality: 'Parkston',
+    addressRegion: 'SD',
+    postalCode: '57366-2007',
     addressCountry: 'US',
   },
   contactPoint: {
@@ -75,6 +81,9 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   alternates: { canonical: '/' },
   keywords: [
+    'AI contract scanner',
+    'contract review',
+    'deal checker',
     'escrow',
     'escrow service',
     'freelancer escrow',
@@ -91,12 +100,12 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: 'TrustVexa',
     url: SITE_URL,
-    title: 'TrustVexa — Secure escrow infrastructure',
+    title: 'TrustVexa — AI contract scanner & secure escrow',
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'TrustVexa — Secure escrow infrastructure',
+    title: 'TrustVexa — AI contract scanner & secure escrow',
     description: SITE_DESCRIPTION,
   },
   appleWebApp: {

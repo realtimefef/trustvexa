@@ -14,6 +14,7 @@ import { LanguageToggle } from '@/components/language-toggle';
 const NAV_LINKS = [
   { href: '/how-it-works', label: 'How it works' },
   { href: '/use-cases', label: 'Use cases' },
+  { href: '/contract-scanner', label: 'AI scanner' },
   { href: '/fees', label: 'Fees' },
   { href: '/security', label: 'Security' },
   { href: '/faq', label: 'FAQ' },
